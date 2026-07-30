@@ -1,0 +1,25 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+
+# Segredos — nunca commitar
+.env
+.env.*
+!.env.example
+credentials.json
+secrets/
+*.pem
+*.key
+
+# Dados reais de Insights (podem conter informacao sensivel de audiencia).
+# Os exemplos versionados ficam em dados/exemplos/.
+dados/metricas/*.csv
+!dados/metricas/.gitkeep
+
+# Saidas geradas
+relatorios/
+
+# Configuracao pessoal do Claude Code (.claude/settings.json e versionado)
+.claude/settings.local.json

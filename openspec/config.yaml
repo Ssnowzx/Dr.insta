@@ -1,0 +1,49 @@
+schema: spec-driven
+
+context: |
+  Projeto: Myfavorite — sistema de estratégia e análise de Instagram operado por Claude Code.
+
+  O que é: um conjunto de Agent Skills (padrão Anthropic) + um motor de métricas em
+  TypeScript que transformam dados manuais do Instagram Insights em diagnóstico,
+  plano editorial e relatórios acionáveis.
+
+  Perfil atendido: conta única, nicho Negócios/Marketing.
+  Objetivo primário dos próximos 90 dias: engajamento e comunidade.
+  Métrica-norte: taxa de resposta/retorno da audiência (ver perfil/metas.md).
+
+  Stack: TypeScript strict (ESM, NodeNext), Vitest para testes e cobertura, zero
+  dependências de runtime. Node >= 20.19.
+
+  Convenções:
+  - Arquivos em lowercase-com-hífen; tipos centralizados em src/tipos/index.ts.
+  - Proibido `any`; sem herança de classes (composição).
+  - Conventional Commits em português no imperativo (feat:, fix:, docs:, test:...).
+  - Testes no padrão AAA (Arrange/Act/Assert), nomeados "deve ...".
+  - Cobertura mínima de 80% (lines/statements/functions).
+
+  Domínio:
+  - Métricas são sempre normalizadas por ALCANCE, não por seguidores — o alcance é a
+    base que o algoritmo do Instagram realmente usa para ranquear.
+  - Os três sinais de ranqueamento tratados como primários: watch time (retenção),
+    sends per reach (compartilhamentos em DM) e likes per reach.
+  - Benchmarks vivem em src/dominio/benchmarks.ts e devem citar a fonte e a data.
+
+rules:
+  proposal:
+    - Escreva em português do Brasil.
+    - Inclua sempre uma seção "Fora de escopo".
+    - "Amarre a proposta a uma métrica de Instagram observável — por exemplo sends/reach, saves/reach ou taxa de resposta."
+  tasks:
+    - Quebre em tarefas de no máximo 2 horas.
+    - Toda mudança em src/ precisa de uma tarefa correspondente de teste.
+  design:
+    - Justifique qualquer nova dependência; o padrão do projeto é zero dependências de runtime.
+
+operations:
+  apply:
+    guidance:
+      - Rode `npm test` antes de marcar tarefas como concluídas.
+      - Se alterar benchmarks, atualize a fonte e a data no mesmo commit.
+  archive:
+    guidance:
+      - Resuma o impacto esperado em métricas antes de arquivar.

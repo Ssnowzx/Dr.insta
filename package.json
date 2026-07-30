@@ -1,0 +1,27 @@
+{
+  "name": "myfavorite",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sistema de estrategia e analise de Instagram operado por Claude Code: Agent Skills + motor de metricas em TypeScript.",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "ig": "tsx src/infra/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cobertura": "vitest run --coverage",
+    "lint": "tsc --noEmit",
+    "validar:skills": "tsx src/infra/validar-skills.ts",
+    "validar:tudo": "npm run lint && npm test && npm run validar:skills && openspec validate --all",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.10",
+    "@vitest/coverage-v8": "^4.1.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.10"
+  }
+}
