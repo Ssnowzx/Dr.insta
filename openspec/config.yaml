@@ -7,9 +7,13 @@ context: |
   TypeScript que transformam dados manuais do Instagram Insights em diagnóstico,
   plano editorial e relatórios acionáveis.
 
-  Perfil atendido: conta única, nicho Negócios/Marketing.
-  Objetivo primário dos próximos 90 dias: engajamento e comunidade.
-  Métrica-norte: taxa de resposta/retorno da audiência (ver perfil/metas.md).
+  Perfil atendido: conta única, nicho Moda/Lifestyle — rode o motor com `--nicho lifestyle`.
+  Objetivo primário dos próximos 90 dias: caminho até a compra (converter alcance
+  em receita rastreável). Trocado em 04/08/2026; antes era engajamento e comunidade.
+  Métrica-norte: sessões rastreadas/mês vindas das origens dela no GA4 (ver perfil/metas.md).
+
+  Não é o gargalo: alcance, sends/reach e resposta em Stories já estão em nível alto.
+  O gargalo é saves/reach (0,23% contra 1,40% de referência) e o caminho até a compra.
 
   Stack: TypeScript strict (ESM, NodeNext), Vitest para testes e cobertura, zero
   dependências de runtime. Node >= 20.19.

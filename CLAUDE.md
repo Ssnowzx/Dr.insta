@@ -37,14 +37,20 @@ Escreva em **português do Brasil**, direto, sem jargão vazio ("engajar a audi�
 | Dimensão | Valor |
 |---|---|
 | Tipo | Conta única (não é agência) |
-| Nicho | Negócios / Marketing |
-| Objetivo — próximos 90 dias | **Engajamento e comunidade** |
-| Métrica-norte | Taxa de resposta e retorno de audiência |
-| Fonte de dados | Input manual / CSV exportado do Insights (sem Graph API) |
+| Nicho | **Moda / Lifestyle** — sempre rode o motor com `--nicho lifestyle` |
+| Objetivo — próximos 90 dias | **Caminho até a compra** — converter alcance em receita rastreável |
+| Métrica-norte | Sessões rastreadas/mês vindas das origens dela no GA4 |
+| Fonte de dados | Input manual / CSV exportado do Insights (sem Graph API) + painel de receita por origem |
 
 O detalhamento vivo (bio, ICP, pilares, voz, metas) está em **`perfil/`**. Leia antes de qualquer recomendação de conteúdo. Se `perfil/perfil.md` ainda tem marcadores `[PREENCHER]`, colete o que falta antes de produzir plano editorial — mas não bloqueie análise de métricas por isso.
 
-**Consequência prática do objetivo escolhido:** priorize `sends/reach`, `saves/reach`, taxa de resposta em Stories e volume/qualidade de DM acima de contagem de seguidores. Crescimento de seguidores é métrica de vaidade neste ciclo — reporte, não otimize.
+**Consequência prática do objetivo escolhido:** priorize `saves/reach`, cliques em link (bio e Stories) e sessões rastreadas no GA4. Nesta ordem.
+
+Atenção ao que **não** é o gargalo: alcance, sends/reach e resposta em Stories já estão em nível alto — em julho/2026 foram 5,4M de contas alcançadas, 284 mil compartilhamentos em Reels, 22 mil respostas em Stories e +20.824 seguidores. Reporte esses números, **não otimize**. Recomendar "mais engajamento" para esta conta é resolver um problema que ela não tem.
+
+O buraco está depois da atenção: `saves/reach` de 0,23% contra 1,40% de referência do nicho, e um caminho até a compra que até 30/07/2026 não existia (zero links na bio). Crescimento de seguidores segue como métrica de vaidade.
+
+> Este objetivo substituiu "Engajamento e comunidade" em 04/08/2026, depois que os Insights de julho mostraram engajamento na média ou acima do nicho e conversão de 0,29%. A leitura completa está em `dados/bianca-olivo-2026-07/INDICE.md`.
 
 ---
 
