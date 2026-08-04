@@ -12,7 +12,23 @@ Insights). `⚠️ proposta` = interpretação a validar. `[FALTA]` = não pergu
 |---|---|
 | Quem é | "Uma mulher que vive o dia e está sempre pronta pra noite. Jovem de espírito, independente de idade. Conectada, por dentro das tendências — não só de moda, mas também das redes sociais. Gosta de se inspirar com stylings diferentes e novas propostas de composição." (resposta 5, palavras dela) |
 | Momento de vida/negócio | `[FALTA]` — o recorte que ela dá é de **estilo**, não de momento. Não é erro dela: em moda o corte por atitude costuma ser mais operacional que por fase de vida. Mas sem isso não dá para ancorar pauta em necessidade concreta |
-| Onde já está no Instagram | `[FALTA]` — não perguntado. A aba Público (pendente) responde parte: idade, localização e horário |
+| Onde já está no Instagram | `[FALTA]` — que contas segue e que conteúdo consome não foi perguntado |
+
+## Quem de fato acompanha (medido — Insights > Público, 30 dias, 04/08/2026)
+
+| Dimensão | Valor |
+|---|---|
+| Gênero | **88,7% mulheres** · 11,3% homens |
+| Idade | **25–44 concentra 68,2%** (25–34: 41,1% · 35–44: 27,1%) · 18–24: 13,0% · 45–54: 11,6% |
+| País | **91,5% Brasil** · EUA 1,1% · Portugal 1,0% |
+| Horário (BRT) | sobe às 9h, alta até 21h, **pico às 18h**. Máximo em **domingos e segundas, 18–21h** |
+
+**A descrição que ela deu bate com quem realmente está lá.** Mulher brasileira, adulta,
+em idade de renda própria. É o público de um e-commerce de moda feminina.
+
+**Consequência direta:** a conversão de 0,29% **não** se explica por audiência errada. Fosse
+esse o caso, a estratégia seria trocar o público. Não é. O buraco está no caminho até a
+compra, e é nele que o ciclo mexe.
 
 ## As 5 dores
 
@@ -58,12 +74,13 @@ status é justamente o que ligaria o alcance dela ao posicionamento que ela quer
 
 ## Anti-persona
 
-- ⚠️ proposta, a confirmar com a aba Público: o seguidor que chega pelo humor viral e não tem
-  interesse em moda. Os Reels de humor entregam milhões de views, mas o salvamento é crítico
-  e a conversão do canal é 0,29%. **Cuidado ao agir sobre isso** — o humor é o que dá
-  distribuição a ela; a hipótese não é "parar com humor", é "o humor não está levando a lugar
-  nenhum depois do riso"
-- ⚠️ proposta: audiência fora do raio de entrega/compra do e-commerce. A aba Público resolve
+**Hipótese testada e descartada em 04/08/2026.** Eu suspeitava que o seguidor que chega pelo
+humor viral não tivesse interesse em moda, e que isso explicasse a conversão baixa. A aba
+Público desmente: 88,7% mulheres, 68,2% entre 25 e 44 anos, 91,5% no Brasil. **Não existe
+anti-persona relevante neste perfil hoje.**
+
+Fica o registro para não voltarmos a esse caminho: cortar humor para "filtrar audiência"
+seria destruir a distribuição sem consertar a conversão.
 
 ---
 

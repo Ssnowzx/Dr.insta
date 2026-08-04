@@ -42,8 +42,10 @@ que move esta.
 1. As 7.976 sessões e a receita de julho foram geradas **sem link na bio** — todo o tráfego
    veio de sticker manual em Stories. O link entrou entre 30/07 e 04/08.
 2. O link entrou **sem UTM**, então os cliques dele ainda não aparecem como canal dela.
-3. A receita de julho tem divergência aberta: R$ 10.583,28 no painel contra R$ 12,7 mil na
-   resposta 12 do formulário.
+
+> **Divergência de receita resolvida em 04/08/2026.** A Bianca confirmou ~R$ 10 mil, o que
+> valida a ordem de grandeza do painel (R$ 10.583,28) e **descarta os R$ 12,7 mil** da
+> resposta 12 do formulário. O valor do painel é o que vale.
 
 **Consequência:** corrigir a UTM, rodar 30 dias, e só então fixar o alvo. Definir meta sobre
 um baseline que sabidamente vai mudar de patamar é inventar número.
@@ -85,6 +87,7 @@ pode indicar problema de distribuição causado pela mudança de mix.
 |---|---|---|---|---|---|
 | **UTM na bio** | Sem parâmetro, o tráfego da bio não é creditado ao canal dela | link da bio | Volume mensurável em `utm_campaign=bio` no GA4 | 30 dias | a iniciar |
 | **Mix de pilares** | Conteúdo de utilidade (Provador) eleva `saves/reach`, hoje em 0,23% | mix editorial | `saves/reach` ≥ 0,8% | 14 dias, mín. 7 posts | a iniciar |
+| **Unboxing natural** | Produto mostrado no ambiente dela converte melhor que apresentação formal | formato do conteúdo de produto | conversão do dia ≥ 0,50% | 4 repetições | **evidência prévia** |
 | **Voz única para marca** | Post de produto performa mal em parte porque ela troca de voz | legenda | Retenção de Reel de produto ≥ 40% | 14 dias, mín. 7 posts | a iniciar |
 
 **Ordem obrigatória:** UTM primeiro, sozinha — é infraestrutura, não experimento. Os dois
