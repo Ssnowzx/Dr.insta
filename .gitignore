@@ -18,6 +18,10 @@ secrets/
 dados/metricas/*.csv
 !dados/metricas/.gitkeep
 
+# Material bruto entregue por cliente (prints de Insights, formularios, painel de receita).
+# Uma pasta por cliente/ciclo. Nada disso entra no historico do repositorio.
+dados/bianca-olivo-*/
+
 # Saidas geradas
 relatorios/
 
