@@ -30,15 +30,23 @@
 
 ## 3. Design system e carga inicial
 
-- [ ] 3.1 Portar os tokens dos dois temas de `relatorios/bianca-olivo-2026-08-plano/index.html`
-- [ ] 3.2 **Medir contraste par a par nos dois temas** — texto ≥ 4,5:1, componente ≥ 3:1 — antes de qualquer tela
-- [ ] 3.3 Converter as sete fontes para `.woff2` e servir do próprio domínio
-- [ ] 3.4 Componentes de base: cartão, etiqueta, dado em destaque, botão, campo
-- [ ] 3.5 Semente: cliente Bianca Olivo, usuário consultor e ciclo "Caminho até a compra"
-- [ ] 3.6 Semente de `metrica_def` e `metrica_alvo` a partir de `perfil/metas.md`, com `contaminado` nas duas linhas que exigem
-- [ ] 3.7 Semente de `benchmark` a partir de `src/dominio/benchmarks.ts`, com `fonte` e `atualizado_em`
-- [ ] 3.8 Semente dos 4 experimentos com a ordem obrigatória (UTM primeiro, isolada)
-- [ ] 3.9 Teste: a semente roda duas vezes sem duplicar linha
+- [x] 3.1 Portar os tokens dos dois temas de `relatorios/bianca-olivo-2026-08-plano/index.html`
+- [x] 3.2 **Medir contraste par a par nos dois temas** — virou `test/contrast.test.ts`, que lê `base.css` e falha o build; 40 pares travados
+- [x] 3.3 Converter as sete fontes para `.woff2`, subsetadas para pt-BR — 460 KB viraram 128 KB
+- [x] 3.4 Casca de aplicação: rail no desktop, barra inferior no celular, cartão, selo de estado, número tabular
+- [x] 3.5 Semente: cliente Bianca Olivo, usuário consultor e ciclo "Caminho até a compra"
+- [x] 3.6 Semente de `metrica_def` e `metrica_alvo` a partir de `perfil/metas.md`, com `contaminado` nas duas linhas que exigem
+- [x] 3.7 Semente de `benchmark` a partir de `src/dominio/benchmarks.ts`, com `fonte` e `atualizado_em`
+- [x] 3.8 Semente dos 4 experimentos com a ordem obrigatória (UTM primeiro, isolada)
+- [x] 3.9 Teste: a semente roda duas vezes sem duplicar linha
+
+## 3b. Painel (adiantado da fase 6, a pedido)
+
+- [x] 3b.1 Funil em escala real como elemento assinatura, com as barras finas marcadas
+- [x] 3b.2 Gráfico de bala: valor contra alvo e referência do nicho, marcas em tinta e não em cor
+- [x] 3b.3 Baseline contaminado e amostra abaixo de 7 aparecem no cartão
+- [x] 3b.4 Telas de plano, pedidos e conta, em leitura
+- [ ] 3b.5 Série histórica mensal — só existe um período medido até agora
 
 ## 4. Acompanhamento de etapas
 

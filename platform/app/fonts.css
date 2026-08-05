@@ -1,0 +1,63 @@
+/* Self-hosted, subset to Latin-1 + Latin Extended-A + typographic punctuation.
+   460 KB of TTF became 128 KB of woff2. Served from our own domain: a Google
+   Fonts request costs a DNS lookup and a TLS handshake before the first word
+   appears, and she reads this on 4G.
+
+   `font-display: swap` shows the fallback immediately and swaps when the face
+   lands. The alternative, `block`, gives three seconds of invisible text. */
+
+@font-face {
+  font-family: 'Italiana';
+  src: url('/fontes/Italiana-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('/fontes/InstrumentSans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('/fontes/InstrumentSans-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('/fontes/InstrumentSans-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Instrument Serif';
+  src: url('/fontes/InstrumentSerif-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fontes/GeistMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fontes/GeistMono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}

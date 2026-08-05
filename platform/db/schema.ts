@@ -28,6 +28,10 @@ const fk = (name?: string) => name === undefined
   ? bigint({ mode: 'number', unsigned: true })
   : bigint(name, { mode: 'number', unsigned: true })
 
+/* DATE columns are strings, not Dates. A calendar day has no time and no zone;
+   `new Date('2026-08-04')` is UTC midnight, which renders as 3 August in
+   America/Sao_Paulo. That off-by-one-day bug is invisible until a report is
+   wrong by one row. */
 const createdAt = () => datetime('created_at').notNull()
 const updatedAt = () => datetime('updated_at').notNull()
 
@@ -106,13 +110,14 @@ export const cycle = mysqlTable('cycle', {
   title: varchar({ length: 160 }).notNull(),
   goal: text(),
   northStarMetric: varchar('north_star_metric', { length: 160 }),
-  startsOn: date('starts_on').notNull(),
-  endsOn: date('ends_on'),
+  startsOn: date('starts_on', { mode: 'string' }).notNull(),
+  endsOn: date('ends_on', { mode: 'string' }),
   state: mysqlEnum(['draft', 'active', 'closed']).notNull().default('draft'),
   createdAt: createdAt(),
   updatedAt: updatedAt()
 }, t => [
   uniqueIndex('uq_cycle_code').on(t.publicCode),
+  uniqueIndex('uq_cycle_client_title').on(t.clientId, t.title),
   index('ix_cycle_client').on(t.clientId, t.state)
 ])
 
@@ -125,8 +130,8 @@ export const delivery = mysqlTable('delivery', {
   title: varchar({ length: 200 }).notNull(),
   subtitle: text(),
   kind: mysqlEnum(['plan', 'analysis', 'report', 'audit']).notNull(),
-  periodStart: date('period_start'),
-  periodEnd: date('period_end'),
+  periodStart: date('period_start', { mode: 'string' }),
+  periodEnd: date('period_end', { mode: 'string' }),
   readingMinutes: smallint('reading_minutes', { unsigned: true }),
   position: smallint({ unsigned: true }).notNull().default(0),
   publishedAt: datetime('published_at'),
@@ -186,7 +191,7 @@ export const request = mysqlTable('request', {
   raisedBySide: mysqlEnum('raised_by_side', ['consultant', 'client']).notNull().default('consultant'),
   priority: mysqlEnum(['low', 'medium', 'high']).notNull().default('medium'),
   state: mysqlEnum(['open', 'in_progress', 'delivered', 'dropped']).notNull().default('open'),
-  dueOn: date('due_on'),
+  dueOn: date('due_on', { mode: 'string' }),
   openedBy: fk('opened_by'),
   closedAt: datetime('closed_at'),
   position: smallint({ unsigned: true }).notNull().default(0),
@@ -253,7 +258,7 @@ export const metricValue = mysqlTable('metric_value', {
   id: id(),
   clientId: fk('client_id').notNull(),
   metricDefId: fk('metric_def_id').notNull(),
-  period: date().notNull(),
+  period: date({ mode: 'string' }).notNull(),
   granularity: mysqlEnum(['day', 'week', 'month']).notNull().default('month'),
   value: decimal({ precision: 16, scale: 6 }).notNull(),
   sampleSize: bigint('sample_size', { mode: 'number', unsigned: true }),
@@ -274,7 +279,7 @@ export const metricTarget = mysqlTable('metric_target', {
   cycleId: fk('cycle_id').notNull(),
   metricDefId: fk('metric_def_id').notNull(),
   baseline: decimal({ precision: 16, scale: 6 }),
-  baselineOn: date('baseline_on'),
+  baselineOn: date('baseline_on', { mode: 'string' }),
   target: decimal({ precision: 16, scale: 6 }),
   contaminated: tinyint().notNull().default(0),
   note: text(),
@@ -292,7 +297,7 @@ export const benchmark = mysqlTable('benchmark', {
   metricDefId: fk('metric_def_id').notNull(),
   value: decimal({ precision: 16, scale: 6 }).notNull(),
   source: varchar({ length: 200 }).notNull(),
-  updatedOn: date('updated_on').notNull()
+  updatedOn: date('updated_on', { mode: 'string' }).notNull()
 }, t => [
   uniqueIndex('uq_benchmark').on(t.niche, t.metricDefId)
 ])
@@ -311,8 +316,8 @@ export const experiment = mysqlTable('experiment', {
   minSample: smallint('min_sample', { unsigned: true }),
   minDays: smallint('min_days', { unsigned: true }),
   position: smallint({ unsigned: true }).notNull().default(0),
-  startsOn: date('starts_on'),
-  endsOn: date('ends_on'),
+  startsOn: date('starts_on', { mode: 'string' }),
+  endsOn: date('ends_on', { mode: 'string' }),
   state: mysqlEnum(['not_started', 'running', 'read', 'inconclusive', 'abandoned'])
     .notNull().default('not_started'),
   outcome: text(),
@@ -320,6 +325,7 @@ export const experiment = mysqlTable('experiment', {
   updatedAt: updatedAt()
 }, t => [
   uniqueIndex('uq_experiment_code').on(t.publicCode),
+  uniqueIndex('uq_experiment_cycle_name').on(t.cycleId, t.name),
   index('ix_experiment_cycle').on(t.cycleId, t.position)
 ])
 

@@ -1,34 +1,63 @@
-/* Colour tokens inherited from the July/August 2026 client deliveries.
-   Every pair there was measured — text >= 4.5:1, component >= 3:1 — and the
-   palette has already been approved by the client. The full port, including
-   self-hosted fonts, lands in phase 3.
+@import './fonts.css';
 
-   Every colour lives here as a variable; no literal colour in the rest of the
-   stylesheet. That is what keeps the dark theme from making something
-   invisible. */
+/* =============================================================================
+   DESIGN TOKENS
+   Inherited from the July/August 2026 client deliveries, already measured pair
+   by pair and already approved by her. Every colour lives here as a variable;
+   no literal colour anywhere else. That is what keeps the dark theme from
+   making something invisible — and `test/contrast.test.ts` parses this file and
+   fails the build if any pair drops below its threshold.
+
+   TWO CARAMELS, on purpose:
+     --caramelo  text and links. Measured for WCAG text contrast.
+     --dado      chart fills. The text caramel has OKLCH chroma 0.094, below the
+                 0.1 floor for a fill — it reads grey as a solid area. A fill and
+                 a link have different jobs, so they get different tokens.
+                 Both validated with the dataviz palette validator on 2026-08-05.
+   ============================================================================= */
 
 :root {
   color-scheme: light;
 
+  /* surfaces */
   --papel: #fbf9f6;
   --papel2: #f4efe8;
   --cartao: #ffffff;
+  --bloco: #14100d;
 
+  /* ink */
   --tinta: #14100d;
   --tinta2: #4a423a;
   --suave: #6f6459;
   --sobre-tinta: #fdfbf8;
+  --sobre-bloco2: #c4b8ab;
 
+  /* lines */
   --linha: #ded4c9;
   --linha2: #eae2d9;
 
+  /* accent and status */
   --caramelo: #96682f;
   --tijolo: #8f3a2c;
   --urg-bg: #fdf0ec;
   --ok: #3d6b4a;
   --ok-bg: #eef4ef;
+  --atencao: #8f6224;
+  --atencao-bg: #fbf3e6;
 
-  --foco: rgba(150, 104, 47, .22);
+  /* chart fills — validated as marks, not as text */
+  --dado: #a55f13;
+  --dado-fraco: #e8d5bb;
+  --grade: #eae2d9;
+
+  --foco: rgba(165, 95, 19, .25);
+  --sombra: 0 1px 2px rgba(20, 16, 13, .04), 0 8px 24px rgba(20, 16, 13, .06);
+  --raio: 14px;
+
+  /* type */
+  --display: 'Italiana', 'Instrument Serif', Georgia, serif;
+  --corpo: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,24 +67,38 @@
     --papel: #13110f;
     --papel2: #241e18;
     --cartao: #1b1815;
+    --bloco: #272019;
 
     --tinta: #f4efe9;
     --tinta2: #cdc2b6;
     --suave: #a89b8e;
     --sobre-tinta: #13110f;
+    --sobre-bloco2: #c9bdb0;
 
-    --linha: #342c25;
-    --linha2: #2a231d;
+    /* Lifted from #342c25: at 1.29:1 against the card the border vanished and
+       the cards blurred into one another. Card edges are what make a dashboard
+       read as a product rather than a page. */
+    --linha: #443a30;
+    --linha2: #2f2820;
 
     --caramelo: #e0aa64;
     --tijolo: #f0a08c;
     --urg-bg: #33211c;
     --ok: #7cc294;
     --ok-bg: #18261d;
+    --atencao: #eab873;
+    --atencao-bg: #2e2415;
 
-    --foco: rgba(224, 170, 100, .26);
+    --dado: #c08636;
+    --dado-fraco: #3a2f22;
+    --grade: #2a231d;
+
+    --foco: rgba(224, 170, 100, .3);
+    --sombra: 0 1px 2px rgba(0, 0, 0, .28), 0 8px 24px rgba(0, 0, 0, .34);
   }
 }
+
+/* ============================================================================= */
 
 * { box-sizing: border-box; }
 
@@ -68,10 +111,78 @@ body {
   margin: 0;
   background: var(--papel);
   color: var(--tinta);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-family: var(--corpo);
+  font-size: 16px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Every number in this product is tabular: a column of figures that shifts
+     width as digits change reads as sloppy, and these are money and rates. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------- type scale */
+
+.display {
+  font-family: var(--display);
+  font-weight: 400;
+  /* Italiana is a high-contrast face with thin strokes. Below ~28px the hairlines
+     disappear on a phone, so it is never used at body sizes. */
+  font-size: clamp(2rem, 1.4rem + 3vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.005em;
+  margin: 0;
+}
+
+.sobrancelha {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  font-weight: 400;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin: 0 0 .75rem;
+}
+
+.titulo-secao {
+  font-family: var(--corpo);
+  font-size: .8125rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--tinta2);
+  margin: 0;
+}
+
+.numero {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.lead {
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  color: var(--tinta2);
+  margin: .75rem 0 0;
+  max-width: 46ch;
+}
+
+/* ------------------------------------------------------------------ shared */
+
+.cartao {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+}
+
+a { color: var(--caramelo); }
+
+:focus-visible {
+  outline: 2px solid var(--dado);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {

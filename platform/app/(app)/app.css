@@ -1,0 +1,773 @@
+/* =============================================================================
+   THE SHELL
+   Mobile is the default and desktop is the override, because that is the order
+   she actually uses it in. The bottom bar exists on the phone; the rail appears
+   only when there is width to spare for it.
+   ============================================================================= */
+
+.casca { min-height: 100dvh; }
+
+/* ------------------------------------------------------------- top (mobile) */
+
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .875rem 1.25rem;
+  padding-top: calc(.875rem + env(safe-area-inset-top));
+  background: color-mix(in srgb, var(--papel) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--linha2);
+}
+
+.topo-marca {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--tinta);
+}
+
+.topo-conta {
+  font-size: .8125rem;
+  color: var(--suave);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conteudo {
+  padding: 1.5rem 1.25rem;
+  /* Clears the fixed bottom bar plus the home indicator. Without it the last
+     card sits under the bar and looks cut off. */
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  max-width: 76rem;
+  margin: 0 auto;
+}
+
+/* ---------------------------------------------------------- bottom (mobile) */
+
+.barra {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: color-mix(in srgb, var(--papel) 92%, transparent);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--linha);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.barra-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .1875rem;
+  /* 44px is the smallest target a thumb hits without aiming. */
+  min-height: 3.25rem;
+  padding: .5rem .25rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  color: var(--suave);
+  text-decoration: none;
+}
+
+.barra-item-ativo { color: var(--dado); }
+
+/* The active state is not colour alone: a bar appears above the icon, so it
+   survives greyscale, colour-blindness and a forced-colours mode. */
+.barra-item-ativo::before {
+  content: '';
+  position: absolute;
+  margin-top: -.5rem;
+  width: 1.75rem;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--dado);
+}
+
+/* ------------------------------------------------------------ rail (desktop) */
+
+.rail { display: none; }
+
+@media (min-width: 64rem) {
+  .casca {
+    display: grid;
+    grid-template-columns: 16rem 1fr;
+  }
+
+  .topo, .barra { display: none; }
+
+  .rail {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    padding: 2rem 1rem;
+    background: var(--papel2);
+    border-right: 1px solid var(--linha);
+  }
+
+  .conteudo {
+    padding: 3rem 2.5rem 4rem;
+  }
+}
+
+.rail-marca {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  padding: 0 .75rem;
+}
+
+.rail-marca-nome {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--tinta);
+}
+
+.rail-marca-conta {
+  font-size: .9375rem;
+  font-weight: 600;
+  color: var(--tinta2);
+}
+
+.rail-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .125rem;
+}
+
+.rail-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .625rem .75rem;
+  border-radius: 10px;
+  font-size: .9375rem;
+  font-weight: 600;
+  color: var(--tinta2);
+  text-decoration: none;
+  transition: background .12s, color .12s;
+}
+
+.rail-item:hover { background: var(--cartao); color: var(--tinta); }
+
+.rail-item-ativo {
+  background: var(--cartao);
+  color: var(--dado);
+  box-shadow: inset 2px 0 0 var(--dado);
+}
+
+/* =============================================================================
+   PAGE HEADER
+   ============================================================================= */
+
+.pagina-cab { margin-bottom: 2.5rem; }
+
+.pagina-cab .display { color: var(--tinta); }
+
+/* =============================================================================
+   THE FUNNEL — the signature element
+   ============================================================================= */
+
+.funil { margin: 0; }
+
+.funil-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.funil-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .4375rem;
+}
+
+.funil-rot {
+  font-size: .9375rem;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.funil-valor {
+  font-size: 1.0625rem;
+  color: var(--tinta);
+}
+
+.funil-trilho {
+  height: 14px;
+  border-radius: 3px;
+  background: var(--dado-fraco);
+  overflow: hidden;
+}
+
+.funil-barra {
+  height: 100%;
+  background: var(--dado);
+  /* Rounded only on the data end, anchored flat at the baseline: the bar starts
+     at zero and stops at its value, and a rounded left edge would suggest it
+     starts somewhere after zero. */
+  border-radius: 0 4px 4px 0;
+  /* Keeps a stage visible when its true share is a fraction of a pixel. */
+  min-width: 3px;
+}
+
+/* Marked, not merely tiny: the diagonal texture says "pinned to a minimum",
+   so a sliver reads as a measurement and not as a rendering failure. It also
+   survives greyscale and forced-colours mode. */
+.funil-barra-fina {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--dado) 0 3px,
+    color-mix(in srgb, var(--dado) 55%, var(--cartao)) 3px 6px
+  );
+  min-width: 6px;
+}
+
+.funil-pe {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .375rem .5rem;
+  margin-top: .4375rem;
+}
+
+.funil-parte {
+  font-size: .875rem;
+  color: var(--dado);
+}
+
+.funil-parte-rot,
+.funil-sobrevida {
+  font-size: .8125rem;
+  color: var(--suave);
+}
+
+.funil-sobrevida::before {
+  content: '·';
+  margin-right: .5rem;
+}
+
+.funil-nota {
+  margin: 1.75rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--linha2);
+  font-size: .8125rem;
+  line-height: 1.55;
+  color: var(--suave);
+  max-width: 56ch;
+}
+
+/* =============================================================================
+   METRIC CARDS
+   ============================================================================= */
+
+.grade-metricas {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 48rem) {
+  .grade-metricas { grid-template-columns: repeat(2, 1fr); }
+}
+
+.metrica {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1.25rem;
+}
+
+.metrica-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .5rem;
+}
+
+.metrica-nome {
+  margin: 0;
+  font-size: .9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--tinta);
+}
+
+.metrica-valor {
+  margin: 0 0 1rem;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--tinta);
+}
+
+.metrica-trilho {
+  position: relative;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--dado-fraco);
+  margin-bottom: .875rem;
+}
+
+.metrica-barra {
+  height: 100%;
+  background: var(--dado);
+  border-radius: 0 3px 3px 0;
+  min-width: 2px;
+}
+
+/* Reference points are ticks in ink, not fills in colour — only the measure
+   carries the data colour, so the eye never compares two references to each
+   other. */
+.metrica-marca {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  border-radius: 1px;
+}
+
+.metrica-alvo { background: var(--tinta); }
+
+.metrica-nicho {
+  background: var(--suave);
+  /* Dashed so target and niche stay apart without a second hue. */
+  background-image: repeating-linear-gradient(
+    to bottom, var(--suave) 0 3px, transparent 3px 6px
+  );
+}
+
+.metrica-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1.5rem;
+  margin: 0 0 .875rem;
+}
+
+.metrica-refs > div { display: flex; align-items: baseline; gap: .4375rem; }
+
+.metrica-refs dt {
+  font-size: .75rem;
+  color: var(--suave);
+}
+
+.metrica-refs dd {
+  margin: 0;
+  font-size: .8125rem;
+  color: var(--tinta2);
+}
+
+.metrica-desc {
+  margin: 0;
+  font-size: .8125rem;
+  line-height: 1.5;
+  color: var(--suave);
+}
+
+.ressalva {
+  margin: .875rem 0 0;
+  padding: .625rem .75rem;
+  border-radius: 8px;
+  background: var(--papel2);
+  font-size: .8125rem;
+  line-height: 1.5;
+  color: var(--tinta2);
+}
+
+.ressalva-atencao {
+  background: var(--atencao-bg);
+  color: var(--atencao);
+}
+
+.ressalva-atencao strong { color: var(--atencao); }
+
+/* --------------------------------------------------------------- status pill */
+
+.selo {
+  flex-shrink: 0;
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  padding: .1875rem .5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  border: 1px solid;
+}
+
+/* Status always ships with its word. The colour is the second signal, never
+   the only one. */
+.selo-ok { color: var(--ok); background: var(--ok-bg); border-color: var(--ok); }
+.selo-atencao { color: var(--atencao); background: var(--atencao-bg); border-color: var(--atencao); }
+.selo-critico { color: var(--tijolo); background: var(--urg-bg); border-color: var(--tijolo); }
+.selo-neutro { color: var(--suave); background: var(--papel2); border-color: var(--linha); }
+
+/* =============================================================================
+   SECTIONS AND SIMPLE STATS
+   ============================================================================= */
+
+.secao { margin-top: 3rem; }
+
+.secao-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: .625rem;
+  border-bottom: 1px solid var(--linha2);
+}
+
+.secao-nota {
+  font-size: .8125rem;
+  color: var(--suave);
+  text-align: right;
+}
+
+.grade-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--linha);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  overflow: hidden;
+}
+
+@media (min-width: 40rem) {
+  .grade-stats { grid-template-columns: repeat(3, 1fr); }
+}
+
+.stat {
+  background: var(--cartao);
+  padding: 1rem;
+}
+
+.stat-rot {
+  margin: 0 0 .25rem;
+  font-size: .75rem;
+  color: var(--suave);
+  line-height: 1.35;
+}
+
+.stat-valor {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--tinta);
+}
+
+/* =============================================================================
+   CARD THAT HOLDS THE FUNNEL
+   ============================================================================= */
+
+.painel-destaque {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1.5rem 1.25rem;
+  box-shadow: var(--sombra);
+}
+
+@media (min-width: 48rem) {
+  .painel-destaque { padding: 2rem; }
+}
+
+.destaque-cab { margin-bottom: 1.75rem; }
+
+.destaque-titulo {
+  margin: 0 0 .375rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.destaque-sub {
+  margin: 0;
+  font-size: .875rem;
+  line-height: 1.5;
+  color: var(--tinta2);
+  max-width: 52ch;
+}
+
+/* =============================================================================
+   LISTS AND SECONDARY TEXT
+   ============================================================================= */
+
+.lista-simples {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  overflow: hidden;
+  background: var(--cartao);
+}
+
+.lista-simples > li + li { border-top: 1px solid var(--linha2); }
+
+.lista-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .875rem 1rem;
+  text-decoration: none;
+  color: inherit;
+  transition: background .12s;
+}
+
+a.lista-item:hover { background: var(--papel2); }
+
+.lista-titulo {
+  font-size: .9375rem;
+  font-weight: 600;
+  color: var(--tinta);
+  line-height: 1.35;
+}
+
+.lista-meta {
+  flex-shrink: 0;
+  font-size: .75rem;
+  color: var(--suave);
+  white-space: nowrap;
+}
+
+.rodape-nota {
+  margin: 1rem 0 0;
+  font-size: .8125rem;
+  line-height: 1.55;
+  color: var(--suave);
+  max-width: 56ch;
+}
+
+a.secao-nota { color: var(--caramelo); text-decoration: none; font-weight: 600; }
+a.secao-nota:hover { text-decoration: underline; }
+
+/* =============================================================================
+   PLAN — steps
+   ============================================================================= */
+
+.entrega-sub {
+  margin: 0 0 1.25rem;
+  font-size: .9375rem;
+  line-height: 1.55;
+  color: var(--tinta2);
+  max-width: 58ch;
+}
+
+.etapas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.etapa {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1.25rem;
+}
+
+.etapa-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .625rem;
+}
+
+.etapa-prazo {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--suave);
+}
+
+.etapa-titulo {
+  margin: 0 0 .5rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--tinta);
+}
+
+.etapa-resumo {
+  margin: 0;
+  font-size: .9375rem;
+  line-height: 1.55;
+  color: var(--tinta2);
+  max-width: 58ch;
+}
+
+/* The number that motivated the item, set apart so it reads as evidence rather
+   than as another sentence. The project rule is that no recommendation reaches
+   her without it. */
+.etapa-dado {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  margin: .875rem 0 0;
+  padding-left: .875rem;
+  border-left: 2px solid var(--dado);
+}
+
+.etapa-dado-valor {
+  font-size: 1.0625rem;
+  color: var(--dado);
+}
+
+.etapa-dado-rot {
+  font-size: .8125rem;
+  color: var(--suave);
+}
+
+/* =============================================================================
+   REQUESTS
+   ============================================================================= */
+
+.pedidos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pedido {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1.25rem;
+}
+
+.pedido-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .625rem;
+}
+
+.pedido-tipo {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--suave);
+}
+
+.pedido-titulo {
+  margin: 0 0 .5rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--tinta);
+}
+
+.pedido-desc {
+  margin: 0;
+  font-size: .9375rem;
+  line-height: 1.55;
+  color: var(--tinta2);
+  max-width: 58ch;
+}
+
+.pedido-porque {
+  margin: .875rem 0 0;
+  padding: .875rem;
+  border-radius: 10px;
+  background: var(--papel2);
+  font-size: .875rem;
+  line-height: 1.55;
+  color: var(--tinta2);
+}
+
+.pedido-porque-rot {
+  display: block;
+  font-family: var(--mono);
+  font-size: .625rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin-bottom: .3125rem;
+}
+
+.pedido-pe {
+  margin: .875rem 0 0;
+  font-size: .75rem;
+  color: var(--suave);
+}
+
+.pedido-pe strong { color: var(--dado); }
+
+/* =============================================================================
+   ACCOUNT
+   ============================================================================= */
+
+.ficha {
+  margin: 0 0 2rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--cartao);
+  overflow: hidden;
+}
+
+.ficha > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .875rem 1rem;
+}
+
+.ficha > div + div { border-top: 1px solid var(--linha2); }
+
+.ficha dt { font-size: .8125rem; color: var(--suave); flex-shrink: 0; }
+
+.ficha dd {
+  margin: 0;
+  font-size: .875rem;
+  font-weight: 600;
+  text-align: right;
+  color: var(--tinta);
+  overflow-wrap: anywhere;
+}
+
+.btn-sair {
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--tinta2);
+  background: none;
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  padding: .75rem 1.25rem;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+
+.btn-sair:hover { border-color: var(--suave); color: var(--tinta); }

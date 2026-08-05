@@ -137,6 +137,10 @@ CREATE TABLE cycle (
                      ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_cycle_code (public_code),
+  -- Natural key. `public_code` is an identity, not a key anyone can look up:
+  -- a seed re-run mints a fresh ULID and would insert a second copy of the
+  -- same cycle. Two cycles with the same title for one client is a mistake.
+  UNIQUE KEY uq_cycle_client_title (client_id, title),
   KEY ix_cycle_client (client_id, state),
   CONSTRAINT fk_cycle_client FOREIGN KEY (client_id)
     REFERENCES client (id) ON DELETE RESTRICT
@@ -459,6 +463,10 @@ CREATE TABLE experiment (
                      ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_experiment_code (public_code),
+  -- Same reasoning as `cycle`: a natural key, so re-seeding updates instead of
+  -- duplicating. Two experiments with the same name in one cycle would also
+  -- make the mandatory ordering ambiguous.
+  UNIQUE KEY uq_experiment_cycle_name (cycle_id, name),
   KEY ix_experiment_cycle (cycle_id, position),
   CONSTRAINT fk_experiment_client FOREIGN KEY (client_id)
     REFERENCES client (id) ON DELETE RESTRICT,
