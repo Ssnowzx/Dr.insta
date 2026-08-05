@@ -11,14 +11,14 @@ import { SESSION_COOKIE, SESSION_TTL_MS } from './constants.ts'
  *
  * The cookie carries 32 random bytes; the database stores only their SHA-256.
  * A database leak hands nobody a usable session, and revoking is deleting the
- * row \u2014 immediate, unlike a JWT that stays valid until it expires.
+ * row — immediate, unlike a JWT that stays valid until it expires.
  *
  * Unsalted SHA-256 is right here, unlike for passwords: the token has 256 bits
  * of real entropy, so there is no dictionary and no table to precompute. Paying
  * for an Argon2 on every request would buy nothing.
  */
 
-/** Renew when less than a third is left \u2014 avoids an UPDATE on every request. */
+/** Renew when less than a third is left — avoids an UPDATE on every request. */
 const RENEW_THRESHOLD_MS = SESSION_TTL_MS / 3
 
 export interface Identity {

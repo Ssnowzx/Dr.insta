@@ -4,8 +4,9 @@ import { redirect } from 'next/navigation'
 import { readSession } from './session.ts'
 import type { Identity } from './session.ts'
 
+
 /**
- * Data Access Layer \u2014 the real authorisation boundary.
+ * Data Access Layer — the real authorisation boundary.
  *
  * `proxy.ts` runs on every route, including prefetches, so it only checks that
  * a cookie exists. The actual decision happens here, and this is called by every
@@ -39,7 +40,7 @@ export async function requireConsultant (): Promise<Identity> {
  * The `client_id` this request is allowed to see.
  *
  * For a client user it is theirs, full stop. For the consultant it is whichever
- * one was asked for \u2014 which is why `wanted` exists: without it the consultant
+ * one was asked for — which is why `wanted` exists: without it the consultant
  * could not open any client at all.
  *
  * Returns `null` when the consultant picked no client (overview). Returning an
@@ -71,13 +72,6 @@ export async function requireClientScope (wanted?: number): Promise<number> {
   return clientId
 }
 
-/**
- * Whether an identity may reach a resource belonging to a given client.
- *
- * Callers must treat `false` as NOT FOUND, never as forbidden: an
- * access-denied response confirms the resource exists, and that is how a
- * consultancy's client list gets mapped by guessing.
- */
-export function canReach (identity: Identity, clientId: number): boolean {
-  return identity.clientId === null || identity.clientId === clientId
-}
+/* Re-exported so callers have one import for the whole access story. The rule
+   itself lives in `scope.ts`, free of Next imports, so it can be tested alone. */
+export { canReach } from './scope.ts'

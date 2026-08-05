@@ -70,8 +70,8 @@ async function main (): Promise<void> {
         const when = applied.get(file)
         console.log(
           when
-            ? `  \u2713 ${file}  applied at ${when.toISOString()}`
-            : `  \u00b7 ${file}  pending`
+            ? `  ✓ ${file}  applied at ${when.toISOString()}`
+            : `  · ${file}  pending`
         )
       }
       const orphans = [...applied.keys()].filter(a => !files.includes(a))
@@ -84,7 +84,7 @@ async function main (): Promise<void> {
 
     const pending = files.filter(f => !applied.has(f))
     if (pending.length === 0) {
-      console.log(`Up to date \u2014 ${files.length} migration(s) already applied.`)
+      console.log(`Up to date — ${files.length} migration(s) already applied.`)
       return
     }
 
@@ -95,7 +95,7 @@ async function main (): Promise<void> {
       /* DDL in MySQL commits implicitly: there is no transactional CREATE TABLE
          migration. If a file fails midway, part of it has been applied and the
          bookkeeping row is NOT written. That is why we stop here instead of
-         moving to the next one \u2014 continuing would leave the database in a state
+         moving to the next one — continuing would leave the database in a state
          nobody can describe. */
       await conn.query(sql)
       await conn.query('INSERT INTO migration (filename) VALUES (?)', [file])

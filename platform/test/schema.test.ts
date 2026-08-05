@@ -10,7 +10,7 @@ import * as schema from '../db/schema.ts'
  * Guards against this project's quietest divergence: a column declared in
  * Drizzle that does not exist in the database.
  *
- * TypeScript will not catch it \u2014 `clientId` compiles beautifully while pointing
+ * TypeScript will not catch it — `clientId` compiles beautifully while pointing
  * at a `clientId` column MySQL has never heard of. The error shows up at
  * runtime, in some query, far from the cause. This compares the declaration
  * against information_schema and reports the whole divergence at once.
@@ -58,7 +58,7 @@ for (const [name, value] of Object.entries(schema)) {
 
 describe('Drizzle schema against the database', () => {
   it('should declare at least one table', () => {
-    // ARRANGE / ACT \u2014 collection happens at module top level
+    // ARRANGE / ACT — collection happens at module top level
     // ASSERT
     expect(declared.length).toBeGreaterThan(0)
     expect(actual.size).toBeGreaterThan(0)
@@ -87,7 +87,7 @@ describe('Drizzle schema against the database', () => {
     const undeclared = [...actual.keys()]
       .filter(name => name !== 'migration' && !declaredNames.has(name))
 
-    // ASSERT \u2014 a table with no type in code is code nobody wrote yet
+    // ASSERT — a table with no type in code is code nobody wrote yet
     expect(undeclared).toEqual([])
   })
 })

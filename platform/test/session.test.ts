@@ -9,7 +9,7 @@ import { digestToken, purgeExpiredSessions, safeCompare } from '../lib/session.t
  * The parts of session handling that do not depend on `cookies()`.
  *
  * `createSession` and `readSession` read and write a cookie, which needs a Next
- * request context \u2014 they are exercised end to end through the browser, not
+ * request context — they are exercised end to end through the browser, not
  * here. What is tested here is what fails silently: the digest, the token
  * comparison and the expired-session sweep.
  */
@@ -71,7 +71,7 @@ describe('digestToken', () => {
   })
 
   it('should fit the CHAR(64) column on the session table', () => {
-    // ARRANGE / ACT \u2014 SHA-256 hex is exactly 64 characters
+    // ARRANGE / ACT — SHA-256 hex is exactly 64 characters
     const value = digestToken('a'.repeat(500))
 
     // ASSERT
@@ -91,7 +91,7 @@ describe('safeCompare', () => {
   })
 
   it('should reject strings of different lengths without throwing', () => {
-    // ARRANGE \u2014 timingSafeEqual throws when buffer lengths differ
+    // ARRANGE — timingSafeEqual throws when buffer lengths differ
     // ACT / ASSERT
     expect(safeCompare('short', 'considerably-longer')).toBe(false)
   })

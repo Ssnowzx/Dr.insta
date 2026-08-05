@@ -10,13 +10,15 @@
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",
-    "start": "next start --port 3000",
+    "start": "npm run start:assets && node .next/standalone/server.js",
+    "start:assets": "cp -R public .next/standalone/ && cp -R .next/static .next/standalone/.next/",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "test:cobertura": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage",
     "db:migrate": "tsx --env-file-if-exists=.env db/migrate.ts",
+    "db:status": "tsx --env-file-if-exists=.env db/migrate.ts --status",
     "db:seed": "tsx --env-file-if-exists=.env db/seed.ts",
-    "db:status": "tsx --env-file-if-exists=.env db/migrate.ts --status"
+    "invite": "tsx --conditions=react-server --env-file-if-exists=.env scripts/invite.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",

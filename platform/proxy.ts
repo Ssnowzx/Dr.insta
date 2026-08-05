@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { SESSION_COOKIE } from '@/lib/constants'
 
 /**
- * Optimistic check. In Next 16 this file is called `proxy.ts` \u2014 the old
+ * Optimistic check. In Next 16 this file is called `proxy.ts` — the old
  * `middleware.ts` was renamed and the old name is ignored without warning.
  *
  * It runs on EVERY route, including the prefetches Next fires when a finger
@@ -13,7 +13,7 @@ import { SESSION_COOKIE } from '@/lib/constants'
  *
  * The real decision belongs to `lib/dal.ts`, which checks the session against
  * the database on every page, action and route. If this file were deleted
- * nothing would leak \u2014 a visitor would just see the screen flash before being
+ * nothing would leak — a visitor would just see the screen flash before being
  * redirected.
  *
  * Route paths stay in pt-BR: they are URLs the client sees and shares.
@@ -34,7 +34,7 @@ export function proxy (req: NextRequest): NextResponse {
     const target = req.nextUrl.clone()
     target.pathname = '/entrar'
     /* Remember where she was heading, to send her back there after signing in.
-       Internal path only \u2014 a `destino` coming from outside would be an open
+       Internal path only — a `destino` coming from outside would be an open
        redirect, which is how credentials get stolen with a legitimate-looking
        link. */
     if (pathname !== '/') target.searchParams.set('destino', pathname + search)
@@ -52,7 +52,7 @@ export function proxy (req: NextRequest): NextResponse {
 }
 
 export const config = {
-  /* Outside the proxy: Next assets, favicon and the health probe \u2014 which has
+  /* Outside the proxy: Next assets, favicon and the health probe — which has
      to answer Docker before any session exists. */
   matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health|fontes).*)']
 }

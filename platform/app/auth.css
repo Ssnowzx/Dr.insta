@@ -1,0 +1,121 @@
+/* Screens in the credential flow: sign in, accept invite, reset password.
+   Colour tokens come from app/base.css — the palette already measured pair by
+   pair and approved by the client. */
+
+.auth-wrap {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  /* `env(safe-area-inset-*)` keeps the card clear of the iPhone home indicator.
+     She opens this on a phone; without it the button sits under the bar. */
+  padding: 2rem 1.25rem calc(2rem + env(safe-area-inset-bottom));
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 25rem;
+}
+
+.auth-mark {
+  font-size: .75rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin: 0 0 1.75rem;
+}
+
+.auth-card h1 {
+  font-size: 1.75rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0 0 .5rem;
+  font-weight: 600;
+}
+
+.auth-lead {
+  color: var(--tinta2);
+  margin: 0 0 2rem;
+  font-size: .95rem;
+}
+
+.campo { margin-bottom: 1.125rem; }
+
+.campo label {
+  display: block;
+  font-size: .8125rem;
+  font-weight: 600;
+  margin-bottom: .4375rem;
+  color: var(--tinta2);
+}
+
+.campo input {
+  width: 100%;
+  /* 16px exactly. Anything smaller makes iOS Safari zoom the page on focus,
+     and the layout never comes back. */
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--tinta);
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  padding: .8125rem .875rem;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.campo input:focus-visible {
+  outline: none;
+  border-color: var(--caramelo);
+  box-shadow: 0 0 0 3px var(--foco);
+}
+
+.campo input::placeholder { color: var(--suave); }
+
+.campo .dica {
+  display: block;
+  font-size: .8125rem;
+  color: var(--suave);
+  margin-top: .4375rem;
+}
+
+.btn {
+  width: 100%;
+  font: inherit;
+  font-size: .9375rem;
+  font-weight: 600;
+  color: var(--sobre-tinta);
+  background: var(--tinta);
+  border: 1px solid var(--tinta);
+  border-radius: 10px;
+  /* 48px tall: the smallest target that a thumb hits reliably. */
+  padding: .875rem 1rem;
+  cursor: pointer;
+  margin-top: .5rem;
+  transition: opacity .15s;
+}
+
+.btn:hover { opacity: .88; }
+.btn:focus-visible { outline: 2px solid var(--caramelo); outline-offset: 2px; }
+.btn[disabled] { opacity: .55; cursor: progress; }
+
+.aviso {
+  font-size: .875rem;
+  border-radius: 10px;
+  padding: .75rem .875rem;
+  margin: 0 0 1.25rem;
+  border: 1px solid;
+}
+
+.aviso-erro { color: var(--tijolo); background: var(--urg-bg); border-color: var(--tijolo); }
+.aviso-ok   { color: var(--ok);     background: var(--ok-bg);  border-color: var(--ok); }
+
+.auth-rodape {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--linha2);
+  font-size: .875rem;
+  color: var(--suave);
+}
+
+.auth-rodape a { color: var(--caramelo); text-decoration: none; font-weight: 600; }
+.auth-rodape a:hover { text-decoration: underline; }
+.auth-rodape a:focus-visible { outline: 2px solid var(--caramelo); outline-offset: 2px; border-radius: 3px; }

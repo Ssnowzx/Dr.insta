@@ -5,8 +5,8 @@ import './base.css'
 /* Metadata strings are pt-BR: they show up in the browser tab and in link
    previews, both of which a person reads. */
 export const metadata: Metadata = {
-  title: 'Plataforma \u2014 My Favorite',
-  description: 'Entregas, demandas e m\u00e9tricas da consultoria.',
+  title: 'Plataforma — My Favorite',
+  description: 'Entregas, demandas e métricas da consultoria.',
   robots: { index: false, follow: false, nocache: true }
 }
 

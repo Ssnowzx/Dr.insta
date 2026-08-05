@@ -1,0 +1,87 @@
+/* Home. Placeholder layout until the dashboard lands in phases 4 to 6 —
+   deliberately the same shape as the credential screens, so the first thing she
+   sees after signing in does not look like a different product. */
+
+.home-wrap {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem calc(2rem + env(safe-area-inset-bottom));
+}
+
+.home-card {
+  width: 100%;
+  max-width: 27rem;
+}
+
+.home-mark {
+  font-size: .75rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin: 0 0 1.75rem;
+}
+
+.home-card h1 {
+  font-size: 1.75rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  margin: 0 0 .5rem;
+}
+
+.home-lead {
+  color: var(--tinta2);
+  margin: 0 0 2rem;
+  font-size: .95rem;
+}
+
+.home-dados {
+  margin: 0 0 2rem;
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  background: var(--cartao);
+  overflow: hidden;
+}
+
+.home-dados > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .875rem 1rem;
+}
+
+.home-dados > div + div { border-top: 1px solid var(--linha2); }
+
+.home-dados dt {
+  font-size: .8125rem;
+  color: var(--suave);
+  flex-shrink: 0;
+}
+
+.home-dados dd {
+  margin: 0;
+  font-size: .875rem;
+  font-weight: 600;
+  text-align: right;
+  /* An email longer than the card must wrap instead of pushing the layout
+     sideways — a horizontal scrollbar on a phone reads as broken. */
+  overflow-wrap: anywhere;
+}
+
+.btn-sair {
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--tinta2);
+  background: none;
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  padding: .75rem 1.25rem;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+
+.btn-sair:hover { border-color: var(--suave); color: var(--tinta); }
+.btn-sair:focus-visible { outline: 2px solid var(--caramelo); outline-offset: 2px; }

@@ -31,11 +31,11 @@ describe('password', () => {
     // ARRANGE
     const password = 'same-password-twice'
 
-    // ACT \u2014 the library generates a fresh salt on every call
+    // ACT — the library generates a fresh salt on every call
     const a = await hashPassword(password)
     const b = await hashPassword(password)
 
-    // ASSERT \u2014 equal hashes for equal passwords would expose password reuse
+    // ASSERT — equal hashes for equal passwords would expose password reuse
     expect(a).not.toBe(b)
     expect(await verifyPassword(a, password)).toBe(true)
     expect(await verifyPassword(b, password)).toBe(true)
@@ -45,7 +45,7 @@ describe('password', () => {
     // ARRANGE / ACT
     const stored = await hashPassword('checking-the-format')
 
-    // ASSERT \u2014 breaks if ARGON2ID stops being 2 or the costs change
+    // ASSERT — breaks if ARGON2ID stops being 2 or the costs change
     expect(stored).toMatch(/^\$argon2id\$v=19\$m=19456,t=2,p=1\$/)
   })
 
@@ -68,7 +68,7 @@ describe('password', () => {
   })
 
   it('should return false instead of throwing when the stored hash is corrupt', async () => {
-    // ARRANGE \u2014 a broken row must not become a 500 on the sign-in screen
+    // ARRANGE — a broken row must not become a 500 on the sign-in screen
     const garbage = 'not-an-argon2-hash'
 
     // ACT
@@ -79,7 +79,7 @@ describe('password', () => {
   })
 
   it('should burn comparable time when the email does not exist', async () => {
-    // ARRANGE \u2014 without this, a non-existent email answers instantly and the
+    // ARRANGE — without this, a non-existent email answers instantly and the
     // sign-in screen becomes an oracle for who has an account here
     const stored = await hashPassword('reference-password-1')
 
@@ -92,7 +92,7 @@ describe('password', () => {
     await burnEquivalentTime()
     const fake = Number(process.hrtime.bigint() - t1) / 1e6
 
-    // ASSERT \u2014 same order of magnitude; the bound is loose on purpose, because
+    // ASSERT — same order of magnitude; the bound is loose on purpose, because
     // timing on shared CI varies legitimately
     expect(fake).toBeGreaterThan(real * 0.4)
     expect(fake).toBeLessThan(real * 4)

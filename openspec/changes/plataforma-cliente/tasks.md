@@ -15,18 +15,18 @@
 
 ## 2. Identidade
 
-- [ ] 2.1 Declarar o esquema Drizzle a partir do SQL de 001
-- [ ] 2.2 `lib/senha.ts` — Argon2id, com teste de verificação e de rejeição
-- [ ] 2.3 `lib/sessao.ts` — token de 32 bytes, guarda só o SHA-256, 90 dias deslizantes
-- [ ] 2.4 Teste: sessão expirada é recusada e sessão válida renova a data
-- [ ] 2.5 `proxy.ts` — checagem otimista, sem tocar no banco (roda em todo prefetch). No Next 16 `middleware.ts` foi renomeado para `proxy.ts`
-- [ ] 2.6 `lib/dal.ts` — a fronteira real: `verificarSessao()` memoizada com `cache()`, chamada por toda página, action e rota
-- [ ] 2.7 `lib/escopo.ts` — resolve o `cliente_id` da sessão; teste de que consultor e cliente veem conjuntos diferentes
-- [ ] 2.8 Tela de entrar, com mensagem de erro que não revela se o e-mail existe
-- [ ] 2.9 Fluxo de convite: token de uso único, 7 dias, tela de definir senha
-- [ ] 2.10 Fluxo de recuperação: token de 1 hora, e-mail e tela de nova senha
-- [ ] 2.11 `scripts/convidar.ts` — gera o link de convite pelo terminal, sem depender de SMTP
-- [ ] 2.12 Registrar `entrou` em `auditoria` e atualizar `usuario.ultimo_acesso_em`
+- [x] 2.1 Declarar o esquema Drizzle a partir do SQL de 001
+- [x] 2.2 `lib/password.ts` — Argon2id, com teste de verificação e de rejeição
+- [x] 2.3 `lib/session.ts` — token de 32 bytes, guarda só o SHA-256, 90 dias deslizantes
+- [x] 2.4 Teste: sessão expirada é recusada e sessão válida renova a data
+- [x] 2.5 `proxy.ts` — checagem otimista, sem tocar no banco (roda em todo prefetch). No Next 16 `middleware.ts` foi renomeado para `proxy.ts`
+- [x] 2.6 `lib/dal.ts` — a fronteira real: `requireSession()` memoizada com `cache()`, chamada por toda página, action e rota
+- [x] 2.7 `lib/scope.ts` — a regra pura de alcance, separada do Next para ser testável sozinha; o teste de conjuntos com dado real vem na fase 4
+- [x] 2.8 Tela de entrar, com mensagem de erro que não revela se o e-mail existe
+- [x] 2.9 Fluxo de convite: token de uso único, 7 dias, tela de definir senha
+- [x] 2.10 Fluxo de recuperação: token de 1 hora e telas prontas — **o envio por SMTP fica pendente**; hoje o link sai no log do contêiner
+- [x] 2.11 `scripts/invite.ts` — gera o link de convite pelo terminal, sem depender de SMTP
+- [x] 2.12 Registrar `signed_in` em `audit_log` e atualizar `user.last_seen_at`
 
 ## 3. Design system e carga inicial
 
