@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ClientPicker } from '@/components/client-picker'
-import { clientBySlug, postCounts, posts } from '@/lib/dashboard'
+import { ArchiveAge } from '@/components/freshness'
+import { archiveAge, clientBySlug, postCounts, posts } from '@/lib/dashboard'
 import type { PostFilter } from '@/lib/dashboard'
 import { requireSession } from '@/lib/dal'
 import { format, shortDate } from '@/lib/format'
@@ -39,7 +40,11 @@ export default async function Conteudo ({
     ...(marca === 'marca' || marca === 'pessoal' ? { brand: marca } : {})
   }
 
-  const [lista, contas] = await Promise.all([posts(clientId, filtro), postCounts(clientId)])
+  const [lista, contas, idade] = await Promise.all([
+    posts(clientId, filtro),
+    postCounts(clientId),
+    archiveAge(clientId)
+  ])
 
   const base = cliente === undefined ? '' : `cliente=${cliente}&`
   const chip = (params: string, ativo: boolean, rotulo: string, n: number) => (
@@ -75,6 +80,9 @@ export default async function Conteudo ({
           públicos — visualização conta quando o vídeo roda de novo, então não é
           o mesmo que gente diferente.
         </p>
+        {idade !== null && (
+          <ArchiveAge importedAt={idade.importedAt} lastPostAt={idade.lastPostAt} />
+        )}
       </header>
 
       {/* The finding, stated before the list rather than left to be discovered:

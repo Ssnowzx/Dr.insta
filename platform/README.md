@@ -98,6 +98,56 @@ Full detail in the comments of `db/migrations/001-initial-schema.sql`.
 
 ---
 
+## Keeping the data current
+
+**Nothing here updates by itself, and every screen says so.** The metrics are
+typed from Insights screenshots and the archive arrives by import, so a date
+travels with the numbers — `lib/freshness.ts` decides the wording and the tone
+escalates with the age. A warning that always looks urgent stops being read.
+
+### What can be collected automatically, and what cannot
+
+| | |
+|---|---|
+| **Automatable** | views, likes, comments, caption, duration, date — per Reel |
+| **Not automatable** | reach, saves, DM shares, video retention, profile visits, link clicks |
+
+The second row is not an omission: those metrics do not exist in public data,
+and they are the ones the cycle is decided on. `saves/reach` is the cycle's
+decision metric and retention is an experiment's success criterion. They arrive
+by Insights export or not at all.
+
+One trap worth naming: the public field `media_repost_count` is a **repost**
+count, not a share count. Measured against July's screenshots it read 1,986
+where Insights showed 48,000 shares. It is stored in its own column and never
+treated as the strong signal.
+
+### Collecting
+
+```bash
+# 1. On instagram.com, logged in as the account, paste scripts/coletor-instagram.js
+#    into the browser console and run:
+#      await coletar('bianca.olivo')
+#    A CSV downloads.
+
+# 2. Import it. Safe to re-run — rows are keyed by the Instagram shortcode.
+npm run db:import-reels -- ~/Downloads/reels-bianca.olivo-2026-08-05.csv
+```
+
+**Why the collector runs in a browser and not as a cron on the VPS.** These are
+Instagram's internal endpoints, answering to a logged-in session and a browser
+fingerprint; a request from a datacenter IP with no session is refused. And it
+downloads a file rather than posting here because Instagram's CSP blocks
+`connect-src` to any other origin — measured, not assumed.
+
+**The importer never writes `reach`.** The public export has `views`, which
+counts every loop of the video; reach is a different measurement only Insights
+has. A reach copied from views would be a wrong denominator for every rate
+computed afterwards, with nothing downstream looking broken.
+`test/import.test.ts` asserts the invariant.
+
+---
+
 ## Production
 
 ```bash

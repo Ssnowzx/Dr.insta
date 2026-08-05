@@ -117,3 +117,27 @@ describe('dates', () => {
     expect(longDate(new Date('2026-08-04T15:00:00Z'))).toBe('4 de agosto de 2026')
   })
 })
+
+describe('date shapes the database actually returns', () => {
+  it('should parse an aggregate datetime string', () => {
+    // ARRANGE — `sql<Date>` is a type assertion, not a conversion: MySQL returns
+    // MAX(datetime) as "2026-08-04 12:00:00" while TypeScript is certain it is a
+    // Date. Formatting the resulting Invalid Date throws a RangeError, which is
+    // a 500 on a client screen. That happened once.
+    // ACT / ASSERT
+    expect(longDate('2026-08-04 12:00:00')).toBe('4 de agosto de 2026')
+    expect(shortDate('2026-08-04 12:00:00')).toBe('4 ago')
+  })
+
+  it('should parse a bare DATE on its own calendar day', () => {
+    // ARRANGE / ACT / ASSERT
+    expect(longDate('2026-08-04')).toBe('4 de agosto de 2026')
+  })
+
+  it('should render a dash rather than throw on an unparseable value', () => {
+    // ARRANGE / ACT / ASSERT
+    expect(longDate('nao-e-data')).toBe('—')
+    expect(shortDate('')).toBe('—')
+    expect(longDate(new Date('invalido'))).toBe('—')
+  })
+})

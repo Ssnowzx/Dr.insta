@@ -67,14 +67,31 @@ export function smallRatio (value: number): string {
   }).format(pct) + '%'
 }
 
+/**
+ * Parses what the database hands back for a date.
+ *
+ * Three shapes arrive: a `Date` from a DATETIME column, "2026-08-04" from a DATE
+ * column, and "2026-08-04 12:00:00" from an aggregate, which MySQL returns as a
+ * string however the query was typed. A bare DATE gets midday UTC so it stays on
+ * its own calendar day in Brazil; an aggregate gets its space turned into a T
+ * and an explicit zone, or the parse is implementation-defined.
+ *
+ * Returns `null` rather than an Invalid Date. Formatting an Invalid Date throws
+ * a RangeError, which is a 500 on a client's screen — that happened once.
+ */
+function asDate (value: Date | string): Date | null {
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value
+
+  const text = value.trim()
+  const iso = text.length === 10 ? `${text}T12:00:00Z` : `${text.replace(' ', 'T')}Z`
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
 /** "4 de agosto de 2026". Rendered in the client's timezone, never in the server's. */
 export function longDate (value: Date | string, timeZone = 'America/Sao_Paulo'): string {
-  const d = typeof value === 'string'
-    /* A DATE column arrives as "2026-08-04" with no time. Appending midday UTC
-       keeps it on the same calendar day in any Brazilian timezone — parsing it
-       bare would give UTC midnight, which is the day before in São Paulo. */
-    ? new Date(`${value}T12:00:00Z`)
-    : value
+  const d = asDate(value)
+  if (d === null) return '—'
 
   return new Intl.DateTimeFormat('pt-BR', {
     day: 'numeric', month: 'long', year: 'numeric', timeZone
@@ -89,7 +106,9 @@ export function longDate (value: Date | string, timeZone = 'America/Sao_Paulo'):
  * site, so every short date in the product reads the same.
  */
 export function shortDate (value: Date | string, timeZone = 'America/Sao_Paulo'): string {
-  const d = typeof value === 'string' ? new Date(`${value}T12:00:00Z`) : value
+  const d = asDate(value)
+  if (d === null) return '—'
+
   return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', timeZone })
     .format(d)
     .replace(' de ', ' ')

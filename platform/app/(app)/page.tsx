@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ClientPicker } from '@/components/client-picker'
+import { DataAge } from '@/components/freshness'
 import { Funnel } from '@/components/funnel'
 import { Series } from '@/components/series'
 import { MetricBar, MetricStat } from '@/components/metric-bar'
@@ -83,6 +84,7 @@ export default async function Painel ({
         </p>
         <h1 className="display">{cycle.title}</h1>
         {cycle.goal !== null && <p className="lead">{cycle.goal}</p>}
+        <DataAge period={period} />
       </header>
 
       <section className="painel-destaque">

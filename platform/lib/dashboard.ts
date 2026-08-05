@@ -340,12 +340,23 @@ export async function requests (clientId: number): Promise<RequestRow[]> {
     .orderBy(request.state, request.position)
 }
 
-/** The latest period with any measured value. Beats hardcoding a month. */
+/**
+ * The latest period the panel can actually show.
+ *
+ * Restricted to measured sources, and that restriction is the whole point. The
+ * Reels importer writes monthly `views` under `source: 'public'`, so a plain
+ * "latest period" jumps to the current month the moment anything is imported —
+ * and the panel then announces August while the funnel, which reads only
+ * measured sources, renders empty. Caught by looking at the screen.
+ */
 export async function latestPeriod (clientId: number): Promise<string | null> {
   const rows = await orm()
     .select({ period: metricValue.period })
     .from(metricValue)
-    .where(eq(metricValue.clientId, clientId))
+    .where(and(
+      eq(metricValue.clientId, clientId),
+      inArray(metricValue.source, ['insights', 'ga4', 'store'])
+    ))
     .orderBy(desc(metricValue.period))
     .limit(1)
 
@@ -645,4 +656,39 @@ export async function postCounts (clientId: number): Promise<PostCounts> {
     pessoal: n(row?.pessoal),
     marcaCurto: n(row?.marcaCurto)
   }
+}
+
+/**
+ * When the archive was last imported, and how recent its newest post is.
+ *
+ * The `sql<Date>` is a type assertion, not a conversion — the same trap as
+ * `sql<number>` over COUNT. MySQL returns an aggregate as a string, so what
+ * arrives is "2026-08-04 12:00:00" while TypeScript is certain it is a Date.
+ * Coerced here, at the boundary, because a `new Date` on that string further
+ * downstream produced an Invalid Date and a 500 on a client screen.
+ */
+export async function archiveAge (
+  clientId: number
+): Promise<{ importedAt: Date; lastPostAt: Date } | null> {
+  const [row] = await orm()
+    .select({
+      importedAt: sql<string | Date | null>`MAX(${post.updatedAt})`,
+      lastPostAt: sql<string | Date | null>`MAX(${post.publishedAt})`
+    })
+    .from(post)
+    .where(eq(post.clientId, clientId))
+
+  const toDate = (v: string | Date | null | undefined): Date | null => {
+    if (v == null) return null
+    /* MySQL's "YYYY-MM-DD HH:MM:SS" has no zone marker; the space needs to be a
+       T and the zone made explicit, or the parse is implementation-defined. */
+    const d = v instanceof Date ? v : new Date(`${v.replace(' ', 'T')}Z`)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+
+  const importedAt = toDate(row?.importedAt)
+  const lastPostAt = toDate(row?.lastPostAt)
+
+  if (importedAt === null || lastPostAt === null) return null
+  return { importedAt, lastPostAt }
 }
