@@ -1,0 +1,15 @@
+node_modules/
+.next/
+next-env.d.ts
+coverage/
+*.tsbuildinfo
+
+# Segredos
+.env
+.env.*
+!.env.exemplo
+
+# Arquivos enviados por cliente (receita, demografia, prints de Insights).
+# Nada disso entra no histórico do repositório.
+arquivos/
+backups/

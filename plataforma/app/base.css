@@ -1,0 +1,31 @@
+/* Base mínima da Fase 1.
+   Os tokens de cor e tipografia aprovados pela cliente entram na Fase 3,
+   portados de relatorios/bianca-olivo-2026-08-plano/ com o contraste remedido
+   par a par antes de qualquer tela sair. */
+
+:root {
+  --papel: #fbf9f6;
+  --tinta: #14100d;
+  --suave: #6f6459;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papel: #13110f;
+    --tinta: #f4efe9;
+    --suave: #a89b8e;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}

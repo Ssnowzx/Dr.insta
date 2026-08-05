@@ -1,0 +1,15 @@
+# Sobreposição para desenvolvimento na máquina local. NUNCA usada na VPS.
+#
+# Precisa de arquivo separado, e não de `docker-compose.override.yml`, porque o
+# Compose carrega o `override` sozinho, sem ninguém pedir — publicar a porta do
+# banco em produção por esquecimento é exatamente o acidente que o
+# `docker-compose.yml` evita ao não ter `ports:` no serviço `db`.
+#
+# Uso:
+#   docker compose -f docker-compose.yml -f compose.dev.yml up -d db
+services:
+  db:
+    ports:
+      # Só no loopback. 127.0.0.1 e não 0.0.0.0 — a diferença entre um banco
+      # acessível pelo seu terminal e um banco acessível pela internet.
+      - "127.0.0.1:3307:3306"
