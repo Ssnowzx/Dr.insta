@@ -19,13 +19,14 @@
 - [ ] 2.2 `lib/senha.ts` — Argon2id, com teste de verificação e de rejeição
 - [ ] 2.3 `lib/sessao.ts` — token de 32 bytes, guarda só o SHA-256, 90 dias deslizantes
 - [ ] 2.4 Teste: sessão expirada é recusada e sessão válida renova a data
-- [ ] 2.5 `middleware.ts` — rota protegida por padrão, lista curta de exceções públicas
-- [ ] 2.6 `lib/escopo.ts` — resolve o `cliente_id` da sessão; teste de que consultor e cliente veem conjuntos diferentes
-- [ ] 2.7 Tela de entrar, com mensagem de erro que não revela se o e-mail existe
-- [ ] 2.8 Fluxo de convite: token de uso único, 7 dias, tela de definir senha
-- [ ] 2.9 Fluxo de recuperação: token de 1 hora, e-mail e tela de nova senha
-- [ ] 2.10 `scripts/convidar.ts` — gera o link de convite pelo terminal, sem depender de SMTP
-- [ ] 2.11 Registrar `entrou` em `auditoria` e atualizar `usuario.ultimo_acesso_em`
+- [ ] 2.5 `proxy.ts` — checagem otimista, sem tocar no banco (roda em todo prefetch). No Next 16 `middleware.ts` foi renomeado para `proxy.ts`
+- [ ] 2.6 `lib/dal.ts` — a fronteira real: `verificarSessao()` memoizada com `cache()`, chamada por toda página, action e rota
+- [ ] 2.7 `lib/escopo.ts` — resolve o `cliente_id` da sessão; teste de que consultor e cliente veem conjuntos diferentes
+- [ ] 2.8 Tela de entrar, com mensagem de erro que não revela se o e-mail existe
+- [ ] 2.9 Fluxo de convite: token de uso único, 7 dias, tela de definir senha
+- [ ] 2.10 Fluxo de recuperação: token de 1 hora, e-mail e tela de nova senha
+- [ ] 2.11 `scripts/convidar.ts` — gera o link de convite pelo terminal, sem depender de SMTP
+- [ ] 2.12 Registrar `entrou` em `auditoria` e atualizar `usuario.ultimo_acesso_em`
 
 ## 3. Design system e carga inicial
 

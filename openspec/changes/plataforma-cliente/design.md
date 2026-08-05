@@ -51,6 +51,31 @@ Três fatos do projeto mandam mais que qualquer preferência técnica:
 
 **Por quê própria:** dois papéis, um cliente, sem SSO e sem OAuth. Auth.js traria adaptador, callbacks e um modelo de conta que não usamos. Uma tabela `sessao`, um cookie `HttpOnly; Secure; SameSite=Lax` e `argon2` de hash cobrem o caso inteiro em pouco código auditável.
 
+**Onde a autorização mora, no Next 16.** Duas coisas mudaram em relação ao que se
+escrevia até o Next 15, e as duas foram lidas em `node_modules/next/dist/docs/`
+antes de escrever qualquer linha:
+
+- `middleware.ts` **foi renomeado para `proxy.ts`**. O nome antigo é ignorado.
+- O proxy roda em **toda rota, inclusive nos prefetch**. Consultar banco ali
+  transforma cada link pré-carregado numa consulta. Por isso ele faz só a
+  checagem otimista — existe cookie de sessão? — e nada mais.
+
+A fronteira de verdade é um **Data Access Layer**: `verificarSessao()` memoizada
+com `cache()` do React, chamada por toda página, Server Action e Route Handler.
+Quem esquecer de chamar não recebe dado, porque a consulta escopada passa por ela.
+Isso é o que cumpre o requisito de recusar a requisição antes de qualquer consulta
+ao domínio — o proxy sozinho não cumpriria.
+
+**Token opaco em vez de JWT no cookie.** O guia oficial cifra o identificador da
+sessão para que o proxy saiba quem é o usuário sem ir ao banco. Aqui o cookie leva
+32 bytes aleatórios e o banco guarda só o SHA-256 deles.
+
+O que se perde: o proxy não sabe *quem* é, só que *há* um cookie. O que se ganha:
+não existe chave de assinatura para vazar, e **revogação é imediata** — apagar a
+linha encerra a sessão no mesmo instante, enquanto um JWT válido continua valendo
+até expirar. Para uma cliente e um consultor, revogação instantânea vale mais que
+economizar uma consulta.
+
 **O risco do e-mail e senha, e o que fazemos com ele.** A escolha do usuário foi senha; o atrito é real — cliente que esquece senha é cliente que não entra. Mitigação embutida no fluxo, sem virar outra decisão:
 
 1. Ela nunca escolhe senha num cadastro. Recebe um **convite de uso único** (token de 32 bytes, validade 7 dias) e define a senha ali.
