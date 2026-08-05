@@ -79,7 +79,7 @@ async function send (message: Message): Promise<void> {
  * comes from a form. Escaping at the boundary costs nothing and removes the
  * question entirely.
  */
-function escape (value: string): string {
+export function escapeHtml (value: string): string {
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -105,11 +105,11 @@ function shell (heading: string, body: string, cta: { url: string; label: string
       <h1 style="margin:0 0 12px;font-size:24px;line-height:1.2;font-weight:600;color:#14100d;">${heading}</h1>
       <div style="font-size:15px;line-height:1.6;color:#4a423a;">${body}</div>
       <p style="margin:28px 0 0;">
-        <a href="${escape(cta.url)}" style="display:inline-block;background:#14100d;color:#fdfbf8;text-decoration:none;font-size:15px;font-weight:600;padding:14px 22px;border-radius:10px;">${cta.label}</a>
+        <a href="${escapeHtml(cta.url)}" style="display:inline-block;background:#14100d;color:#fdfbf8;text-decoration:none;font-size:15px;font-weight:600;padding:14px 22px;border-radius:10px;">${cta.label}</a>
       </p>
       <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#6f6459;">
         Se o botão não abrir, copie este endereço:<br>
-        <span style="word-break:break-all;color:#96682f;">${escape(cta.url)}</span>
+        <span style="word-break:break-all;color:#96682f;">${escapeHtml(cta.url)}</span>
       </p>
     </td></tr>
   </table>
@@ -143,7 +143,7 @@ export async function sendInvite (
     to,
     subject: 'Sua área na My Favorite está pronta',
     text: `Oi, ${first}.\n\nEscolha uma senha para entrar:\n${url}\n\nO link vale por sete dias e só pode ser usado uma vez.`,
-    html: shell(`Oi, ${escape(first)}.`, body, { url, label: 'Criar minha senha' })
+    html: shell(`Oi, ${escapeHtml(first)}.`, body, { url, label: 'Criar minha senha' })
   })
 
   return { sent: true }
@@ -162,7 +162,7 @@ export async function sendReset (to: string, name: string, url: string): Promise
     subject: 'Criar uma senha nova',
     text: `Oi, ${first}.\n\nUse este link para criar uma senha nova:\n${url}\n\nEle vale por uma hora. Se não foi você que pediu, pode ignorar — nada muda.`,
     html: shell(
-      `Oi, ${escape(first)}.`,
+      `Oi, ${escapeHtml(first)}.`,
       '<p style="margin:0;">Recebi um pedido para criar uma senha nova na sua conta.</p>' +
       '<p style="margin:16px 0 0;">O link abaixo vale por <strong>uma hora</strong>. Se não foi você que pediu, pode ignorar este e-mail — nada muda.</p>',
       { url, label: 'Criar senha nova' }

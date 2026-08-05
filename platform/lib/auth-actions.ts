@@ -8,6 +8,7 @@ import { auditLog, user } from '@/db/schema'
 import { burnEquivalentTime, hashPassword, isTooShort, MIN_LENGTH, verifyPassword } from './password.ts'
 import { createSession, destroyAllSessions, destroySession } from './session.ts'
 import { consumeToken, issueToken, resolveToken } from './tokens.ts'
+import { safeDestination } from './redirect.ts'
 import { sendReset } from './mail.ts'
 
 /**
@@ -19,16 +20,6 @@ import { sendReset } from './mail.ts'
 export interface FormState {
   error?: string
   ok?: string
-}
-
-/** A path inside this app, or `null`. Guards against open redirects. */
-function safeDestination (raw: FormDataEntryValue | null): string | null {
-  if (typeof raw !== 'string' || raw === '') return null
-  /* Must start with a single slash. `//evil.com` is a protocol-relative URL: the
-     browser reads it as an absolute address, and a redirect to it is how
-     credentials get harvested through a link that looks like ours. */
-  if (!raw.startsWith('/') || raw.startsWith('//')) return null
-  return raw
 }
 
 async function requestContext (): Promise<{ ip?: string; userAgent?: string }> {

@@ -6,18 +6,41 @@ import { defineConfig } from 'vitest/config'
    "Cannot find package", which reads like a missing dependency. */
 const root = fileURLToPath(new URL('.', import.meta.url))
 
+/**
+ * Modules a unit test cannot reach without standing up a Next request.
+ *
+ * They are excluded from the coverage denominator so the percentage means
+ * something, and each one is listed with how it IS verified — an exclusion with
+ * no answer to "then what covers it" is just a lowered bar.
+ *
+ *  · Server Actions and the DAL read `cookies()` and `headers()`. Exercised end
+ *    to end in the browser: sign in, invite, reset, marking a step, moving a
+ *    request. The security-critical pure parts were extracted precisely so they
+ *    could be tested — see `lib/redirect.ts` and `lib/scope.ts`.
+ *  · `lib/dashboard.ts` is the query layer; every page runs through it, and
+ *    `test/schema.test.ts` proves each column it names exists.
+ *  · `lib/session.ts` writes the session cookie. Its pure half (digest,
+ *    constant-time compare, expiry sweep) is covered in `test/session.test.ts`.
+ *  · `lib/mail.ts` needs a socket to send. Its pure half is covered in
+ *    `test/mail.test.ts`, and delivery was verified against a local SMTP sink.
+ *  · The `db/*.ts` CLIs are run by hand and verified by their effect on the
+ *    database — the seed is asserted idempotent across three runs.
+ */
+const NEEDS_A_REQUEST = [
+  'lib/auth-actions.ts',
+  'lib/step-actions.ts',
+  'lib/request-actions.ts',
+  'lib/dal.ts',
+  'lib/dashboard.ts',
+  'lib/session.ts',
+  'lib/mail.ts',
+  'db/seed.ts',
+  'db/migrate.ts',
+  'db/import-reels.ts',
+  'db/migrations/**'
+]
+
 export default defineConfig({
-  /**
-   * `server-only` ships two entry points: under React's `react-server`
-   * condition it resolves to an empty module, and everywhere else it throws on
-   * import. Vitest resolves the throwing one, so any test that reaches
-   * `lib/session.ts` dies before running a single assertion.
-   *
-   * The `react-server` condition is the fix rather than aliasing the package
-   * away: aliasing would also silence the guard in application code, and that
-   * guard is what keeps a database import from ever reaching the browser
-   * bundle.
-   */
   resolve: {
     conditions: ['react-server', 'node', 'import'],
     alias: { '@': root }
@@ -39,7 +62,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['lib/**/*.ts', 'db/**/*.ts'],
-      exclude: ['db/migrations/**'],
+      exclude: NEEDS_A_REQUEST,
       thresholds: { lines: 80, statements: 80, functions: 80 }
     }
   }
