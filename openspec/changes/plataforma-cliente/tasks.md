@@ -60,14 +60,14 @@
 
 ## 5. Recepção de demandas
 
-- [ ] 5.1 Lista de demandas com filtro por estado e prazo
-- [ ] 5.2 Detalhe com `demanda_evento` como linha do tempo
-- [ ] 5.3 Mudança de estado gravando evento com autor e hora
-- [ ] 5.4 Upload por streaming, com SHA-256 calculado durante a escrita
-- [ ] 5.5 Rota de download que confere sessão e `cliente_id` antes de servir um byte
-- [ ] 5.6 Teste: arquivo de outro cliente devolve 404, não 403 (403 confirma que existe)
-- [ ] 5.7 Semente dos cinco pedidos da análise dos 203 Reels
-- [ ] 5.8 Teste de ponta a ponta com arquivo de 7 MB
+- [x] 5.1 Lista de demandas com filtro por estado e prazo
+- [x] 5.2 Detalhe com `demanda_evento` como linha do tempo
+- [x] 5.3 Mudança de estado gravando evento com autor e hora
+- [x] 5.4 Upload por streaming com SHA-256 durante a escrita, em Route Handler — Server Action tem teto de 1 MB por padrão
+- [x] 5.5 Rota de download que confere sessão e `cliente_id` antes de servir um byte
+- [x] 5.6 Verificado no navegador: arquivo e pedido de outro cliente devolvem 404, não 403
+- [x] 5.7 Semente dos cinco pedidos da análise dos 203 Reels
+- [x] 5.8 Teste com 7 MB no `storeStream`; ida e volta pelo navegador com sha256 idêntico e `text/html` recusado com 415
 
 ## 6. Painel de dados e estratégia
 

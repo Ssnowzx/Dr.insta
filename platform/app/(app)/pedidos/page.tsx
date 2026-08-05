@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ClientPicker } from '@/components/client-picker'
 import { clientBySlug, requests } from '@/lib/dashboard'
 import { requireSession } from '@/lib/dal'
@@ -70,7 +71,9 @@ export default async function Pedidos ({
                 <span className={`selo ${estado?.classe ?? ''}`}>{estado?.rot}</span>
               </div>
 
-              <h2 className="pedido-titulo">{p.title}</h2>
+              <h2 className="pedido-titulo">
+                <Link href={`/pedidos/${p.publicCode}`}>{p.title}</Link>
+              </h2>
               {p.description !== null && <p className="pedido-desc">{p.description}</p>}
 
               {p.whyItMatters !== null && (
@@ -84,6 +87,10 @@ export default async function Pedidos ({
                 pedido em {shortDate(p.createdAt)}
                 {p.priority === 'high' && <> · <strong>é o que mais destrava</strong></>}
               </p>
+
+              <Link className="btn-abrir" href={`/pedidos/${p.publicCode}`}>
+                Abrir e responder
+              </Link>
             </li>
           )
         })}
@@ -97,10 +104,10 @@ export default async function Pedidos ({
           <ul className="lista-simples">
             {fechados.map(p => (
               <li key={p.id}>
-                <span className="lista-item">
+                <Link className="lista-item" href={`/pedidos/${p.publicCode}`}>
                   <span className="lista-titulo">{p.title}</span>
                   <span className="lista-meta">{ESTADO[p.state]?.rot}</span>
-                </span>
+                </Link>
               </li>
             ))}
           </ul>

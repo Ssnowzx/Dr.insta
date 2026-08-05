@@ -3,7 +3,7 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import {
   benchmark, client, cycle, delivery, metricDef, metricTarget, metricValue,
-  request, step, stepStatus, user
+  file, request, requestEvent, step, stepStatus, user
 } from '@/db/schema'
 import type { Unit } from './format.ts'
 
@@ -400,4 +400,79 @@ export async function clientBySlug (slug: string) {
     .where(eq(client.slug, slug))
     .limit(1)
   return rows[0] ?? null
+}
+
+export interface RequestEventRow {
+  id: number
+  kind: 'comment' | 'state_change' | 'file' | 'view'
+  body: string | null
+  fromState: string | null
+  toState: string | null
+  userName: string | null
+  createdAt: Date
+  fileCode: string | null
+  fileName: string | null
+  fileBytes: number | null
+}
+
+export interface RequestDetail extends RequestRow {
+  clientId: number
+  events: RequestEventRow[]
+}
+
+/**
+ * One request with its whole history.
+ *
+ * Looked up by `public_code` rather than by id: the code is what appears in the
+ * URL, and a sequential id there would publish how many requests exist.
+ *
+ * Returns `null` for both "does not exist" and "belongs to someone else" — the
+ * caller must not be able to tell those apart, or the URL becomes a way to test
+ * whether a request exists.
+ */
+export async function requestDetail (
+  publicCode: string,
+  reachable: (clientId: number) => boolean
+): Promise<RequestDetail | null> {
+  const rows = await orm()
+    .select({
+      id: request.id,
+      publicCode: request.publicCode,
+      clientId: request.clientId,
+      title: request.title,
+      description: request.description,
+      whyItMatters: request.whyItMatters,
+      kind: request.kind,
+      priority: request.priority,
+      state: request.state,
+      dueOn: request.dueOn,
+      createdAt: request.createdAt
+    })
+    .from(request)
+    .where(eq(request.publicCode, publicCode))
+    .limit(1)
+
+  const found = rows[0]
+  if (found === undefined || !reachable(found.clientId)) return null
+
+  const events = await orm()
+    .select({
+      id: requestEvent.id,
+      kind: requestEvent.kind,
+      body: requestEvent.body,
+      fromState: requestEvent.fromState,
+      toState: requestEvent.toState,
+      userName: user.name,
+      createdAt: requestEvent.createdAt,
+      fileCode: file.publicCode,
+      fileName: file.originalName,
+      fileBytes: file.bytes
+    })
+    .from(requestEvent)
+    .leftJoin(user, eq(user.id, requestEvent.userId))
+    .leftJoin(file, eq(file.id, requestEvent.fileId))
+    .where(eq(requestEvent.requestId, found.id))
+    .orderBy(requestEvent.createdAt, requestEvent.id)
+
+  return { ...found, events }
 }
