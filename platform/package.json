@@ -1,9 +1,9 @@
 {
-  "name": "myfavorite-plataforma",
+  "name": "myfavorite-platform",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Plataforma de consultoria de Instagram: entregas, demandas, etapas e serie historica de metricas.",
+  "description": "Consulting platform: deliveries, requests, step tracking and metric history.",
   "engines": {
     "node": ">=20.19.0"
   },
@@ -14,9 +14,9 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:cobertura": "vitest run --coverage",
-    "banco:migrar": "tsx --env-file-if-exists=.env banco/migrar.ts",
-    "banco:semear": "tsx --env-file-if-exists=.env banco/semear.ts",
-    "banco:estado": "tsx --env-file-if-exists=.env banco/migrar.ts --estado"
+    "db:migrate": "tsx --env-file-if-exists=.env db/migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=.env db/seed.ts",
+    "db:status": "tsx --env-file-if-exists=.env db/migrate.ts --status"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",
@@ -24,7 +24,8 @@
     "mysql2": "^3.23.2",
     "next": "^16.3.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.10",

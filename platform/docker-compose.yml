@@ -1,0 +1,71 @@
+name: myfavorite
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    # `--default-time-zone=+00:00` is what upholds the schema's promise: every
+    # DATETIME written is UTC. Without it the container timezone enters the
+    # picture and CURRENT_TIMESTAMP starts lying.
+    command:
+      - --default-time-zone=+00:00
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-name-resolve
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${DB_NAME:-myfavorite}
+      MYSQL_USER: ${DB_USER:-myfavorite}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      TZ: UTC
+    volumes:
+      - mysql-data:/var/lib/mysql
+    # No `ports:` on purpose. A 3306 published to the internet is the most
+    # common way to lose a database on a VPS — the app reaches it over the
+    # internal network.
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      TZ: UTC
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-myfavorite}
+      DB_USER: ${DB_USER:-myfavorite}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      APP_URL: ${APP_URL:?set APP_URL in .env}
+      FILES_ROOT: /var/lib/myfavorite/files
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+    volumes:
+      # Bind mount rather than a named volume: the rsync backup has to see these
+      # files from the host without entering the container.
+      - ${FILES_HOST:-./files}:/var/lib/myfavorite/files
+    # Loopback only. The Nginx on the host is what faces the internet.
+    ports:
+      - "127.0.0.1:${APP_PORT:-3080}:3000"
+    networks: [internal]
+
+volumes:
+  mysql-data:
+
+networks:
+  internal:
+    driver: bridge

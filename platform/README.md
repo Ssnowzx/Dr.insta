@@ -1,0 +1,144 @@
+# Platform
+
+The consultancy's web application: deliveries with step tracking, request
+intake, file uploads and a metric history.
+
+Replaces the standalone HTML pages published on Vercel. The reasoning, the scope
+and the discarded alternatives live in `openspec/changes/plataforma-cliente/`.
+
+> **Language convention.** Code, comments, identifiers and database objects are
+> English. Anything a person reads on screen — labels, error messages, delivery
+> content — is Brazilian Portuguese.
+
+---
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| Application | Next.js 16 (App Router) · React 19 · TypeScript strict |
+| Database | MySQL 8.4 (MariaDB 11 compatible) · Drizzle ORM |
+| Auth | Session table · Argon2id · `HttpOnly; Secure; SameSite=Lax` cookie |
+| Styling | CSS with the tokens already approved by the client, no framework |
+| Charts | Server-rendered SVG, no library |
+| Infra | Docker Compose (app + db) behind the host's Nginx |
+
+Decisions and rejected alternatives: `openspec/changes/plataforma-cliente/design.md`.
+
+---
+
+## Running locally
+
+Requires Docker and Node >= 20.19.
+
+```bash
+cd platform
+cp .env.exemplo .env      # set DB_HOST=127.0.0.1 and DB_PORT=3307
+npm install
+
+# database only, port published on 127.0.0.1 (never in production)
+docker compose -f docker-compose.yml -f compose.dev.yml up -d db
+
+npm run db:migrate
+npm run dev
+```
+
+`http://localhost:3000` should report how many tables exist in the schema.
+
+### Commands
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Development server |
+| `npm run build` | Production build (`standalone` output) |
+| `npm run lint` | `tsc --noEmit` |
+| `npm test` | Vitest (needs the database running) |
+| `npm run db:migrate` | Applies pending migrations |
+| `npm run db:status` | Lists what has been applied, changes nothing |
+| `npm run db:seed` | Initial data (phase 3) |
+
+---
+
+## Database
+
+Migrations live in `db/migrations/`, applied in alphabetical order, once each.
+Bookkeeping is the `migration` table, created by the migrator itself.
+
+**DDL in MySQL commits implicitly** — there is no transactional `CREATE TABLE`
+migration. If a file fails midway, part of it has been applied and the
+bookkeeping row is *not* written. The migrator stops there rather than moving
+on. A new migration always lands as a new file; never edit one already applied.
+
+### The four schema decisions worth knowing
+
+1. **`user.client_id` NULL = consultant.** Set = that client's user. That is the
+   whole access rule in one column, with no permission matrix.
+2. **`step_status` has three states: `pending`, `done`, `blocked`.** The old HTML
+   checkbox threw `blocked` away — which is exactly what you need to know.
+3. **`UNIQUE (client_id, metric_def_id, period, granularity, source)`.** The same
+   metric arrives from Insights and from GA4 with different numbers; overwriting
+   one with the other would destroy the disagreement that needs to surface.
+4. **`metric_target.contaminated`** marks a baseline that cannot set a target. It
+   is the "baseline before target" rule written in SQL.
+
+Full detail in the comments of `db/migrations/001-initial-schema.sql`.
+
+### Conventions
+
+- Every `DATETIME` is **UTC** — server on `--default-time-zone=+00:00`, driver on
+  `timezone: 'Z'`. Rendering in `America/Sao_Paulo` is the application's job.
+- `DECIMAL` comes back as a **string** (`decimalNumbers: false`). Converting to
+  `number` reintroduces floating point in the column that holds money.
+- Ratios are stored as ratios (`0.002300`), never as pre-formatted percentages.
+- No hard deletes in work tables: `archived_at` marks the exit.
+- Every domain query filters by `client_id`.
+- Reserved words checked against a live MySQL 8.4: `rank` and `groups` are not
+  usable as identifiers, which is why `position` and `tier` appear where "order"
+  and "group" would read more naturally.
+
+---
+
+## Production
+
+```bash
+cp .env.exemplo .env      # fill it in; DB_HOST=db
+docker compose up -d --build
+docker compose exec app node --env-file-if-exists=.env node_modules/.bin/tsx db/migrate.ts
+```
+
+The host's Nginx terminates TLS and proxies — a ready block sits in
+`infra/nginx-myfavorite.conf`. Two lines there are not optional:
+
+- `client_max_body_size 64m` — Insights screenshots reach 7 MB and Nginx
+  defaults to 1 MB. Without it the upload fails with a 413 that never says where
+  the limit came from.
+- `proxy_request_buffering off` — with buffering on, Nginx stores the whole body
+  before forwarding, and the progress bar on the client's screen sits at 100%
+  while the server is still working.
+
+The `db` service **publishes no port**. It talks to the app over Compose's
+internal network; an exposed 3306 is the most common way to lose a database on a
+VPS.
+
+### Backup
+
+```bash
+docker compose exec -T db mysqldump -uroot -p"$DB_ROOT_PASSWORD" \
+  --single-transaction --routines myfavorite | gzip > backup-$(date +%F).sql.gz
+```
+
+Daily via cron, 14-day retention, plus an `rsync` of `FILES_HOST`.
+**Restore once into an empty database and check the per-table row counts**
+before the client is invited — an untested backup is one you have not lost yet.
+
+---
+
+## Uploaded files
+
+Written to `FILES_ROOT/<client_id>/<year>/<month>/<ulid>.<ext>`. The name the
+browser sent lives **only in the database** and never touches the filesystem.
+`SHA-256` is computed while writing, to catch a re-upload and prove integrity.
+
+Nothing is served statically. An Nginx `alias` pointing at that folder would
+expose the client's revenue and demographics on a guessable URL — downloads go
+through a route that checks the session and the client scope.

@@ -163,7 +163,26 @@ Válidos as regras globais (`~/.claude/CLAUDE.md`), com estes acréscimos:
 - **`src/infra/` faz I/O** — leitura de CSV, CLI, validação de arquivos.
 - Tipos em `src/tipos/index.ts`. Sem `any`. Sem `as` (salvo narrowing de `unknown` já validado).
 - Nomes de arquivo em `lowercase-com-hífen.ts`.
-- Testes em `test/<nome>.test.ts`, padrão AAA, nomeados `deve ...`.
+
+### Idioma do código — duas metades, de propósito
+
+A regra global (`~/.claude/CLAUDE.md`) passou a exigir **código em inglês** em 05/08/2026.
+Este repositório tem duas metades e elas seguem convenções diferentes:
+
+| Pasta | Idioma | Por quê |
+|---|---|---|
+| **`platform/`** | **inglês** — identificadores, comentários, tabelas, colunas, commits | Nasceu depois da regra. Testes nomeados `should ...` |
+| **`src/`, `test/`, `perfil/`, `openspec/`** | **português** | O motor de métricas já existe, roda e tem cobertura. Traduzir agora seria refatoração ampla sem ganho de comportamento — e `perfil/` e `openspec/` são narrativa de negócio, não código |
+
+**A fronteira nunca é atravessada por acoplamento:** `platform/` não importa de
+`src/`. Os benchmarks viajam por **semente no banco**, com `source` e `updated_on`.
+Se um dia o motor for traduzido, isso vira uma mudança OpenSpec própria.
+
+**Em `platform/`, texto que a cliente lê continua em português do Brasil** —
+rótulos, mensagens de erro, títulos de entrega, e as rotas (`/entrar`, `/convite`),
+que são URLs que ela vê e compartilha.
+
+- Testes: em `test/<nome>.test.ts`, padrão AAA. Nomeados `deve ...` em `src/`, `should ...` em `platform/`.
 
 ### Antes de dar qualquer tarefa por concluída
 

@@ -1,0 +1,15 @@
+node_modules/
+.next/
+next-env.d.ts
+coverage/
+*.tsbuildinfo
+
+# Secrets
+.env
+.env.*
+!.env.exemplo
+
+# Files uploaded by clients (revenue, demographics, Insights screenshots).
+# None of this enters the repository history.
+files/
+backups/

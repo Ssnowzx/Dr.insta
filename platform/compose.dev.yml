@@ -1,0 +1,15 @@
+# Local development override. NEVER used on the VPS.
+#
+# It needs to be a separate file rather than `docker-compose.override.yml`,
+# because Compose loads the override on its own without being asked — publishing
+# the database port in production by accident is exactly the mishap that
+# `docker-compose.yml` avoids by having no `ports:` on the `db` service.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f compose.dev.yml up -d db
+services:
+  db:
+    ports:
+      # Loopback only. 127.0.0.1 and not 0.0.0.0 — the difference between a
+      # database your terminal can reach and one the internet can reach.
+      - "127.0.0.1:3307:3306"
