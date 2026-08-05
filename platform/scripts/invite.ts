@@ -3,6 +3,7 @@ import { orm } from '../db/client.ts'
 import { db, waitForDatabase } from '../db/connection.ts'
 import { client, user } from '../db/schema.ts'
 import { issueToken } from '../lib/tokens.ts'
+import { mailConfigured, sendInvite } from '../lib/mail.ts'
 import { ulid } from '../lib/ulid.ts'
 
 /**
@@ -102,9 +103,25 @@ async function main (): Promise<void> {
 
   const issued = await issueToken(userId, 'invite')
 
+  /* Always print the link, even when the mail goes out. If delivery is slow or
+     lands in spam, the operator already has it in front of them instead of
+     re-running the command and invalidating the token they just sent. */
   console.log('\nInvite link (single use, valid until ' + issued.expiresAt.toISOString() + '):\n')
   console.log(`  ${issued.url}\n`)
-  console.log('It sets the password on first use. Send it over a channel you trust.\n')
+
+  if (mailConfigured()) {
+    try {
+      await sendInvite(email, name, issued.url, isConsultant ? 'consultant' : 'client')
+      console.log(`Emailed to ${email}.\n`)
+    } catch (error) {
+      console.error('Could not send the email:',
+        error instanceof Error ? error.message : error)
+      console.error('The link above is still valid — send it by hand.\n')
+    }
+  } else {
+    console.log('SMTP is not configured, so nothing was emailed.')
+    console.log('Send the link over a channel you trust.\n')
+  }
 }
 
 main()

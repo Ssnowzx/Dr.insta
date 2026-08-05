@@ -133,6 +133,21 @@ const DEFS: DefSeed[] = [
     key: 'story_replies', label: 'Respostas nos Stories', unit: 'count',
     tier: 'monitor', decimals: 0,
     howToMeasure: 'Insights > Interações por formato'
+  },
+  /* Derived from the public Reels export, and only ever written with
+     `source: 'public'`. A view counts every loop, so it is not distinct people —
+     the description says so where she reads it. */
+  {
+    key: 'views', label: 'Visualizações dos Reels', short: 'Views', unit: 'count',
+    tier: 'monitor', decimals: 0,
+    description: 'Quantas vezes seus Reels rodaram. Vídeo curto roda de novo sozinho, então isso não é o mesmo que gente diferente.',
+    howToMeasure: 'Exportação pública de Reels'
+  },
+  {
+    key: 'posts_published', label: 'Reels publicados', short: 'Publicados', unit: 'count',
+    tier: 'monitor', decimals: 0,
+    description: 'Quantos Reels saíram no mês. Serve para ver esforço ao lado de resultado.',
+    howToMeasure: 'Exportação pública de Reels'
   }
 ]
 

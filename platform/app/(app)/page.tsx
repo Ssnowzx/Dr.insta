@@ -2,9 +2,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ClientPicker } from '@/components/client-picker'
 import { Funnel } from '@/components/funnel'
+import { Series } from '@/components/series'
 import { MetricBar, MetricStat } from '@/components/metric-bar'
 import {
-  activeCycle, clientBySlug, clientProfile, funnel, latestPeriod, metrics, requests
+  activeCycle, clientBySlug, clientProfile, funnel, latestPeriod, metrics,
+  monthlySeries, requests
 } from '@/lib/dashboard'
 import { requireSession } from '@/lib/dal'
 import { longDate, monthLabel } from '@/lib/format'
@@ -59,10 +61,11 @@ export default async function Painel ({
     )
   }
 
-  const [etapas, todas, pedidos] = await Promise.all([
+  const [etapas, todas, pedidos, series] = await Promise.all([
     funnel(clientId, period),
     metrics(clientId, cycle.id, period, profile?.niche ?? 'lifestyle'),
-    requests(clientId)
+    requests(clientId),
+    monthlySeries(clientId, ['views', 'posts_published'])
   ])
 
   const decidem = todas
@@ -123,6 +126,34 @@ export default async function Painel ({
           {decidem.map(m => <MetricBar key={m.key} metric={m} />)}
         </div>
       </section>
+
+      {series.length > 0 && (
+        <section className="secao">
+          <div className="secao-cab">
+            <h2 className="titulo-secao">Mês a mês</h2>
+            <p className="secao-nota">números públicos</p>
+          </div>
+          <div className="series">
+            {series.map(s => (
+              <article className="serie-cartao" key={s.key}>
+                <h3 className="serie-titulo">{s.label}</h3>
+                {s.description !== null && <p className="serie-desc">{s.description}</p>}
+                <Series
+                  points={s.points}
+                  unit={s.unit}
+                  decimals={s.decimals}
+                  label={s.label}
+                />
+              </article>
+            ))}
+          </div>
+          <p className="rodape-nota">
+            Estes dois vêm da exportação pública dos seus Reels, não dos Insights.
+            Servem para ver esforço e resultado lado a lado — e para a gente
+            perceber quando as views caírem, o que é esperado quando o mix mudar.
+          </p>
+        </section>
+      )}
 
       <section className="secao">
         <div className="secao-cab">

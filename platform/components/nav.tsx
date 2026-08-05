@@ -18,13 +18,14 @@ import { usePathname } from 'next/navigation'
 interface Destino {
   href: string
   label: string
-  icon: 'painel' | 'plano' | 'pedidos' | 'conta'
+  icon: 'painel' | 'plano' | 'pedidos' | 'conteudo' | 'conta'
 }
 
 const DESTINOS: Destino[] = [
   { href: '/', label: 'Painel', icon: 'painel' },
   { href: '/plano', label: 'Plano', icon: 'plano' },
   { href: '/pedidos', label: 'Pedidos', icon: 'pedidos' },
+  { href: '/conteudo', label: 'Conteúdo', icon: 'conteudo' },
   { href: '/conta', label: 'Conta', icon: 'conta' }
 ]
 
@@ -44,6 +45,9 @@ function Icone ({ nome }: { nome: Destino['icon'] }) {
       return <svg {...comum}><path d="M4 6.5 6 8.5 9.5 5M4 12.5l2 2L9.5 11M4 18.5l2 2 3.5-3.5M13 7h7M13 13h7M13 19h7" /></svg>
     case 'pedidos':
       return <svg {...comum}><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
+    case 'conteudo':
+      /* A play triangle inside a frame: the archive is Reels. */
+      return <svg {...comum}><rect x="3.2" y="4.2" width="17.6" height="15.6" rx="3" /><path d="M10.4 9.2 15 12l-4.6 2.8z" /></svg>
     case 'conta':
       return <svg {...comum}><circle cx="12" cy="8" r="3.6" /><path d="M4.5 20a7.5 7.5 0 0 1 15 0" /></svg>
   }

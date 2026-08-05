@@ -8,6 +8,7 @@ import { auditLog, user } from '@/db/schema'
 import { burnEquivalentTime, hashPassword, isTooShort, MIN_LENGTH, verifyPassword } from './password.ts'
 import { createSession, destroyAllSessions, destroySession } from './session.ts'
 import { consumeToken, issueToken, resolveToken } from './tokens.ts'
+import { sendReset } from './mail.ts'
 
 /**
  * Server Actions for the whole credential lifecycle.
@@ -183,7 +184,7 @@ export async function requestReset (_prev: FormState, form: FormData): Promise<F
   if (email === '') return { error: 'Escreva o seu e-mail.' }
 
   const rows = await orm()
-    .select({ id: user.id, clientId: user.clientId, active: user.active })
+    .select({ id: user.id, name: user.name, clientId: user.clientId, active: user.active })
     .from(user)
     .where(eq(user.email, email))
     .limit(1)
@@ -196,12 +197,14 @@ export async function requestReset (_prev: FormState, form: FormData): Promise<F
 
   const issued = await issueToken(found.id, 'reset')
 
-  /* SMTP arrives with the rest of phase 2. Until then the link is printed in
-     the container log, which is enough for the consultant to relay it — and
-     saying so out loud beats a screen that claims an email was sent when none
-     was. */
-  if ((process.env.SMTP_HOST ?? '') === '') {
-    console.warn(`[reset] link para ${email}: ${issued.url}`)
+  /* A send that fails must not change the answer: telling this person the mail
+     bounced would tell them the address exists here. The failure goes to the
+     log, where the consultant can find it and relay the link by hand. */
+  try {
+    await sendReset(email, found.name, issued.url)
+  } catch (error) {
+    console.error(`[reset] falha ao enviar para ${email}:`,
+      error instanceof Error ? error.message : error)
   }
 
   const context = await requestContext()

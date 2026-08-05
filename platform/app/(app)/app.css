@@ -56,7 +56,7 @@
   inset: auto 0 0 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   background: color-mix(in srgb, var(--papel) 92%, transparent);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--linha);
@@ -1206,3 +1206,247 @@ a.secao-nota:hover { text-decoration: underline; }
   background: var(--papel2);
   font-style: italic;
 }
+
+/* =============================================================================
+   MONTHLY SERIES — phase 6
+   ============================================================================= */
+
+.series {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 64rem) {
+  .series { grid-template-columns: repeat(2, 1fr); }
+}
+
+.serie-cartao {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1.25rem;
+}
+
+.serie-titulo {
+  margin: 0 0 .25rem;
+  font-size: .9375rem;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.serie-desc {
+  margin: 0 0 1rem;
+  font-size: .8125rem;
+  line-height: 1.5;
+  color: var(--suave);
+}
+
+.serie { margin: 0; }
+
+.serie-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Recessive grid: present enough to read a level against, quiet enough not to
+   compete with the line. */
+.serie-grade { stroke: var(--grade); stroke-width: 1; }
+
+.serie-linha {
+  fill: none;
+  stroke: var(--dado);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* A whisper of fill under the line — it anchors the shape to the zero baseline
+   without turning a line chart into an area chart. */
+.serie-area { fill: var(--dado); opacity: .1; stroke: none; }
+
+.serie-ponto { fill: var(--dado); stroke: var(--cartao); stroke-width: 2; }
+
+/* The running month is hollow, not just a different colour: the distinction
+   survives greyscale and forced-colours. */
+.serie-ponto-parcial { fill: var(--cartao); stroke: var(--dado); }
+
+.serie-mes {
+  fill: var(--suave);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.serie-extremos {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: .75rem;
+  padding-top: .75rem;
+  border-top: 1px solid var(--linha2);
+  font-size: .875rem;
+  color: var(--tinta);
+}
+
+.serie-extremo-mes {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--suave);
+}
+
+.serie-parcial { font-size: .75rem; color: var(--suave); }
+
+.serie-nota {
+  margin: .75rem 0 0;
+  font-size: .8125rem;
+  line-height: 1.5;
+  color: var(--suave);
+}
+
+.serie-vazia {
+  margin: 0;
+  font-size: .875rem;
+  color: var(--suave);
+}
+
+/* =============================================================================
+   ARCHIVE
+   ============================================================================= */
+
+.achado {
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.125rem;
+  border-radius: var(--raio);
+  background: var(--atencao-bg);
+  border: 1px solid var(--atencao);
+  color: var(--atencao);
+  font-size: .9375rem;
+  line-height: 1.55;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: 1.5rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .4375rem;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--tinta2);
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  padding: .5rem .875rem;
+  text-decoration: none;
+  /* 40px tall so a thumb can hit it without aiming. */
+  min-height: 2.5rem;
+}
+
+.chip:hover { border-color: var(--suave); color: var(--tinta); }
+
+.chip-ativo {
+  background: var(--tinta);
+  border-color: var(--tinta);
+  color: var(--sobre-tinta);
+}
+
+.chip-n { font-size: .75rem; opacity: .75; }
+
+.acervo {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 48rem) {
+  .acervo { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 80rem) {
+  .acervo { grid-template-columns: repeat(3, 1fr); }
+}
+
+.peca {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1.125rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.peca-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .625rem;
+}
+
+.peca-data {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--suave);
+}
+
+.peca-tags { display: flex; gap: .375rem; }
+
+.tag {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  padding: .125rem .4375rem;
+  border-radius: 5px;
+  background: var(--papel2);
+  color: var(--suave);
+}
+
+.tag-curto { color: var(--dado); background: var(--dado-fraco); }
+.tag-marca { color: var(--tinta); background: var(--papel2); font-weight: 600; }
+
+.peca-legenda {
+  margin: 0 0 1rem;
+  font-size: .875rem;
+  line-height: 1.5;
+  color: var(--tinta2);
+  flex: 1;
+}
+
+.peca-numeros {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .5rem .75rem;
+  margin: 0 0 .875rem;
+  padding-top: .875rem;
+  border-top: 1px solid var(--linha2);
+}
+
+.peca-numeros > div { display: flex; flex-direction: column; gap: .0625rem; }
+.peca-numeros dt { font-size: .6875rem; color: var(--suave); }
+.peca-numeros dd { margin: 0; font-size: .9375rem; color: var(--tinta); }
+
+/* An absent measurement is shown as absent. Reach is not in the public export,
+   and filling it with views would fabricate the denominator every rate uses. */
+.peca-sem { color: var(--suave); }
+
+.peca-link {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--caramelo);
+  text-decoration: none;
+}
+
+.peca-link:hover { text-decoration: underline; }

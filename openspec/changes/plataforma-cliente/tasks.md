@@ -24,7 +24,7 @@
 - [x] 2.7 `lib/scope.ts` — a regra pura de alcance, separada do Next para ser testável sozinha; o teste de conjuntos com dado real vem na fase 4
 - [x] 2.8 Tela de entrar, com mensagem de erro que não revela se o e-mail existe
 - [x] 2.9 Fluxo de convite: token de uso único, 7 dias, tela de definir senha
-- [x] 2.10 Fluxo de recuperação: token de 1 hora e telas prontas — **o envio por SMTP fica pendente**; hoje o link sai no log do contêiner
+- [x] 2.10 Fluxo de recuperação completo: token de 1 hora, telas e envio por SMTP com TLS obrigatório (escotilha local que se recusa em produção)
 - [x] 2.11 `scripts/invite.ts` — gera o link de convite pelo terminal, sem depender de SMTP
 - [x] 2.12 Registrar `signed_in` em `audit_log` e atualizar `user.last_seen_at`
 
@@ -46,7 +46,7 @@
 - [x] 3b.2 Gráfico de bala: valor contra alvo e referência do nicho, marcas em tinta e não em cor
 - [x] 3b.3 Baseline contaminado e amostra abaixo de 7 aparecem no cartão
 - [x] 3b.4 Telas de plano, pedidos e conta, em leitura
-- [ ] 3b.5 Série histórica mensal — só existe um período medido até agora
+- [x] 3b.5 Série histórica mensal — 8 meses reais da exportação pública, com o mês em curso marcado
 
 ## 4. Acompanhamento de etapas
 
@@ -71,14 +71,14 @@
 
 ## 6. Painel de dados e estratégia
 
-- [ ] 6.1 `lib/formatar.ts` — razão, moeda e inteiro a partir de `metrica_def.unidade`; teste de cada unidade
-- [ ] 6.2 Gráfico de linha em SVG para evolução mensal
-- [ ] 6.3 Gráfico de barra comparando valor, baseline, alvo e benchmark
-- [ ] 6.4 **Baseline contaminado e amostra abaixo do mínimo aparecem na tela**, não escondidos
-- [ ] 6.5 Benchmark com mais de 12 meses sinalizado na interface
-- [ ] 6.6 Importador do CSV dos 203 Reels para `post`, com `procedencia='publico'`
-- [ ] 6.7 Teste: o importador não preenche `alcance` com `views`
-- [ ] 6.8 Acervo de posts filtrável por pilar e duração
+- [x] 6.1 `lib/format.ts` — razão, moeda, contagem e segundos a partir de `metric_def.unit`; 15 testes
+- [x] 6.2 Gráfico de linha em SVG, uma medida por gráfico e base em zero — nunca eixo duplo
+- [x] 6.3 Gráfico de barra comparando valor, baseline, alvo e benchmark
+- [x] 6.4 **Baseline contaminado e amostra abaixo do mínimo aparecem na tela**, não escondidos
+- [x] 6.5 Benchmark com 12 meses ou mais sinalizado no cartão, com a idade em meses
+- [x] 6.6 Importador dos 203 Reels reais para `post`, com `provenance='public'` e série mensal derivada
+- [x] 6.7 Teste do invariante: nenhum post público tem `reach`, `saves` ou `retention` — e nenhum tem `reach` igual a `views`
+- [x] 6.8 Acervo filtrável por duração e menção à marca, com a casa vazia declarada na tela
 
 ## 7. Produção
 

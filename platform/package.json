@@ -18,13 +18,16 @@
     "db:migrate": "tsx --env-file-if-exists=.env db/migrate.ts",
     "db:status": "tsx --env-file-if-exists=.env db/migrate.ts --status",
     "db:seed": "tsx --env-file-if-exists=.env db/seed.ts",
+    "db:import-reels": "tsx --conditions=react-server --env-file-if-exists=.env db/import-reels.ts",
     "invite": "tsx --conditions=react-server --env-file-if-exists=.env scripts/invite.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",
+    "@types/nodemailer": "^8.0.1",
     "drizzle-orm": "^0.45.2",
     "mysql2": "^3.23.2",
     "next": "^16.3.0",
+    "nodemailer": "^9.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "server-only": "^0.0.1"

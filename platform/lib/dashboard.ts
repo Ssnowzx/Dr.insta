@@ -3,7 +3,7 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import {
   benchmark, client, cycle, delivery, metricDef, metricTarget, metricValue,
-  file, request, requestEvent, step, stepStatus, user
+  file, post, request, requestEvent, step, stepStatus, user
 } from '@/db/schema'
 import type { Unit } from './format.ts'
 
@@ -475,4 +475,174 @@ export async function requestDetail (
     .orderBy(requestEvent.createdAt, requestEvent.id)
 
   return { ...found, events }
+}
+
+export interface Series {
+  key: string
+  label: string
+  unit: Unit
+  decimals: number
+  description: string | null
+  points: Array<{ period: string; value: number; partial?: boolean }>
+}
+
+/**
+ * Monthly series for the given metric keys.
+ *
+ * `today` is a parameter rather than a call to the clock, so the "this month is
+ * still running" flag is testable and the domain never reaches for the time
+ * implicitly.
+ */
+export async function monthlySeries (
+  clientId: number,
+  keys: readonly string[],
+  today: Date = new Date()
+): Promise<Series[]> {
+  if (keys.length === 0) return []
+
+  const rows = await orm()
+    .select({
+      key: metricDef.metricKey,
+      label: metricDef.label,
+      unit: metricDef.unit,
+      decimals: metricDef.decimals,
+      description: metricDef.description,
+      period: metricValue.period,
+      value: metricValue.value
+    })
+    .from(metricValue)
+    .innerJoin(metricDef, eq(metricDef.id, metricValue.metricDefId))
+    .where(and(
+      eq(metricValue.clientId, clientId),
+      eq(metricValue.granularity, 'month'),
+      inArray(metricDef.metricKey, [...keys])
+    ))
+    .orderBy(metricValue.period)
+
+  const current = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, '0')}-01`
+
+  const byKey = new Map<string, Series>()
+  for (const r of rows) {
+    let entry = byKey.get(r.key)
+    if (entry === undefined) {
+      entry = {
+        key: r.key, label: r.label, unit: r.unit,
+        decimals: r.decimals, description: r.description, points: []
+      }
+      byKey.set(r.key, entry)
+    }
+    entry.points.push({
+      period: r.period,
+      value: Number.parseFloat(r.value),
+      /* The running month is not comparable with the closed ones. Drawing it
+         unmarked shows a cliff that is just the calendar. */
+      ...(r.period === current ? { partial: true } : {})
+    })
+  }
+
+  /* Returned in the order the caller asked for, not in whatever order the rows
+     arrived — the page decides which chart comes first. */
+  return keys.map(k => byKey.get(k)).filter((s): s is Series => s !== undefined)
+}
+
+export interface PostRow {
+  id: number
+  igCode: string
+  publishedAt: Date
+  url: string | null
+  caption: string | null
+  durationSec: number | null
+  pillar: string | null
+  mentionsBrand: boolean | null
+  views: number | null
+  likes: number | null
+  comments: number | null
+  reach: number | null
+  provenance: 'public' | 'insights' | 'mixed'
+}
+
+export interface PostFilter {
+  /** `curto` is <= 20s, the limit the cycle set for product content. */
+  duration?: 'curto' | 'longo'
+  brand?: 'marca' | 'pessoal'
+}
+
+export async function posts (
+  clientId: number,
+  filter: PostFilter = {},
+  limit = 60
+): Promise<PostRow[]> {
+  const conditions = [eq(post.clientId, clientId)]
+
+  if (filter.duration === 'curto') conditions.push(sql`${post.durationSec} <= 20`)
+  if (filter.duration === 'longo') conditions.push(sql`${post.durationSec} > 20`)
+  if (filter.brand === 'marca') conditions.push(eq(post.mentionsBrand, 1))
+  if (filter.brand === 'pessoal') conditions.push(eq(post.mentionsBrand, 0))
+
+  const rows = await orm()
+    .select({
+      id: post.id, igCode: post.igCode, publishedAt: post.publishedAt,
+      url: post.url, caption: post.caption, durationSec: post.durationSec,
+      pillar: post.pillar, mentionsBrand: post.mentionsBrand,
+      views: post.views, likes: post.likes, comments: post.comments,
+      reach: post.reach, provenance: post.provenance
+    })
+    .from(post)
+    .where(and(...conditions))
+    .orderBy(desc(post.publishedAt))
+    .limit(limit)
+
+  return rows.map(r => ({
+    ...r,
+    mentionsBrand: r.mentionsBrand === null ? null : r.mentionsBrand === 1
+  }))
+}
+
+export interface PostCounts {
+  total: number
+  curtos: number
+  longos: number
+  marca: number
+  pessoal: number
+  marcaCurto: number
+}
+
+/**
+ * Counts for the filter chips, so a filter never leads to an empty screen
+ * unannounced.
+ *
+ * Every value is passed through `Number()`. MySQL returns `COUNT` and `SUM` as
+ * strings, and `sql<number>` is a type assertion rather than a conversion — so
+ * TypeScript believes these are numbers while the runtime hands back `"0"`.
+ * That mismatch already hid the empty-cell callout once: `"0" === 0` is false,
+ * and the finding silently never rendered.
+ */
+export async function postCounts (clientId: number): Promise<PostCounts> {
+  const [row] = await orm()
+    .select({
+      total: sql<number>`COUNT(*)`,
+      curtos: sql<number>`SUM(${post.durationSec} <= 20)`,
+      longos: sql<number>`SUM(${post.durationSec} > 20)`,
+      marca: sql<number>`SUM(${post.mentionsBrand} = 1)`,
+      pessoal: sql<number>`SUM(${post.mentionsBrand} = 0)`,
+      /* The empty cell the Reels analysis found: brand content never shipped in
+         20 seconds or less. Counted here so the screen can state it. */
+      marcaCurto: sql<number>`SUM(${post.mentionsBrand} = 1 AND ${post.durationSec} <= 20)`
+    })
+    .from(post)
+    .where(eq(post.clientId, clientId))
+
+  const n = (v: unknown): number => {
+    const parsed = Number(v)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  return {
+    total: n(row?.total),
+    curtos: n(row?.curtos),
+    longos: n(row?.longos),
+    marca: n(row?.marca),
+    pessoal: n(row?.pessoal),
+    marcaCurto: n(row?.marcaCurto)
+  }
 }

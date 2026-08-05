@@ -81,11 +81,18 @@ export function longDate (value: Date | string, timeZone = 'America/Sao_Paulo'):
   }).format(d)
 }
 
-/** "4 ago" — for tight spaces like a table column. */
+/**
+ * "4 ago" — for tight spaces like a table column.
+ *
+ * `Intl` in pt-BR returns "4 de ago.", and both the preposition and the full
+ * stop are noise beside a timestamp. Stripped here rather than at each call
+ * site, so every short date in the product reads the same.
+ */
 export function shortDate (value: Date | string, timeZone = 'America/Sao_Paulo'): string {
   const d = typeof value === 'string' ? new Date(`${value}T12:00:00Z`) : value
   return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', timeZone })
     .format(d)
+    .replace(' de ', ' ')
     .replace('.', '')
 }
 

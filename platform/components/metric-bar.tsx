@@ -59,6 +59,17 @@ export function MetricBar ({ metric }: { metric: MetricCard }) {
 
   const showSample = metric.sampleSize !== null && metric.sampleSize < 7
 
+  /* A niche reference older than twelve months is a rule the project already
+     holds itself to in the engine. Surfacing the age is what keeps a stale
+     number from being read as current. */
+  const benchmarkAge = metric.benchmarkUpdatedOn === null
+    ? null
+    : Math.floor(
+        (Date.now() - new Date(`${metric.benchmarkUpdatedOn}T12:00:00Z`).getTime())
+        / (1000 * 60 * 60 * 24 * 30.44)
+      )
+  const staleBenchmark = benchmarkAge !== null && benchmarkAge >= 12
+
   return (
     <article className="metrica">
       <div className="metrica-cab">
@@ -119,6 +130,13 @@ export function MetricBar ({ metric }: { metric: MetricCard }) {
         <p className="ressalva ressalva-atencao">
           <strong>Ainda não dá para fixar meta com este número.</strong>{' '}
           {metric.targetNote}
+        </p>
+      )}
+
+      {staleBenchmark && (
+        <p className="ressalva">
+          A média do nicho é de {benchmarkAge} meses atrás. Ainda serve de norte,
+          mas trate como ordem de grandeza, não como número do mês.
         </p>
       )}
 
