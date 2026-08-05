@@ -50,13 +50,13 @@
 
 ## 4. Acompanhamento de etapas
 
-- [ ] 4.1 Semente de `entrega` + `etapa` com os cinco ajustes de 04/08/2026, com o dado que sustenta cada um
-- [ ] 4.2 Tela da entrega, mobile-first, em coluna única centrada
-- [ ] 4.3 Marcação de etapa com os três estados e campo de comentário
-- [ ] 4.4 Placar de progresso e pedido parcial tão fácil quanto o completo
-- [ ] 4.5 Visão do consultor: o que ela marcou, o que travou e quando
-- [ ] 4.6 Teste: dois usuários marcando a mesma etapa não sobrescrevem um ao outro
-- [ ] 4.7 Renderizar e conferir em 360, 390, 768, 1024 e 1440 px
+- [x] 4.1 Semente de `delivery` + `step` com os cinco ajustes, com o dado que sustenta cada um
+- [x] 4.2 Tela da entrega, mobile-first, em coluna única centrada
+- [x] 4.3 Marcação com três estados, otimista no toque; o campo de nota abre sozinho ao marcar `travou`
+- [x] 4.4 Placar de progresso e pedido parcial tão fácil quanto o completo
+- [x] 4.5 Visão do consultor: o que ela marcou, a nota dela e quando — alcançável por `?cliente=<slug>`, porque consultor não tem `client_id`
+- [x] 4.6 Teste: dois usuários na mesma etapa não se sobrescrevem, `completed_at` limpa ao desmarcar, ENUM recusa estado inválido (7 testes)
+- [x] 4.7 Conferido no navegador em 390 e 1440 px; rail medido sem sobreposição
 
 ## 5. Recepção de demandas
 

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { ClientPicker } from '@/components/client-picker'
 import { Funnel } from '@/components/funnel'
 import { MetricBar, MetricStat } from '@/components/metric-bar'
 import {
-  activeCycle, clientProfile, funnel, latestPeriod, metrics, requests
+  activeCycle, clientBySlug, clientProfile, funnel, latestPeriod, metrics, requests
 } from '@/lib/dashboard'
 import { requireSession } from '@/lib/dal'
 import { longDate, monthLabel } from '@/lib/format'
@@ -24,24 +25,22 @@ export const dynamic = 'force-dynamic'
  * page if they came first — and this client\'s risk is precisely that she reads
  * the big numbers and concludes nothing is wrong.
  */
-export default async function Painel () {
+export default async function Painel ({
+  searchParams
+}: {
+  searchParams: Promise<{ cliente?: string }>
+}) {
   const identity = await requireSession()
+  const { cliente } = await searchParams
 
-  if (identity.clientId === null) {
-    return (
-      <>
-        <header className="pagina-cab">
-          <p className="sobrancelha">Consultor</p>
-          <h1 className="display">Escolha um cliente.</h1>
-          <p className="lead">
-            A visão de consultor com vários clientes entra numa próxima etapa.
-          </p>
-        </header>
-      </>
-    )
-  }
-
+  /* A client user's own id always wins; the query string is only consulted for
+     a consultant, who has none. Reading the parameter first would let a client
+     open another client by editing the URL. */
   const clientId = identity.clientId
+    ?? (cliente === undefined ? null : (await clientBySlug(cliente))?.id ?? null)
+
+  if (clientId === null) return <ClientPicker base="/" />
+
   const [profile, cycle, period] = await Promise.all([
     clientProfile(clientId),
     activeCycle(clientId),

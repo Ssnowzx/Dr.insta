@@ -3,7 +3,7 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import {
   benchmark, client, cycle, delivery, metricDef, metricTarget, metricValue,
-  request, step, stepStatus
+  request, step, stepStatus, user
 } from '@/db/schema'
 import type { Unit } from './format.ts'
 
@@ -350,4 +350,54 @@ export async function latestPeriod (clientId: number): Promise<string | null> {
     .limit(1)
 
   return rows[0]?.period ?? null
+}
+
+export interface StepAnswer {
+  stepId: number
+  userName: string
+  state: 'pending' | 'done' | 'blocked'
+  comment: string | null
+  updatedAt: Date
+}
+
+/**
+ * Every answer on this client's steps, whoever gave it.
+ *
+ * The consultant view needs this because `deliveries()` filters `step_status` by
+ * the reader's own user id — and the consultant never marked anything. Without
+ * a separate query the consultant would see an empty plan and conclude she has
+ * not started.
+ */
+export async function clientStepAnswers (clientId: number): Promise<StepAnswer[]> {
+  return await orm()
+    .select({
+      stepId: stepStatus.stepId,
+      userName: user.name,
+      state: stepStatus.state,
+      comment: stepStatus.comment,
+      updatedAt: stepStatus.updatedAt
+    })
+    .from(stepStatus)
+    .innerJoin(step, eq(step.id, stepStatus.stepId))
+    .innerJoin(user, eq(user.id, stepStatus.userId))
+    .where(eq(step.clientId, clientId))
+    .orderBy(desc(stepStatus.updatedAt))
+}
+
+/** Clients a consultant may open. Used by the picker until a real one exists. */
+export async function listClients () {
+  return await orm()
+    .select({ id: client.id, slug: client.slug, name: client.name, brand: client.brand })
+    .from(client)
+    .where(sql`${client.archivedAt} IS NULL`)
+    .orderBy(client.name)
+}
+
+export async function clientBySlug (slug: string) {
+  const rows = await orm()
+    .select({ id: client.id, name: client.name })
+    .from(client)
+    .where(eq(client.slug, slug))
+    .limit(1)
+  return rows[0] ?? null
 }

@@ -771,3 +771,196 @@ a.secao-nota:hover { text-decoration: underline; }
 }
 
 .btn-sair:hover { border-color: var(--suave); color: var(--tinta); }
+
+/* =============================================================================
+   STEP MARKING — phase 4
+   ============================================================================= */
+
+.placar { margin-bottom: 1.5rem; }
+
+.placar-conta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .375rem;
+  margin: 0 0 .5rem;
+  font-size: .875rem;
+  color: var(--tinta2);
+}
+
+.placar-n { font-size: 1.25rem; color: var(--tinta); }
+.placar-de { color: var(--suave); }
+.placar-travou { color: var(--tijolo); }
+
+.placar-trilho {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--dado-fraco);
+  overflow: hidden;
+}
+
+.placar-barra {
+  height: 100%;
+  background: var(--dado);
+  border-radius: 0 3px 3px 0;
+  transition: width .25s ease;
+}
+
+/* A done step recedes: it stays readable but stops competing for attention with
+   what is still open. */
+.etapa-done { opacity: .72; }
+.etapa-done .etapa-titulo { text-decoration: line-through; text-decoration-color: var(--suave); }
+
+/* A blocked one does the opposite — it is the item that needs me. */
+.etapa-blocked { border-color: var(--tijolo); }
+
+.etapa-selo { display: inline-block; margin-bottom: .875rem; }
+
+/* ---------------------------------------------------------- segmented control */
+
+.controle { margin-top: 1rem; }
+
+.segmentos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 3px;
+  background: var(--papel2);
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+}
+
+.segmento {
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--tinta2);
+  background: none;
+  border: none;
+  border-radius: 9px;
+  /* 44px tall: a thumb target that does not need aiming. */
+  min-height: 2.75rem;
+  padding: .5rem .25rem;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+
+.segmento:hover:not(.segmento-ativo) { color: var(--tinta); }
+.segmento[disabled] { cursor: progress; opacity: .7; }
+
+.segmento-ativo { background: var(--cartao); box-shadow: var(--sombra); }
+
+/* The selected state is never colour alone — the segment also gains a surface
+   and a shadow, so it survives greyscale and forced-colours. */
+.segmento-ativo.segmento-pending { color: var(--tinta); }
+.segmento-ativo.segmento-done { color: var(--ok); }
+.segmento-ativo.segmento-blocked { color: var(--tijolo); }
+
+/* ------------------------------------------------------------------- the note */
+
+.link-nota {
+  font: inherit;
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--caramelo);
+  background: none;
+  border: none;
+  padding: .5rem 0 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.nota { margin-top: .875rem; }
+
+.nota label {
+  display: block;
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--tinta2);
+  margin-bottom: .4375rem;
+}
+
+.nota textarea {
+  width: 100%;
+  /* 16px exactly, or iOS Safari zooms the page on focus and never zooms back. */
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--tinta);
+  background: var(--papel2);
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  padding: .75rem;
+  resize: vertical;
+}
+
+.nota textarea:focus-visible {
+  outline: none;
+  border-color: var(--dado);
+  box-shadow: 0 0 0 3px var(--foco);
+}
+
+.nota-pe {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-top: .625rem;
+}
+
+.btn-nota {
+  font: inherit;
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--sobre-tinta);
+  background: var(--tinta);
+  border: 1px solid var(--tinta);
+  border-radius: 9px;
+  padding: .5625rem 1rem;
+  cursor: pointer;
+}
+
+.btn-nota[disabled] { opacity: .6; cursor: progress; }
+
+.nota-ok { font-size: .8125rem; color: var(--ok); font-weight: 600; }
+
+.nota-erro {
+  margin: .75rem 0 0;
+  padding: .625rem .75rem;
+  border-radius: 8px;
+  background: var(--urg-bg);
+  border: 1px solid var(--tijolo);
+  color: var(--tijolo);
+  font-size: .8125rem;
+}
+
+/* ------------------------------------------------------- consultant read view */
+
+.resposta {
+  margin-top: 1rem;
+  padding-top: .875rem;
+  border-top: 1px solid var(--linha2);
+}
+
+.resposta-linha {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem .75rem;
+  margin: 0;
+}
+
+.resposta-quem { font-size: .75rem; color: var(--suave); }
+
+.resposta-nota {
+  margin: .625rem 0 0;
+  padding: .75rem .875rem;
+  border-radius: 10px;
+  background: var(--papel2);
+  font-size: .875rem;
+  line-height: 1.55;
+  color: var(--tinta2);
+  font-style: italic;
+}
+
+.resposta-vazia { margin: 0; font-size: .8125rem; color: var(--suave); }

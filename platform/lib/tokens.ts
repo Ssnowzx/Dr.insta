@@ -72,6 +72,7 @@ export interface TokenHolder {
   userId: number
   /** Null for a consultant. Carried so the audit row can be scoped to a client. */
   clientId: number | null
+  role: 'consultant' | 'client'
   email: string
   name: string
   tokenId: number
@@ -99,6 +100,7 @@ export async function resolveToken (
       usedAt: credentialToken.usedAt,
       userId: user.id,
       clientId: user.clientId,
+      role: user.role,
       email: user.email,
       name: user.name,
       active: user.active
@@ -120,6 +122,7 @@ export async function resolveToken (
   return {
     userId: row.userId,
     clientId: row.clientId,
+    role: row.role,
     email: row.email,
     name: row.name,
     tokenId: row.tokenId
