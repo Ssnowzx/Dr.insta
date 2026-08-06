@@ -7,6 +7,8 @@
 | Escopo | **Multi-cliente no banco, uma cliente na tela** | Toda tabela de domínio carrega `cliente_id`; nenhuma consulta roda sem ele |
 | Infra | **Docker + Nginx na VPS** | App e banco em contêiner; o Nginx do host faz proxy e TLS |
 | Acesso | **E-mail e senha** | Precisa de fluxo de primeira senha, senão a cliente não entra |
+| Canal | **Nenhum e-mail sai do produto** (05/08) | Recuperação deixa de ser self-service; o consultor gera o link dentro da plataforma |
+| Upload | **Route Handler, nunca Server Action** | Action tem teto de 1 MB por padrão e os Insights dela chegam a 7 MB |
 
 ## Contexto que restringe o desenho
 
@@ -18,7 +20,7 @@ Três fatos do projeto mandam mais que qualquer preferência técnica:
 
 ## Stack
 
-### Aplicação — Next.js 15 (App Router) + React 19 + TypeScript strict
+### Aplicação — Next.js 16 (App Router) + React 19 + TypeScript strict
 
 **Por quê:** o dashboard é majoritariamente leitura de dado que muda uma vez por mês. Server Components renderizam isso no servidor e mandam HTML — o celular dela recebe conteúdo, não um pacote de JavaScript que depois busca JSON. Interatividade fica em ilhas pequenas: marcar etapa, abrir demanda, enviar arquivo.
 
@@ -27,13 +29,15 @@ Três fatos do projeto mandam mais que qualquer preferência técnica:
 - **Astro** — ótimo para conteúdo, mas isto é aplicação com sessão, formulário e estado. Estaríamos remando contra o modelo dele.
 - **HTML estático como hoje** — é o que estamos substituindo, e por motivo declarado.
 
-**Custo assumido:** Next.js é a única dependência pesada do projeto. Ela se justifica por render no servidor, roteamento, e por eliminar o serviço de API separado. A regra "zero dependências de runtime" do `openspec/config.yaml` vale para `src/` — o motor de métricas continua puro e sem dependência. `plataforma/` é outro artefato, e a exceção está registrada aqui.
+**Custo assumido:** Next.js é a única dependência pesada do projeto. Ela se justifica por render no servidor, roteamento, e por eliminar o serviço de API separado. A regra "zero dependências de runtime" do `openspec/config.yaml` vale para `src/` — o motor de métricas continua puro e sem dependência. `platform/` é outro artefato, e a exceção está registrada aqui.
 
 ### Estilo — CSS com os tokens já aprovados, sem framework
 
 **Por quê:** os tokens de cor e tipografia das entregas de julho/agosto já passaram por medição de contraste WCAG par a par e já foram aprovados pela cliente. Eles migram como variáveis CSS, iguais. Tailwind seria reescrever esse sistema em outra sintaxe sem ganhar nada — a superfície é pequena e os componentes se repetem.
 
-**Fontes servidas do próprio domínio.** Os `.ttf` já estão em `relatorios/bianca-olivo-2026-07/fonts/` (Italiana, Instrument Sans, Instrument Serif, Geist Mono). Convertidos para `.woff2` e servidos pelo Nginx, cortam a ida ao Google Fonts — que no 4G custa duas resoluções de DNS e uma conexão TLS antes do primeiro texto aparecer.
+**Fontes servidas do próprio domínio.** Os `.ttf` de `relatorios/bianca-olivo-2026-07/fonts/` (Italiana, Instrument Sans, Instrument Serif, Geist Mono) foram subsetados para pt-BR e convertidos: **460 KB viraram 128 KB**. Cortam a ida ao Google Fonts, que no 4G custa uma resolução de DNS e um aperto de mão TLS antes do primeiro texto aparecer.
+
+**Duas variantes do caramelo, medidas.** O validador de paleta reprovou o caramelo aprovado como *preenchimento*: croma OKLCH 0,094 contra piso 0,1, o que lê como cinza em área sólida. Texto e preenchimento têm trabalhos diferentes, então há `--caramelo` (texto, contraste WCAG) e `--dado` (marca de gráfico, validado nos dois temas). `test/contrast.test.ts` lê o `base.css` e afirma 40 pares.
 
 ### Gráficos — SVG próprio, sem biblioteca
 
@@ -49,7 +53,7 @@ Três fatos do projeto mandam mais que qualquer preferência técnica:
 
 ### Autenticação — sessão em tabela, senha com Argon2id
 
-**Por quê própria:** dois papéis, um cliente, sem SSO e sem OAuth. Auth.js traria adaptador, callbacks e um modelo de conta que não usamos. Uma tabela `sessao`, um cookie `HttpOnly; Secure; SameSite=Lax` e `argon2` de hash cobrem o caso inteiro em pouco código auditável.
+**Por quê própria:** dois papéis, um cliente, sem SSO e sem OAuth. Auth.js traria adaptador, callbacks e um modelo de conta que não usamos. Uma tabela `session`, um cookie `HttpOnly; Secure; SameSite=Lax` e `argon2` de hash cobrem o caso inteiro em pouco código auditável.
 
 **Onde a autorização mora, no Next 16.** Duas coisas mudaram em relação ao que se
 escrevia até o Next 15, e as duas foram lidas em `node_modules/next/dist/docs/`
@@ -60,7 +64,7 @@ antes de escrever qualquer linha:
   transforma cada link pré-carregado numa consulta. Por isso ele faz só a
   checagem otimista — existe cookie de sessão? — e nada mais.
 
-A fronteira de verdade é um **Data Access Layer**: `verificarSessao()` memoizada
+A fronteira de verdade é um **Data Access Layer**: `requireSession()` memoizada
 com `cache()` do React, chamada por toda página, Server Action e Route Handler.
 Quem esquecer de chamar não recebe dado, porque a consulta escopada passa por ela.
 Isso é o que cumpre o requisito de recusar a requisição antes de qualquer consulta
@@ -76,11 +80,58 @@ linha encerra a sessão no mesmo instante, enquanto um JWT válido continua vale
 até expirar. Para uma cliente e um consultor, revogação instantânea vale mais que
 economizar uma consulta.
 
-**O risco do e-mail e senha, e o que fazemos com ele.** A escolha do usuário foi senha; o atrito é real — cliente que esquece senha é cliente que não entra. Mitigação embutida no fluxo, sem virar outra decisão:
+**O risco do e-mail e senha, e o que fazemos com ele.** A escolha do usuário foi senha; o atrito é real — cliente que esquece senha é cliente que não entra. Mitigação embutida no fluxo:
 
 1. Ela nunca escolhe senha num cadastro. Recebe um **convite de uso único** (token de 32 bytes, validade 7 dias) e define a senha ali.
 2. Sessão de **90 dias com renovação deslizante**. Na prática, entra uma vez no celular e continua entrando.
-3. **Recuperação por e-mail** desde a primeira versão. Sem isso, a primeira senha esquecida encerra o uso da plataforma.
+3. Um caminho de recuperação que **não depende de e-mail** — ver abaixo.
+
+### Sem e-mail, decidido em 05/08/2026
+
+O produto **não envia e-mail nenhum**. O usuário decidiu isso depois de perguntar
+para qual endereço a notificação estava indo e descobrir que era um endereço de
+teste, num domínio reservado, entregue num coletor local. O log dizia "enviado".
+
+O argumento que sustenta a decisão: um servidor de e-mail que ninguém mantém é
+uma dependência que falha em silêncio no pior momento, e um resumo caindo numa
+caixa que ninguém olha equivale a resumo nenhum. `nodemailer` foi removido.
+
+**O que isso custa, explicitamente:** a recuperação de senha deixa de ser
+self-service. Não é detalhe de implementação — é redução do que o produto faz, e
+está registrada aqui para não ser redescoberta como bug.
+
+**O que fecha o buraco:**
+
+1. A tela de entrar **registra a tentativa** (`asked_for_access` na auditoria) e
+   ela aparece em `/novidades` como "não conseguiu entrar". O consultor fica
+   sabendo sem depender de ela lembrar de avisar.
+2. **Conta → Acesso das clientes** gera um link novo e copia. Convite para quem
+   nunca entrou (7 dias), redefinição para quem já tem senha (1 hora). Gerar um
+   novo invalida o anterior.
+
+A tela de recuperação **não emite token**. Se emitisse, qualquer um digitando o
+endereço dela queimaria o link pendente de quem está no meio da recuperação. Só
+o consultor emite, autenticado.
+
+O link aparece na tela **além** de ser copiado: `navigator.clipboard` exige
+contexto seguro e não faz nada em HTTP puro, então a cópia pode falhar calada
+enquanto o recurso ainda precisa funcionar.
+
+### Notificação dentro da plataforma
+
+`/novidades` é a tela do consultor com o que cada cliente fez desde a última
+leitura. O marcador é `user.news_seen_at` (migração 002), e **não**
+`last_seen_at` — este avança a cada login e marcaria tudo como lido só por
+alguém abrir o app.
+
+Três regras: **travou e "não conseguiu entrar" vêm primeiro**, porque são as
+duas que mudam o que ele faz hoje; **só a ação da cliente aparece**, já que a
+plataforma contando ao consultor o que ele mesmo fez é ruído; e a janela é
+**semiaberta** — inclusiva no início, exclusiva no fim — para que duas leituras
+seguidas não repitam nem percam um evento.
+
+No celular a entrada é um sino no topo, não um sexto item na barra inferior:
+seis itens em 360px dão 60px cada, e o rótulo mais longo já precisa de 53.
 
 ### Arquivos — disco da VPS, servidos por rota autenticada
 
@@ -143,6 +194,19 @@ Quatro grupos, na ordem em que o produto os usa.
 `post`, com `UNIQUE (cliente_id, codigo_ig)`.
 
 **Colunas de dado público e de Insights ficam separadas e nulas por padrão.** Os 203 Reels trazem `views`, `curtidas`, `comentarios` — dado público. Não trazem `alcance` nem `retencao_pct`, que só o Insights tem. Uma coluna `alcance` nula é a verdade; preencher com `views` seria fabricar denominador, e toda taxa do projeto é normalizada por alcance. `procedencia` marca de onde veio cada linha.
+
+### A regra que o código protege
+
+O importador **nunca escreve `reach`**. A exportação pública tem `views`, que
+conta cada vez que o vídeo roda — vídeo curto roda de novo sozinho. Alcance é
+outra medição, que só o Insights tem. Um `reach` copiado de `views` não seria um
+pouco errado: seria denominador errado em **toda** taxa calculada depois, e nada
+downstream pareceria quebrado. `test/import.test.ts` afirma o invariante, e
+afirma também que nenhum post tem `reach` igual a `views`.
+
+Pela mesma razão, o funil e os cartões de métrica leem apenas origens medidas
+(`insights`, `ga4`, `store`). O que vem do coletor entra como `public` e nunca
+pode ser confundido com medição.
 
 ## Riscos
 

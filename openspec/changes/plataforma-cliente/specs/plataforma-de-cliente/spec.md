@@ -115,6 +115,89 @@ Quando uma métrica só existe em fonte restrita, o campo correspondente SHALL p
 - **AND** o registro é marcado com a procedência pública
 - **AND** nenhuma taxa normalizada por alcance é calculada para esses registros
 
+### Requirement: Notificação vive dentro do produto
+
+O sistema NÃO SHALL enviar mensagem por canal externo. Atividade relevante da cliente SHALL ser apresentada ao consultor numa tela dentro do produto, com um marcador de leitura por usuário.
+
+O marcador de leitura SHALL ser distinto do registro de último acesso: avançar o corte por alguém ter entrado no sistema marcaria como lido o que ninguém leu.
+
+Itens que exigem ação do consultor — impedimento relatado e pedido de acesso — SHALL aparecer antes dos demais.
+
+Ação praticada pelo próprio consultor NÃO SHALL ser apresentada a ele como novidade.
+
+#### Scenario: Cliente relata impedimento fora do horário
+
+- **WHEN** a cliente marca uma etapa como travada
+- **THEN** o registro fica disponível na tela de atividade do consultor
+- **AND** aparece antes das demais categorias
+- **AND** o comentário dela acompanha o item
+
+#### Scenario: Consultor marca uma etapa
+
+- **WHEN** o próprio consultor registra estado numa etapa
+- **THEN** isso não aparece na tela de atividade dele
+
+#### Scenario: Consultor declara leitura
+
+- **WHEN** o consultor marca a atividade como lida
+- **THEN** o corte avança para aquele instante
+- **AND** a visita seguinte mostra apenas o que ocorreu a partir dali
+
+#### Scenario: Janela sem atividade
+
+- **WHEN** nada ocorreu desde a última leitura
+- **THEN** a tela declara o período coberto, em vez de apenas informar ausência
+
+### Requirement: Recuperação de acesso sem canal externo
+
+Sem canal externo, uma pessoa que não consegue entrar NÃO SHALL depender de si mesma para recuperar acesso. O sistema SHALL registrar a tentativa e apresentá-la ao consultor, e SHALL permitir que apenas o consultor autenticado emita uma credencial de acesso nova.
+
+A tela de recuperação NÃO SHALL emitir credencial: uma requisição não autenticada capaz de emitir invalidaria a credencial pendente de quem está no meio de uma recuperação.
+
+Uma credencial nova SHALL invalidar a anterior de mesma finalidade.
+
+#### Scenario: Pessoa não consegue entrar
+
+- **WHEN** ela informa o endereço na tela de recuperação
+- **THEN** a resposta é a mesma exista ou não aquele cadastro
+- **AND** nenhuma credencial é emitida
+- **AND** a tentativa aparece na tela de atividade do consultor
+
+#### Scenario: Consultor emite acesso
+
+- **WHEN** o consultor autenticado emite uma credencial para alguém
+- **THEN** a credencial é apresentada na tela para ser repassada
+- **AND** qualquer credencial anterior de mesma finalidade deixa de valer
+- **AND** o prazo de validade é declarado
+
+#### Scenario: Emissão por quem não é consultor
+
+- **WHEN** alguém sem papel de consultor tenta emitir uma credencial
+- **THEN** a operação é recusada
+
+### Requirement: A idade do dado é exibida junto com o dado
+
+Nenhum dado deste produto se atualiza sozinho. Toda tela que apresenta número medido SHALL declarar o período a que ele se refere e há quanto tempo.
+
+A idade SHALL ser calculada a partir do fim do período coberto, não do início: um número mensal recém-chegado não é um número de um mês atrás.
+
+O destaque SHALL crescer com a idade. Um aviso permanentemente destacado deixa de ser lido.
+
+#### Scenario: Número do mês recém-fechado
+
+- **WHEN** o período medido terminou há poucos dias
+- **THEN** a tela declara o período sem destaque
+
+#### Scenario: Período fechado sem dado novo
+
+- **WHEN** um período inteiro se fechou sem que dado novo entrasse
+- **THEN** a tela destaca a defasagem e diz como o dado entra
+
+#### Scenario: Acervo e métricas com idades diferentes
+
+- **WHEN** o acervo e as métricas foram atualizados em momentos distintos
+- **THEN** cada um declara a própria idade
+
 ### Requirement: Arquivo de cliente não é servido por URL adivinhável
 
 Arquivo enviado por cliente SHALL ser servido apenas por rota que verifique a sessão e o escopo de cliente antes de transmitir qualquer conteúdo. O caminho de armazenamento SHALL ser gerado pelo servidor; o nome informado pelo remetente SHALL ser preservado apenas como metadado.

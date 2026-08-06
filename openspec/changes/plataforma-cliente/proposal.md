@@ -18,7 +18,7 @@ A decisão de 05/08/2026 foi encerrar o remendo incremental e construir o produt
 - **Acompanhamento de etapas** — os cinco ajustes de 04/08/2026 saem do `localStorage` e passam a viver no banco, com estado por usuária, marcação de travado (não só feito/não feito) e comentário por etapa
 - **Painel de dados e estratégia** — série histórica de métrica por competência, comparada com baseline, alvo do ciclo e benchmark do nicho, com a marcação explícita de baseline contaminado que `perfil/metas.md` já carrega
 - **Acervo de posts** — os 203 Reels deixam o CSV solto e passam a ser consultáveis por pilar, duração e formato
-- Autenticação por e-mail e senha, com dois papéis: consultor e cliente
+- Autenticação por e-mail e senha, com dois papéis: consultor e cliente. **O produto não envia e-mail** — o e-mail é identificador de login, não canal
 - Arquivo enviado pela cliente passa a ter dono, checksum e vínculo com a demanda que o pediu — em vez de cair numa pasta por carimbo de hora
 - O banco nasce **multi-cliente**; a interface entra no ar com uma cliente só
 
@@ -39,7 +39,8 @@ Nenhuma. `openspec/specs/` continua vazio.
 - **Multi-cliente na interface.** Seletor de cliente, convite de novos clientes e permissão granular ficam para depois — o banco suporta, a tela não expõe
 - **Substituir as duas páginas já publicadas na Vercel.** Elas continuam no ar até a plataforma receber a cliente. Desmontar é tarefa da fase final, não do começo
 - **Editor de conteúdo.** A plataforma apresenta e acompanha; ela não escreve legenda nem gera calendário. Isso continua nas skills
-- **Notificação por e-mail ou push.** Fica para quando houver evidência de que a demanda parada não é vista
+- **Notificação por e-mail ou push.** Decidido em 05/08/2026 que o produto não envia e-mail nenhum; a notificação vive dentro da plataforma, em `/novidades`
+- **Coleta automática de dados do Instagram.** O coletor em `platform/scripts/coletor-instagram.js` roda no navegador com a sessão dela e baixa um CSV — ele automatiza o dado público. Alcance, salvamentos, envios em DM e retenção **não existem em dado público** e continuam chegando por exportação do Insights
 
 ## Métrica observável
 

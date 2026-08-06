@@ -24,8 +24,8 @@
 - [x] 2.7 `lib/scope.ts` — a regra pura de alcance, separada do Next para ser testável sozinha; o teste de conjuntos com dado real vem na fase 4
 - [x] 2.8 Tela de entrar, com mensagem de erro que não revela se o e-mail existe
 - [x] 2.9 Fluxo de convite: token de uso único, 7 dias, tela de definir senha
-- [x] 2.10 Fluxo de recuperação completo: token de 1 hora, telas e envio por SMTP com TLS obrigatório (escotilha local que se recusa em produção)
-- [x] 2.11 `scripts/invite.ts` — gera o link de convite pelo terminal, sem depender de SMTP
+- [x] 2.10 Fluxo de recuperação: token de 1 hora e telas. **Revisto em 05/08** — sem e-mail, quem emite é o consultor; ver 9.x
+- [x] 2.11 `scripts/invite.ts` — gera o link de convite pelo terminal; nada é enviado
 - [x] 2.12 Registrar `signed_in` em `audit_log` e atualizar `user.last_seen_at`
 
 ## 3. Design system e carga inicial
@@ -80,14 +80,39 @@
 - [x] 6.7 Teste do invariante: nenhum post público tem `reach`, `saves` ou `retention` — e nenhum tem `reach` igual a `views`
 - [x] 6.8 Acervo filtrável por duração e menção à marca, com a casa vazia declarada na tela
 
+## 9. Notificação e acesso, dentro da plataforma (05/08/2026)
+
+> Rumo trocado no meio do caminho. O resumo diário nasceu como e-mail e foi
+> desfeito no mesmo dia, depois que o usuário perguntou para qual endereço estava
+> indo: um endereço de teste, em domínio reservado, entregue num coletor local —
+> e o log dizia "enviado". A decisão foi **o produto não manda e-mail nenhum**.
+
+- [x] 9.1 Migração 002: `user.news_seen_at`, separada de `last_seen_at`
+- [x] 9.2 `lib/digest.ts` — o que a cliente fez numa janela semiaberta, travado por teste nas duas bordas
+- [x] 9.3 `/novidades` — travou e "não conseguiu entrar" primeiro; só ação da cliente
+- [x] 9.4 Sino no topo com contador; no rail do desktop. Fora da barra inferior por medida: 6 itens em 360px dão 60px e o rótulo maior precisa de 53
+- [x] 9.5 "Marcar como lido" move o corte
+- [x] 9.6 Tela de entrar registra `asked_for_access` e **não emite token** — emitir permitiria queimar o link pendente de quem está no meio da recuperação
+- [x] 9.7 Conta → Acesso das clientes: gera e copia o link, mostrando-o também (clipboard exige contexto seguro)
+- [x] 9.8 Remover `nodemailer`, `lib/mail.ts` e o cron de resumo
+- [x] 9.9 Tela de recuperação diz a verdade em vez de prometer e-mail
+
+## 10. Frescor do dado e coleta (05/08/2026)
+
+- [x] 10.1 `lib/freshness.ts` — idade medida do **fim** do período, com destaque escalonado
+- [x] 10.2 Aviso de idade no painel e no acervo, com datas separadas
+- [x] 10.3 `scripts/coletor-instagram.js` — roda no navegador com a sessão dela e baixa CSV
+- [x] 10.4 Documentar por que não é cron na VPS: endpoint interno exige sessão, e a CSP do Instagram bloqueia POST para outra origem
+- [x] 10.5 Declarar no README o que dado público **não** dá: alcance, salvamentos, envios em DM, retenção
+
 ## 7. Produção
 
 - [ ] 7.1 Provisionar a VPS: Docker, firewall, usuário, pasta de arquivos
 - [ ] 7.2 Deploy, TLS pelo certbot e conferência dos cabeçalhos em produção
 - [ ] 7.3 Cron de backup diário do banco e dos arquivos
 - [ ] 7.4 **Restaurar o backup num banco vazio e conferir contagem por tabela**
-- [ ] 7.5 Percurso completo com a conta da cliente antes de mandar o convite
-- [ ] 7.6 Enviar o convite e registrar a data (marca o início da janela de 14 dias)
+- [ ] 7.5 Percurso completo com a conta da cliente antes de convidar, e trocar os e-mails de teste (`*@exemplo.invalido`) pelos reais
+- [ ] 7.6 Gerar o link de convite dela em Conta → Acesso das clientes, mandar pelo canal de sempre e registrar a data (marca o início da janela de 14 dias)
 - [ ] 7.7 Confirmar que ela entrou; se passar 7 dias sem acesso, tratar como sinal de alarme
 - [ ] 7.8 Só depois disso: desmontar `relatorios/` e o Blob store da Vercel
 
