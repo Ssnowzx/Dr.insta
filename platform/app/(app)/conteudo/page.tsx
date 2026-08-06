@@ -7,7 +7,7 @@ import type { PostFilter } from '@/lib/dashboard'
 import { clientScope } from '@/lib/dal'
 import { format, shortDate } from '@/lib/format'
 
-export const metadata: Metadata = { title: 'Conteúdo — My Favorite' }
+export const metadata: Metadata = { title: 'Conteúdo' }
 export const dynamic = 'force-dynamic'
 
 /**
@@ -17,6 +17,15 @@ export const dynamic = 'force-dynamic'
  * those are the two axes the Reels analysis found the story in: brand content
  * never shipped in 20 seconds or less, and the long product format is the one
  * that underperformed.
+ *
+ * THE TWO AXES CROSS, AND THAT IS THE POINT
+ *
+ * The chips used to replace the whole query string, so choosing "fala da marca"
+ * dropped "até 20s" — the screen opened by stating that no brand Reel had ever
+ * shipped short and then refused to let anyone check it. Each chip now toggles
+ * its own axis and leaves the other alone, and the counts on the chips are
+ * computed inside the current cut, so with "até 20s" on, "fala da marca" reads
+ * a plain 0. The empty cell is on the control, not only in the sentence.
  *
  * Every number here is from the public export, and the screen says so. Views
  * count loops, so they are not distinct people — presenting them next to
@@ -37,21 +46,47 @@ export default async function Conteudo ({
 
   const [lista, contas, idade, medianaViews] = await Promise.all([
     posts(clientId, filtro),
-    postCounts(clientId),
+    postCounts(clientId, filtro),
     archiveAge(clientId),
     archiveMedian(clientId)
   ])
 
-  const chip = (params: string, ativo: boolean, rotulo: string, n: number) => (
+  /* Toggling: tapping the chip that is already on turns that axis off, which is
+     the only way back out of a cut without hunting for "tudo". The other axis is
+     carried through untouched — that carrying is the whole fix. */
+  const destino = (eixo: 'duracao' | 'marca', valor: string): string => {
+    const proximo = {
+      duracao: eixo === 'duracao' ? (duracao === valor ? undefined : valor) : duracao,
+      marca: eixo === 'marca' ? (marca === valor ? undefined : valor) : marca
+    }
+    const params = new URLSearchParams()
+    if (proximo.duracao !== undefined) params.set('duracao', proximo.duracao)
+    if (proximo.marca !== undefined) params.set('marca', proximo.marca)
+    const busca = params.toString()
+    return busca === '' ? '/conteudo' : `/conteudo?${busca}`
+  }
+
+  const chip = (
+    eixo: 'duracao' | 'marca',
+    valor: string,
+    ativo: boolean,
+    rotulo: string,
+    n: number
+  ) => (
     <Link
       key={rotulo}
-      href={`/conteudo?${params}`}
+      href={destino(eixo, valor)}
       className={ativo ? 'chip chip-ativo' : 'chip'}
-      aria-current={ativo ? 'true' : undefined}
+      aria-pressed={ativo}
+      /* The count is part of the name, not decoration: "fala da marca, 0 posts"
+         is what a screen reader has to say when the cut is empty. */
+      aria-label={`${rotulo}, ${n} ${n === 1 ? 'post' : 'posts'}`}
     >
       {rotulo} <span className="numero chip-n">{n}</span>
     </Link>
   )
+
+  const filtrando = duracao !== undefined || marca !== undefined
 
   if (contas.total === 0) {
     return (
@@ -82,24 +117,64 @@ export default async function Conteudo ({
 
       {/* The finding, stated before the list rather than left to be discovered:
           brand content has never shipped short. */}
-      {contas.marcaCurto === 0 && contas.marca > 0 && (
+      {contas.marcaCurto === 0 && contas.marcaTotal > 0 && (
         <p className="achado">
-          <strong>Uma casa vazia:</strong> nenhum dos {contas.marca} Reels que
+          <strong>Uma casa vazia:</strong> nenhum dos {contas.marcaTotal} Reels que
           falam da marca tem 20 segundos ou menos. Não é que o formato curto de
-          peça tenha ido mal — ele nunca foi testado.
+          peça tenha ido mal — ele nunca foi testado. Ligue os dois filtros
+          abaixo e veja a casa vazia por dentro.
         </p>
       )}
 
-      <div className="chips">
-        {chip('', duracao === undefined && marca === undefined, 'tudo', contas.total)}
-        {chip('duracao=curto', duracao === 'curto', 'até 20s', contas.curtos)}
-        {chip('duracao=longo', duracao === 'longo', 'mais de 20s', contas.longos)}
-        {chip('marca=marca', marca === 'marca', 'fala da marca', contas.marca)}
-        {chip('marca=pessoal', marca === 'pessoal', 'não fala', contas.pessoal)}
+      {/* Two groups, labelled, because the controls are two questions and not
+          one list of five answers. Unlabelled they read as mutually exclusive,
+          which is exactly the reading that made combining them look impossible. */}
+      <div className="filtros">
+        <div className="filtro-eixo">
+          <p className="filtro-rot" id="filtro-duracao">duração</p>
+          <div className="chips" role="group" aria-labelledby="filtro-duracao">
+            {chip('duracao', 'curto', duracao === 'curto', 'até 20s', contas.curtos)}
+            {chip('duracao', 'longo', duracao === 'longo', 'mais de 20s', contas.longos)}
+          </div>
+        </div>
+
+        <div className="filtro-eixo">
+          <p className="filtro-rot" id="filtro-marca">legenda</p>
+          <div className="chips" role="group" aria-labelledby="filtro-marca">
+            {chip('marca', 'marca', marca === 'marca', 'fala da marca', contas.marca)}
+            {chip('marca', 'pessoal', marca === 'pessoal', 'não fala', contas.pessoal)}
+          </div>
+        </div>
       </div>
 
+      {/* `contas.noRecorte` and not `lista.length`: the list stops at 60, and
+          saying "60 Reels neste recorte" of a cut that holds 117 would turn a
+          page limit into a fact about her archive. */}
+      <p className="filtro-estado" aria-live="polite">
+        {filtrando
+          ? (
+            <>
+              <span className="numero">{contas.noRecorte}</span>{' '}
+              {contas.noRecorte === 1 ? 'Reel neste recorte' : 'Reels neste recorte'}
+              {' · '}
+              <Link href="/conteudo">ver os {contas.total}</Link>
+            </>
+            )
+          : <>Todos os <span className="numero">{contas.total}</span> Reels.</>}
+      </p>
+
       {lista.length === 0
-        ? <p className="rodape-nota">Nenhum post com esse recorte.</p>
+        ? (
+          <p className="achado">
+            {duracao !== undefined && marca !== undefined
+              ? <>
+                  <strong>Nenhum Reel aqui.</strong> Esse cruzamento não existe no
+                  seu acervo — é uma casa vazia, não uma falha da busca. Nunca foi
+                  testado, então não há resultado ruim: há resultado nenhum.
+                </>
+              : <>Nenhum Reel com esse recorte.</>}
+          </p>
+          )
         : (
           <ul className="acervo">
             {lista.map(p => (
@@ -196,8 +271,9 @@ export default async function Conteudo ({
 
       {lista.length === 60 && (
         <p className="rodape-nota">
-          Mostrando os 60 mais recentes desse recorte. Use os filtros acima para
-          chegar no que você procura.
+          Mostrando os <span className="numero">60</span> mais recentes dos{' '}
+          <span className="numero">{contas.noRecorte}</span> deste recorte. Use os
+          filtros acima para chegar no que você procura.
         </p>
       )}
     </>

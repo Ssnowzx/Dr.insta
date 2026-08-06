@@ -6,7 +6,7 @@ import type { DigestItem } from '@/lib/digest'
 import { clientScope, requireConsultant } from '@/lib/dal'
 import { shortDate } from '@/lib/format'
 
-export const metadata: Metadata = { title: 'Novidades — My Favorite' }
+export const metadata: Metadata = { title: 'Novidades' }
 export const dynamic = 'force-dynamic'
 
 /**

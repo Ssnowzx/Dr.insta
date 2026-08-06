@@ -15,6 +15,13 @@ and the discarded alternatives live in `openspec/changes/plataforma-cliente/`.
 > a second instance with a different slug and its own database — not a second
 > row on the same screen. See [Tenancy](#tenancy).
 
+> **Whose brand is this.** The platform is the consultancy's; the brand it
+> displays is the client's. Screens reachable without a session carry **no
+> brand at all** — before anyone signs in there is no client to name. Inside,
+> the brand comes from `client.brand` through `generateMetadata`, never from the
+> source. A brand written into the code is a brand that lies on the second
+> instance.
+
 ---
 
 ## Stack
@@ -77,7 +84,7 @@ migration. If a file fails midway, part of it has been applied and the
 bookkeeping row is *not* written. The migrator stops there rather than moving
 on. A new migration always lands as a new file; never edit one already applied.
 
-### The four schema decisions worth knowing
+### The six schema decisions worth knowing
 
 1. **`user.client_id` NULL = consultant.** Set = that client's user. That is the
    whole access rule in one column, with no permission matrix.
@@ -88,8 +95,33 @@ on. A new migration always lands as a new file; never edit one already applied.
    one with the other would destroy the disagreement that needs to surface.
 4. **`metric_target.contaminated`** marks a baseline that cannot set a target. It
    is the "baseline before target" rule written in SQL.
+5. **`pillar` hangs off the CYCLE, not the client.** A pillar is a bet with an
+   expiry date. Tied to the client, November's edit would overwrite August's mix
+   and "did the bet pay off?" would lose its object. Tied to the cycle, closing
+   the cycle freezes the mix. `is_control` marks the pillar that must NOT change
+   — the one the reallocation is read against.
+6. **`step.copy_value` is the string she pastes**, not a description of it. The
+   step that named a tagged link without handing it over got a link with the
+   wrong tag pasted into the bio, and nothing looked broken from her side.
+   `copy_note` is a separate column from `summary` on purpose: the summary
+   answers "why does this matter" and is read before the value appears.
 
-Full detail in the comments of `db/migrations/001-initial-schema.sql`.
+Full detail in the comments of `db/migrations/001-initial-schema.sql` and
+`003-pillars-and-copy-value.sql`.
+
+### Seeding
+
+`db/seed.ts` is idempotent, and every `onDuplicateKeyUpdate` **lists everything
+the file authors**. This is not tidiness: the original upserts updated one
+column each, so correcting a sentence in the file printed `Seeded` and left the
+database as it was. The failure is silent and surfaces on the client's screen.
+
+What stays out of the `set`: ids, `public_code`, and anything a person produced
+in the app. `step_status` is hers and lives in its own table, so re-seeding
+never touches an answer she gave.
+
+Fixed in `cycle`, `step` and `pillar`. `request` still inserts only into an
+empty table, and the remaining tables keep the old pattern — suspect them.
 
 ### Conventions
 
@@ -103,6 +135,37 @@ Full detail in the comments of `db/migrations/001-initial-schema.sql`.
 - Reserved words checked against a live MySQL 8.4: `rank` and `groups` are not
   usable as identifiers, which is why `position` and `tier` appear where "order"
   and "group" would read more naturally.
+
+---
+
+## Colour, and the two ways it goes wrong
+
+Every colour token lives in `app/base.css` as `light-dark(light, dark)`, and
+`test/contrast.test.ts` measures the pairs against WCAG 2.2 AA — 4.5:1 for text,
+3:1 for large text, control boundaries and meaningful graphics.
+
+**The test measures PAIRS, so a pair it does not know about is a pair that can
+fail.** That is not hypothetical: `--dado` is validated as a chart fill at 3:1
+and was being used as `color` in six places, where the floor is 4.5. In light it
+read between 2.95 and 3.85 — the worst being the "≤20s" tag, which marks the
+exact format cut the cycle is testing. `--dado-texto` exists for those. The rule
+the file already stated, now enforced: **adding a pair to the UI means adding it
+here.**
+
+**Everything passed in dark, because the work was done in dark.** Whichever
+theme you build in, the defects concentrate in the other one. Check both, with
+the toggle, before calling anything finished.
+
+Two structural facts worth carrying:
+
+- **In a dark interface, layers are made of light, not tone.** The plate against
+  paper measures 14.78 in light and **1.18** in dark, and going darker does not
+  help — near-black against dark paper is 1.07. At the bottom of the luminance
+  curve there is no room left. Separation there comes from a lit edge, a glow or
+  a shadow. `app/auth.css` is the worked example.
+- **A field's boundary is a control boundary** and answers to 3:1, not to
+  whatever looks tidy. `--linha` was doing that job at 1.53 and 1.47;
+  `--linha-campo` is what fields use now.
 
 ---
 

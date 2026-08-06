@@ -83,6 +83,11 @@ const PAIRS: Pair[] = [
   { fg: 'tinta2', bg: 'cartao', min: 4.5, why: 'texto de apoio no cartão' },
   { fg: 'suave', bg: 'papel', min: 4.5, why: 'sobrancelha e rótulo — o par que reprovou em julho' },
   { fg: 'suave', bg: 'cartao', min: 4.5, why: 'rótulo dentro do cartão' },
+  /* `--papel2` is the third surface, and the one that was missing here. It is
+     the ground under `.tag` and `.selo-neutro` — the state word on every metric
+     card and the duration on every post — and `--suave` measured 4.35 on it in
+     light while passing on both surfaces this list did know about. */
+  { fg: 'suave', bg: 'papel2', min: 4.5, why: 'etiqueta e selo neutro sobre a segunda superfície' },
 
   // accent and status text
   { fg: 'caramelo', bg: 'papel', min: 4.5, why: 'link' },
@@ -100,16 +105,44 @@ const PAIRS: Pair[] = [
      mode, light surface with dark text in dark mode. Either way the pair is
      --sobre-tinta on --tinta, which is why this is not tested against --bloco. */
   { fg: 'sobre-tinta', bg: 'tinta', min: 4.5, why: 'texto sobre o botão principal' },
+  /* The badge on a nav item. It sat on `--dado` and measured 3.62 in light —
+     a bar's threshold applied to a figure someone has to read. */
+  { fg: 'sobre-tinta', bg: 'dado-texto', min: 4.5, why: 'contador de pedidos e de novidades' },
   { fg: 'sobre-bloco2', bg: 'bloco', min: 4.5, why: 'texto secundário sobre bloco escuro' },
 
   /* The funnel plate. It is dark in BOTH themes, so these two tokens do not
      invert — which is exactly why they need their own pairs: reusing
      `--sobre-tinta` here would pass in light and go black-on-black in dark. */
   { fg: 'sobre-bloco', bg: 'bloco', min: 4.5, why: 'texto forte sobre a placa do funil' },
+
+  /* The credential screens' well. It is the plate in light and near-black in
+     dark, because two dark surfaces cannot be told apart by tone — see the
+     header of `app/auth.css`. */
+  { fg: 'sobre-bloco', bg: 'poco', min: 4.5, why: 'a assinatura sobre o campo animado' },
+  { fg: 'dado-bloco', bg: 'poco', min: 3, why: 'a luz que percorre os anéis' },
+
+  /* A field is a control, and WCAG 1.4.11 asks 3:1 of the boundary that
+     identifies one. `--linha` was doing this job at 1.53 on white and 1.47 on
+     the dark card — a field you had to hunt for, in both themes. */
+  { fg: 'linha-campo', bg: 'campo-fundo', min: 3, why: 'borda do campo contra o próprio fundo' },
+  { fg: 'linha-campo', bg: 'cartao', min: 3, why: 'borda do campo contra o cartão em volta' },
+  { fg: 'tinta', bg: 'campo-fundo', min: 4.5, why: 'o que ela digita' },
+  { fg: 'suave', bg: 'campo-fundo', min: 4.5, why: 'texto de exemplo dentro do campo' },
   /* The plate's eyebrow and percentages. NOT `--caramelo`: that token is the
      brand hue at TEXT weight, which is dark, and dark on a dark plate is
      unreadable. The plate uses the brand nude as the store itself uses it. */
   { fg: 'dado-bloco', bg: 'bloco', min: 4.5, why: 'sobrancelha e percentagens sobre a placa' },
+
+  /* The measure, as TEXT.
+     `--dado` is on this list twice below at 3:1, which is the right threshold
+     for a bar and the wrong one for a word — and the stylesheet was using it as
+     `color` in six places (active nav item, active bell, evidence figure on a
+     step, the emphasis in a request footer, the reopen button, the "≤20s" tag).
+     In light those read between 2.95 and 3.85. `--dado-texto` exists for those
+     six; these three pairs are the surfaces they sit on. */
+  { fg: 'dado-texto', bg: 'papel', min: 4.5, why: 'item ativo da navegação e sino' },
+  { fg: 'dado-texto', bg: 'cartao', min: 4.5, why: 'número da evidência e botão de reabrir' },
+  { fg: 'dado-texto', bg: 'dado-fraco', min: 4.5, why: 'etiqueta de até 20s — o corte que o ciclo testa' },
 
   // non-text (WCAG 1.4.11)
   { fg: 'dado', bg: 'cartao', min: 3, why: 'preenchimento de gráfico no cartão' },

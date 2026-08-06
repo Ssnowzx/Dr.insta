@@ -14,7 +14,11 @@
   /* ink — warm, never blue-black. The brand has no cool tone anywhere. */
   --tinta: light-dark(#241b17, #f7efe9);
   --tinta2: light-dark(#5a4a43, #c7b5ab);
-  --suave: light-dark(#7a6860, #9d897e);
+  /* Darkened from #7a6860 in light: it measured 4.91 on `--papel` and 5.28 on
+     `--cartao` — both fine, both tested — but 4.35 on `--papel2`, the ground
+     under every `.tag` and `.selo-neutro`. The pair the test did not know about
+     was the one that failed. */
+  --suave: light-dark(#726059, #9d897e);
   --sobre-tinta: light-dark(#faf6f3, #16110f);
   /* On the plate — the funnel's surface. These do NOT invert with the theme:
      the plate is a dark field in both, so anything sitting on it stays light in
@@ -25,6 +29,26 @@
   /* lines */
   --linha: light-dark(#e0cdc2, #40332c);
   --linha2: light-dark(#f0e5df, #2b211c);
+  /* The line around something you TYPE IN, which is a different job from the
+     line around a card. WCAG 1.4.11 wants 3:1 for the boundary of a control,
+     and `--linha` measures 1.53 on white and 1.47 on the dark card — a field
+     you have to hunt for. This clears 3:1 in both themes. */
+  --linha-campo: light-dark(#ab8b78, #7a6459);
+
+  /* Surfaces for the credential screens.
+
+     `--poco` is the field the rings are drawn on. In light it is the funnel's
+     plate; in dark it drops to near-black, and that is not a stylistic choice:
+     dark-on-dark cannot be separated by tone. `--bloco` against dark paper
+     measures 1.18 — the two halves of the split were the same brown. Dropping
+     the well to #0a0706 does not fix that either (1.07), because at the bottom
+     of the luminance curve there is no room left. What it does is lift the nude
+     light from 9.8:1 to 12.3:1, and the separation is then carried by a lit
+     hairline on the seam. In a dark interface, layers are made of light. */
+  --poco: light-dark(#2a201c, #0a0706);
+  /* The input's own ground, distinct from the card it sits in — a card and a
+     field that share a background are one shape with a line drawn on it. */
+  --campo-fundo: light-dark(#ffffff, #120e0c);
 
   /* accent and status — the brand hue (≈16°) pushed down to text weight.
      The store's own nude sits at 75% lightness and measures 1.6:1 on white; it
@@ -40,6 +64,18 @@
   /* chart fills — validated as marks (3:1), not as text */
   --dado: light-dark(#b4715c, #d99678);
   --dado-fraco: light-dark(#f0ded5, #3a2c25);
+  /* The same measure, at text weight. `--dado` was being used as `color` in six
+     places — the active nav item, the evidence figure on a plan step, the
+     "≤20s" tag — where the threshold is 4.5 and not 3, and in light it landed
+     between 2.95 and 3.85. Every one of them passed in dark, which is why they
+     survived: the work was done in dark.
+
+     It is close to `--caramelo` and that is deliberate — both are the brand hue
+     pushed down to text weight. They stay separate tokens because they answer
+     to different things: `--caramelo` is a link and moves with link decisions,
+     this one is a measure and moves with `--dado`. Dark keeps `--dado`'s own
+     value, which already cleared 4.5 there — nothing changes in that theme. */
+  --dado-texto: light-dark(#95482f, #d99678);
   /* On the dark plate the mark goes to the brand nude as it actually is — this
      is the one place the store's own colour can be used unmodified, because
      against #2a201c it clears the 3:1 a mark needs with room to spare. */
@@ -235,6 +271,143 @@ body {
 }
 
 a { color: var(--caramelo); }
+
+/* --------------------------------------------------------------------- forms
+
+   These live here and not in `app/auth.css` because the same three components
+   render on both sides of the product: the credential screens import that
+   stylesheet, and `Conta → Sua senha` does not. It used to, in the sense that
+   `FormTrocarSenha` writes the same class names — so the password form inside
+   the app rendered with the browser's own controls: Arial, no padding, a grey
+   system button, and `.aviso-erro` with no colour at all, on the one screen
+   where a person is changing a credential and needs to see whether it worked.
+
+   A stylesheet scoped to a route group is a stylesheet that a shared component
+   can silently leave behind. Anything shared belongs in the base. */
+
+.campo { margin-bottom: 1.125rem; }
+
+.campo label {
+  display: block;
+  font-size: .8125rem;
+  font-weight: 600;
+  margin-bottom: .4375rem;
+  color: var(--tinta2);
+}
+
+.campo input {
+  width: 100%;
+  /* 16px exactly. Anything smaller makes iOS Safari zoom the page on focus,
+     and the layout never comes back. */
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--tinta);
+  background: var(--campo-fundo);
+  border: 1px solid var(--linha-campo);
+  border-radius: 12px;
+  /* 52px tall. A credential field is the one control on the screen; at 46px it
+     read as a form row, at 52 it reads as the thing you came here to use. */
+  padding: .9375rem 1rem;
+  transition: border-color .15s, box-shadow .15s, background-color .15s;
+}
+
+.campo input:hover { border-color: var(--caramelo); }
+
+.campo input:focus-visible {
+  outline: none;
+  border-color: var(--caramelo);
+  /* Two rings: a tight one in the brand hue and a wide soft one. A single flat
+     ring reads as a border that changed colour; the pair reads as lit. */
+  box-shadow: 0 0 0 1px var(--caramelo), 0 0 0 4px var(--foco);
+}
+
+.campo input::placeholder { color: var(--suave); }
+
+/* A password field with a reveal.
+
+   She types this on a phone, one-handed, into a masked field. Without a way to
+   look, a mistyped character means clearing the whole thing and starting over —
+   and the field that punishes a typo hardest is the one nobody can proofread.
+
+   The wrapper is what reserves room for the button, so the text never runs under
+   it. */
+.campo-inp { position: relative; }
+
+.campo-inp input { padding-right: 3.25rem; }
+
+.campo-olho {
+  position: absolute;
+  right: .375rem;
+  top: 50%;
+  transform: translateY(-50%);
+  /* 40px square: the smallest comfortable target that still fits inside a 52px
+     field without crowding its edges. */
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--suave);
+  cursor: pointer;
+}
+
+.campo-olho:hover { color: var(--tinta); background: var(--papel2); }
+.campo-olho:focus-visible { outline: 2px solid var(--caramelo); outline-offset: 1px; }
+
+.campo .dica {
+  display: block;
+  font-size: .8125rem;
+  color: var(--suave);
+  margin-top: .4375rem;
+}
+
+.btn {
+  width: 100%;
+  font: inherit;
+  font-size: .9375rem;
+  font-weight: 600;
+  letter-spacing: .005em;
+  color: var(--sobre-tinta);
+  background: var(--tinta);
+  border: 1px solid var(--tinta);
+  border-radius: 12px;
+  /* 52px tall: matches the fields above it, so the stack reads as one object. */
+  padding: .9375rem 1rem;
+  cursor: pointer;
+  margin-top: .75rem;
+  /* The inset hairline is the whole difference between a filled rectangle and a
+     surface with a light on it — it puts a lit top edge on the button. The drop
+     shadow is tinted with the ink rather than neutral: grey shade on a warm
+     ground reads as dirt. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .14),
+    0 6px 18px -8px rgba(36, 27, 23, .5);
+  transition: transform .06s, box-shadow .15s, opacity .15s;
+}
+
+.btn:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .2),
+    0 10px 24px -8px rgba(36, 27, 23, .55);
+}
+
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 2px solid var(--caramelo); outline-offset: 3px; }
+.btn[disabled] { opacity: .55; cursor: progress; box-shadow: none; }
+
+.aviso {
+  font-size: .875rem;
+  border-radius: 10px;
+  padding: .75rem .875rem;
+  margin: 0 0 1.25rem;
+  border: 1px solid;
+}
+
+.aviso-erro { color: var(--tijolo); background: var(--urg-bg); border-color: var(--tijolo); }
+.aviso-ok   { color: var(--ok);     background: var(--ok-bg);  border-color: var(--ok); }
 
 :focus-visible {
   outline: 2px solid var(--dado);

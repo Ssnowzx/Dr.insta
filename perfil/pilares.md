@@ -131,6 +131,23 @@ Leitura em **14 dias e no mínimo 7 posts por pilar**. Abaixo disso é ruído, n
 Nunca dois posts do mesmo pilar seguidos. O perfil precisa parecer variado para quem entra
 pelo grid.
 
+## Isto agora chega até ela — em 06/08/2026
+
+Este arquivo deixou de ser só nosso. Os quatro pilares, o mix, o ritmo semanal, a evidência
+de cada um e o critério de leitura estão na tabela `pillar` e aparecem em `/plano`, **antes**
+dos cinco ajustes. O trade-off virou `cycle.trade_off` e aparece junto do mix que o causa.
+
+Por que importou: até aqui o plano chegava como cinco tarefas e o raciocínio ficava aqui, num
+arquivo que ela nunca abriu. Uma lista sem argumento só dá para obedecer ou ignorar — e em
+06/08, dez dias depois de entregue, `step_status` tinha zero linhas.
+
+**Este arquivo continua sendo a fonte de verdade.** Mudou aqui, mude em
+`platform/db/seed.ts` e rode `npm run db:seed`. Mudar só aqui não muda nada para ela.
+
+O que ainda **não** chegou: a classificação dos posts por pilar. `post.pillar` está NULL nos
+205 Reels, então não dá para filtrar o acervo por pilar nem conferir se o mix está sendo
+seguido. A leitura dos 14 dias vai depender de conferência manual.
+
 ---
 
-**Última atualização:** 04/08/2026
+**Última atualização:** 06/08/2026

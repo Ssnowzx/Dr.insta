@@ -1,9 +1,10 @@
 import 'server-only'
+import { cache } from 'react'
 import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import {
   benchmark, client, cycle, delivery, experiment, metricDef, metricTarget,
-  metricValue, file, post, request, requestEvent, step, stepStatus, user
+  metricValue, file, pillar, post, request, requestEvent, step, stepStatus, user
 } from '@/db/schema'
 import { mediana } from './acervo.ts'
 import type { Unit } from './format.ts'
@@ -187,6 +188,8 @@ export interface CycleSummary {
   id: number
   title: string
   goal: string | null
+  /** What this cycle knowingly gives up. Agreed up front or it is not agreed. */
+  tradeOff: string | null
   northStarMetric: string | null
   startsOn: string
 }
@@ -195,6 +198,7 @@ export async function activeCycle (clientId: number): Promise<CycleSummary | nul
   const rows = await orm()
     .select({
       id: cycle.id, title: cycle.title, goal: cycle.goal,
+      tradeOff: cycle.tradeOff,
       northStarMetric: cycle.northStarMetric, startsOn: cycle.startsOn
     })
     .from(cycle)
@@ -203,6 +207,57 @@ export async function activeCycle (clientId: number): Promise<CycleSummary | nul
     .limit(1)
 
   return rows[0] ?? null
+}
+
+export interface PillarRow {
+  id: number
+  key: string
+  name: string
+  sharePct: number | null
+  perWeek: string | null
+  thesis: string | null
+  roleNote: string | null
+  evidence: string | null
+  /** Resolved from `metric_def`, so the screen names the metric the way the
+      panel names it and the two cannot drift apart. */
+  metricLabel: string | null
+  successLabel: string | null
+  isControl: boolean
+}
+
+/**
+ * The editorial mix for a cycle.
+ *
+ * This is the reasoning the plan was missing. Five adjustments arrived as five
+ * chores; which pillar each one serves, how much of the week it should take and
+ * what result would settle it lived in a markdown file she has never opened. A
+ * plan she can only obey is a plan she cannot disagree with, and disagreeing is
+ * what turns it into hers.
+ *
+ * The join to `metric_def` is a LEFT one on purpose: a pillar naming a metric
+ * that does not exist yet is a draft, not an error, and should still render.
+ */
+export async function pillars (clientId: number, cycleId: number): Promise<PillarRow[]> {
+  const rows = await orm()
+    .select({
+      id: pillar.id,
+      key: pillar.pillarKey,
+      name: pillar.name,
+      sharePct: pillar.sharePct,
+      perWeek: pillar.perWeek,
+      thesis: pillar.thesis,
+      roleNote: pillar.roleNote,
+      evidence: pillar.evidence,
+      metricLabel: metricDef.label,
+      successLabel: pillar.successLabel,
+      isControl: pillar.isControl
+    })
+    .from(pillar)
+    .leftJoin(metricDef, eq(metricDef.metricKey, pillar.metricKey))
+    .where(and(eq(pillar.clientId, clientId), eq(pillar.cycleId, cycleId)))
+    .orderBy(pillar.position)
+
+  return rows.map(r => ({ ...r, isControl: r.isControl === 1 }))
 }
 
 export interface ExperimentRow {
@@ -250,7 +305,14 @@ export async function experiments (clientId: number, cycleId: number): Promise<E
   return rows
 }
 
-export async function clientProfile (clientId: number) {
+/**
+ * The client this instance serves.
+ *
+ * Memoised for the render pass because the brand is now read twice on every
+ * page — once by `generateMetadata` for the browser tab and once by the layout
+ * for the header. Without `cache()` that is two identical queries per load.
+ */
+export const clientProfile = cache(async (clientId: number) => {
   const rows = await orm()
     .select({
       id: client.id, name: client.name, brand: client.brand,
@@ -261,7 +323,7 @@ export async function clientProfile (clientId: number) {
     .limit(1)
 
   return rows[0] ?? null
-}
+})
 
 export interface StepRow {
   id: number
@@ -272,6 +334,10 @@ export interface StepRow {
   urgency: 'today' | 'this_week' | 'ongoing'
   evidenceValue: string | null
   evidenceLabel: string | null
+  /** The exact string to paste, and where it goes. Both or neither. */
+  copyValue: string | null
+  copyLabel: string | null
+  copyNote: string | null
   state: 'pending' | 'done' | 'blocked'
   comment: string | null
 }
@@ -310,6 +376,9 @@ export async function deliveries (clientId: number, userId: number): Promise<Del
       urgency: step.urgency,
       evidenceValue: step.evidenceValue,
       evidenceLabel: step.evidenceLabel,
+      copyValue: step.copyValue,
+      copyLabel: step.copyLabel,
+      copyNote: step.copyNote,
       position: step.position,
       state: stepStatus.state,
       comment: stepStatus.comment
@@ -351,6 +420,9 @@ export async function deliveries (clientId: number, userId: number): Promise<Del
       urgency: r.urgency,
       evidenceValue: r.evidenceValue,
       evidenceLabel: r.evidenceLabel,
+      copyValue: r.copyValue,
+      copyLabel: r.copyLabel,
+      copyNote: r.copyNote,
       state: r.state ?? 'pending',
       comment: r.comment
     })
@@ -370,6 +442,34 @@ export interface RequestRow {
   state: 'open' | 'in_progress' | 'delivered' | 'dropped'
   dueOn: string | null
   createdAt: Date
+}
+
+/**
+ * How many requests are still hers to answer.
+ *
+ * This exists because the product had no way of telling HER anything. The
+ * consultant has `/novidades` and a bell; she had neither, and no email is sent
+ * by design — so a request opened for her sat there until she happened to look,
+ * or until he messaged her outside the platform. The count on the nav item is
+ * the smallest thing that closes that loop from his side to hers.
+ *
+ * `open` and `in_progress` both count, matching the panel and the list she
+ * opens: a badge that disagrees with the screen behind it teaches her not to
+ * trust the badge.
+ */
+export async function openRequestCount (clientId: number): Promise<number> {
+  const [row] = await orm()
+    .select({ n: sql<number>`COUNT(*)` })
+    .from(request)
+    .where(and(
+      eq(request.clientId, clientId),
+      inArray(request.state, ['open', 'in_progress'])
+    ))
+
+  /* `sql<number>` is an assertion, not a conversion — MySQL hands COUNT back as
+     a string, and `"0" > 0` is false while `"0"` is truthy. */
+  const parsed = Number(row?.n)
+  return Number.isFinite(parsed) ? parsed : 0
 }
 
 export async function requests (clientId: number): Promise<RequestRow[]> {
@@ -657,11 +757,22 @@ export async function posts (
 }
 
 export interface PostCounts {
+  /** The whole archive, never filtered — the "tudo" chip and the opening line. */
   total: number
+  /* The two axes cross, so each one is counted INSIDE the other's current cut:
+     with "até 20s" on, `marca` is how many brand posts are also short. That is
+     what makes the empty cell visible on the chip itself rather than only in a
+     sentence above it. */
   curtos: number
   longos: number
   marca: number
   pessoal: number
+  /** Both cuts at once — how many posts the list is actually about. */
+  noRecorte: number
+  /* Absolute, both of them: the callout is a claim about the whole archive
+     ("none of the 18 brand Reels…"), and a claim that changed as she filtered
+     would be a different claim every click. */
+  marcaTotal: number
   marcaCurto: number
 }
 
@@ -691,14 +802,37 @@ export async function archiveMedian (clientId: number): Promise<number | null> {
   return mediana(rows.map(r => Number(r.views)).filter(v => v > 0))
 }
 
-export async function postCounts (clientId: number): Promise<PostCounts> {
+/**
+ * @param filter The cut currently applied, so each axis can be counted inside
+ *   the other. Passing nothing gives the plain archive-wide counts.
+ */
+export async function postCounts (
+  clientId: number,
+  filter: PostFilter = {}
+): Promise<PostCounts> {
+  /* `TRUE` rather than an omitted term: it keeps every expression below one
+     shape, so the axis that has no filter reads the same as the one that does
+     instead of needing a second query to fall back to. */
+  const noBrandCut = filter.brand === undefined
+  const brandCut = noBrandCut
+    ? sql`TRUE`
+    : sql`${post.mentionsBrand} = ${filter.brand === 'marca' ? 1 : 0}`
+
+  const durationCut = filter.duration === undefined
+    ? sql`TRUE`
+    : filter.duration === 'curto'
+      ? sql`${post.durationSec} <= 20`
+      : sql`${post.durationSec} > 20`
+
   const [row] = await orm()
     .select({
       total: sql<number>`COUNT(*)`,
-      curtos: sql<number>`SUM(${post.durationSec} <= 20)`,
-      longos: sql<number>`SUM(${post.durationSec} > 20)`,
-      marca: sql<number>`SUM(${post.mentionsBrand} = 1)`,
-      pessoal: sql<number>`SUM(${post.mentionsBrand} = 0)`,
+      curtos: sql<number>`SUM(${post.durationSec} <= 20 AND ${brandCut})`,
+      longos: sql<number>`SUM(${post.durationSec} > 20 AND ${brandCut})`,
+      marca: sql<number>`SUM(${post.mentionsBrand} = 1 AND ${durationCut})`,
+      pessoal: sql<number>`SUM(${post.mentionsBrand} = 0 AND ${durationCut})`,
+      noRecorte: sql<number>`SUM(${durationCut} AND ${brandCut})`,
+      marcaTotal: sql<number>`SUM(${post.mentionsBrand} = 1)`,
       /* The empty cell the Reels analysis found: brand content never shipped in
          20 seconds or less. Counted here so the screen can state it. */
       marcaCurto: sql<number>`SUM(${post.mentionsBrand} = 1 AND ${post.durationSec} <= 20)`
@@ -717,6 +851,8 @@ export async function postCounts (clientId: number): Promise<PostCounts> {
     longos: n(row?.longos),
     marca: n(row?.marca),
     pessoal: n(row?.pessoal),
+    noRecorte: n(row?.noRecorte),
+    marcaTotal: n(row?.marcaTotal),
     marcaCurto: n(row?.marcaCurto)
   }
 }

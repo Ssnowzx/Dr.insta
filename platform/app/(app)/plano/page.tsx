@@ -1,16 +1,66 @@
 import type { Metadata } from 'next'
+import { CopyValue } from '@/components/copy-value'
 import { StepControl } from '@/components/step-control'
-import { activeCycle, clientStepAnswers, deliveries, experiments } from '@/lib/dashboard'
+import { activeCycle, clientStepAnswers, deliveries, experiments, pillars } from '@/lib/dashboard'
+import type { PillarRow } from '@/lib/dashboard'
 import { clientScope, requireSession } from '@/lib/dal'
 import { longDate, shortDate } from '@/lib/format'
 
-export const metadata: Metadata = { title: 'Plano — My Favorite' }
+export const metadata: Metadata = { title: 'Plano' }
 export const dynamic = 'force-dynamic'
 
 const URGENCIA: Record<string, string> = {
   today: 'hoje, se der',
   this_week: 'esta semana',
   ongoing: 'a partir de já'
+}
+
+/**
+ * The mix as one bar, before the four cards that explain it.
+ *
+ * A stacked bar and not four separate ones: the question this answers is "how
+ * is my week divided", which is about the parts against each other. Four bars
+ * side by side answer "how big is each", and the reader has to add them up to
+ * get back to the only fact that matters — that the total does not grow.
+ *
+ * Widths are the real shares, normalised by their own sum rather than assumed to
+ * reach 100. A mix that adds to 95 while someone is mid-edit should render as a
+ * full bar of correct proportions, not as a bar with a gap at the end that looks
+ * like a rendering fault.
+ */
+function MixBarra ({ pilares }: { pilares: PillarRow[] }) {
+  const total = pilares.reduce((soma, p) => soma + (p.sharePct ?? 0), 0)
+  if (total === 0) return null
+
+  return (
+    <div className="mix">
+      <div
+        className="mix-trilho"
+        role="img"
+        aria-label={`Divisão do conteúdo: ${pilares
+          .filter(p => p.sharePct !== null)
+          .map(p => `${p.name}, ${p.sharePct}%`)
+          .join('; ')}`}
+      >
+        {pilares.map((p, i) => (
+          <div
+            key={p.id}
+            className={`mix-faixa mix-faixa-${i + 1}`}
+            style={{ width: `${(((p.sharePct ?? 0) / total) * 100).toFixed(2)}%` }}
+          />
+        ))}
+      </div>
+
+      <ul className="mix-legenda">
+        {pilares.map((p, i) => (
+          <li key={p.id}>
+            <span className={`mix-ponto mix-faixa-${i + 1}`} aria-hidden="true" />
+            {p.name} <span className="numero">{p.sharePct}%</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 /**
@@ -29,10 +79,11 @@ export default async function Plano () {
 
   const ciclo = await activeCycle(clientId)
 
-  const [lista, respostas, ensaios] = await Promise.all([
+  const [lista, respostas, ensaios, mix] = await Promise.all([
     deliveries(clientId, identity.userId),
     ehConsultor ? clientStepAnswers(clientId) : Promise.resolve([]),
-    ciclo === null ? Promise.resolve([]) : experiments(clientId, ciclo.id)
+    ciclo === null ? Promise.resolve([]) : experiments(clientId, ciclo.id),
+    ciclo === null ? Promise.resolve([]) : pillars(clientId, ciclo.id)
   ])
 
   const porEtapa = new Map(respostas.map(r => [r.stepId, r]))
@@ -58,6 +109,75 @@ export default async function Plano () {
           isso é tão útil quanto o que deu certo.
         </p>
       </header>
+
+      {/* The mix comes BEFORE the chores.
+
+          The five adjustments are what to do; the pillars are what they are for.
+          Presented after, they read as an appendix nobody reaches; presented
+          first, each chore below arrives already belonging to something. This
+          whole section lived in a markdown file she has never opened. */}
+      {mix.length > 0 && (
+        <section className="secao">
+          <div className="secao-cab">
+            <h2 className="titulo-secao">Como o seu conteúdo se divide</h2>
+            <p className="secao-nota">o mesmo volume, outra proporção</p>
+          </div>
+
+          <p className="rodape-nota" style={{ marginTop: 0, marginBottom: '1.25rem' }}>
+            Você publica cerca de 8 Reels por semana e escreve tudo sozinha. Isto
+            aqui <strong>não pede nada a mais</strong> — é a mesma quantidade,
+            dividida de outro jeito.
+          </p>
+
+          <MixBarra pilares={mix} />
+
+          <ol className="pilares">
+            {mix.map(p => (
+              <li className={p.isControl ? 'pilar pilar-controle' : 'pilar'} key={p.id}>
+                <div className="pilar-cab">
+                  <h3 className="pilar-nome">{p.name}</h3>
+                  {p.sharePct !== null && (
+                    <span className="numero pilar-share">{p.sharePct}%</span>
+                  )}
+                  {p.isControl && <span className="selo selo-neutro">não mexer</span>}
+                </div>
+
+                {p.perWeek !== null && <p className="pilar-ritmo">{p.perWeek}</p>}
+                {p.thesis !== null && <p className="pilar-tese">{p.thesis}</p>}
+                {p.roleNote !== null && <p className="pilar-papel">{p.roleNote}</p>}
+                {p.evidence !== null && <p className="pilar-prova">{p.evidence}</p>}
+
+                <dl className="pilar-regras">
+                  {p.metricLabel !== null && (
+                    <div>
+                      <dt>move</dt>
+                      <dd>{p.metricLabel}</dd>
+                    </div>
+                  )}
+                  {p.successLabel !== null && (
+                    <div>
+                      <dt>dá certo se</dt>
+                      <dd>{p.successLabel}</dd>
+                    </div>
+                  )}
+                </dl>
+              </li>
+            ))}
+          </ol>
+
+          {/* The price of the mix, on the same screen as the mix and not in a
+              footnote. Reallocating trades reach for arrival, and for the first
+              weeks the fall is the only visible half of that trade — which is
+              how someone concludes they broke it and reverts a week before the
+              reading window closes. */}
+          {ciclo?.tradeOff != null && (
+            <p className="troca">
+              <span className="troca-rot">o que isso custa</span>
+              {ciclo.tradeOff}
+            </p>
+          )}
+        </section>
+      )}
 
       {lista.map(entrega => {
         const feitos = entrega.steps.filter(s => s.state === 'done').length
@@ -121,6 +241,17 @@ export default async function Plano () {
                         <span className="numero etapa-dado-valor">{etapa.evidenceValue}</span>
                         <span className="etapa-dado-rot">{etapa.evidenceLabel}</span>
                       </p>
+                    )}
+
+                    {/* The step hands over what it asks her to paste. It used to
+                        name the thing and let her build it, and she built the
+                        wrong one — see `components/copy-value.tsx`. */}
+                    {etapa.copyValue !== null && etapa.copyLabel !== null && (
+                      <CopyValue
+                        valor={etapa.copyValue}
+                        rotulo={etapa.copyLabel}
+                        {...(etapa.copyNote === null ? {} : { nota: etapa.copyNote })}
+                      />
                     )}
 
                     {ehConsultor

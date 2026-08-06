@@ -1,35 +1,358 @@
 /* Screens in the credential flow: sign in, accept invite, reset password.
    Colour tokens come from app/base.css — the palette already measured pair by
-   pair and approved by the client. */
+   pair and approved by the client.
 
-.auth-wrap {
+   THE SPLIT
+
+   Two halves that do opposite jobs. The left is the dark plate — the same
+   `--bloco` surface the funnel is drawn on, dark in both themes — and it is pure
+   atmosphere: rings, light travelling around them, nothing to read but three
+   words. The right is paper, and it is the only place with anything to do.
+
+   That asymmetry is the point. A credential screen has exactly one task, and
+   splitting the field from the form means the form never has to compete with
+   the decoration for attention.
+
+   No brand mark anywhere: this door is the consultancy's, and the client's brand
+   belongs to the screens behind it. See `components/auth-shell.tsx`.
+
+   COLOUR, AND WHY THE DARK THEME NEEDED ITS OWN ANSWER
+
+   The first version drew the field on `--bloco`, the funnel's plate. In light
+   that plate measures 14.78 against paper and the split is obvious. In dark it
+   measures 1.18 — both halves were the same brown, and the composition fell
+   apart.
+
+   Going darker does not fix it: near-black against dark paper is 1.07. At the
+   bottom of the luminance curve there is no room to separate two surfaces by
+   tone, and no choice of browns would have worked.
+
+   So the dark theme separates by LIGHT instead:
+
+     · the field drops to `--poco`, near-black, which lifts the nude from 9.8:1
+       to 12.3:1 — the rings stop being decoration and become the light source
+     · the seam between the halves is a lit hairline, not a change of colour
+     · the form sits on a raised card with a visible edge and a deep shadow
+
+   Text on the field is written against it directly — `--sobre-bloco` for the
+   words, `--dado-bloco` for the light. Both pairs are in `test/contrast.test.ts`.
+   ----------------------------------------------------------------------------- */
+
+.auth-split {
   min-height: 100dvh;
   display: grid;
-  place-items: center;
-  /* `env(safe-area-inset-*)` keeps the card clear of the iPhone home indicator.
-     She opens this on a phone; without it the button sits under the bar. */
-  padding: 2rem 1.25rem calc(2rem + env(safe-area-inset-bottom));
+  /* One column on a phone: the field becomes a band above the form rather than
+     a half she has to scroll past. */
+  grid-template-columns: 1fr;
+  grid-template-rows: 13rem 1fr;
 }
 
+@media (min-width: 56rem) {
+  .auth-split {
+    grid-template-columns: 1.05fr 1fr;
+    grid-template-rows: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------ the left field */
+
+/**
+ * The rings are sized in `cqmin` — a share of the field's SHORTER side — and not
+ * in rem.
+ *
+ * Fixed sizes cannot work here, because this box changes shape completely: a
+ * 500×208 band on a phone, roughly 717×900 beside the form on a desktop. Rings
+ * in rem that sit comfortably in one of those get sliced by the other, and a
+ * circle cut by the frame stops reading as a circle — the travelling light just
+ * appears and disappears at the edges. Tying them to the shorter side means they
+ * always fit, whatever the shape, with no breakpoint to maintain.
+ *
+ * `container-type: size` is what makes `cqmin` resolve against this element. It
+ * is safe here because the grid gives the field its size; nothing is measured
+ * from the content inside it.
+ */
+.auth-campo {
+  position: relative;
+  overflow: hidden;
+  container-type: size;
+  display: grid;
+  place-items: center;
+  /* The same cloth as the rest of the product, plus two warm pools of light and
+     a vignette that closes the corners. The vignette is what keeps a near-black
+     field from reading as an empty div: it gives the surface a centre. */
+  background-image:
+    radial-gradient(70% 60% at 50% 50%, transparent 40%, rgba(0, 0, 0, .5) 100%),
+    radial-gradient(60rem 46rem at 78% 12%, rgba(232, 196, 180, .16), transparent 58%),
+    radial-gradient(52rem 44rem at 12% 88%, rgba(180, 113, 92, .18), transparent 58%),
+    var(--tecido);
+  background-color: var(--poco);
+}
+
+/* THE SEAM.
+
+   A lit hairline where the two halves meet. This is the part that carries the
+   split in the dark theme, where the two grounds are 1.07 apart and the eye has
+   nothing else to go on. In light it is barely noticeable against an already
+   obvious edge — which is correct: it only has to work where it is needed. */
+.auth-campo::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(232, 196, 180, .14) 15%,
+    rgba(245, 216, 202, .85) 50%,
+    rgba(232, 196, 180, .14) 85%,
+    transparent
+  );
+  box-shadow: 0 0 22px 2px rgba(232, 196, 180, .3);
+}
+
+@media (min-width: 56rem) {
+  .auth-campo::after {
+    inset: 0 0 0 auto;
+    width: 1px;
+    height: auto;
+    background: linear-gradient(
+      180deg,
+      transparent,
+      rgba(232, 196, 180, .14) 15%,
+      rgba(245, 216, 202, .8) 50%,
+      rgba(232, 196, 180, .14) 85%,
+      transparent
+    );
+  }
+}
+
+/* Slow ambient drift behind everything. Blur this large is cheap because the
+   elements never repaint their own contents — only their transform moves. */
+.auth-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(5.5rem);
+  opacity: .5;
+  pointer-events: none;
+}
+
+.auth-blob-a {
+  width: 34rem; height: 34rem;
+  top: -20%; right: -14%;
+  background: radial-gradient(circle, rgba(232, 196, 180, .34), transparent 62%);
+  animation: auth-deriva-a 28s ease-in-out infinite;
+}
+
+.auth-blob-b {
+  width: 30rem; height: 30rem;
+  bottom: -24%; left: -16%;
+  background: radial-gradient(circle, rgba(160, 82, 63, .38), transparent 62%);
+  animation: auth-deriva-b 34s ease-in-out infinite;
+}
+
+/* The bones: complete circles, almost invisible, that hold the composition
+   together when the moving parts are stopped. */
+.auth-arco,
+.auth-anel,
+.auth-onda {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Three sizes, in the proportion 1 : 1.6 : 2.25 — close enough to spacing by
+   ear that the gaps read as intentional, far enough from equal that the eye
+   does not try to average them. */
+.auth-arco-1, .auth-anel-1 { width: 40cqmin; height: 40cqmin; }
+.auth-arco-2, .auth-anel-2 { width: 64cqmin; height: 64cqmin; }
+.auth-arco-3, .auth-anel-3 { width: 90cqmin; height: 90cqmin; }
+
+.auth-arco { border: 1px solid rgba(232, 196, 180, .09); }
+
+/* The light travelling around the ring.
+
+   `conic-gradient` paints a rotating wedge; the mask punches out everything
+   except the outer 2px, which is what turns the wedge into a moving arc riding
+   the stroke. `-webkit-mask` is still required for Safari. */
+.auth-anel {
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 68%,
+    rgba(232, 196, 180, .8) 86%,
+    rgba(250, 244, 240, .95) 92%,
+    transparent 100%
+  );
+}
+
+/* Different speeds AND different directions: two rings turning the same way at
+   similar speeds read as one object slipping, which looks like a bug. */
+.auth-anel-1 { animation: auth-gira 15s linear infinite; }
+.auth-anel-2 { opacity: .8; animation: auth-gira-inv 24s linear infinite; }
+.auth-anel-3 { opacity: .55; animation: auth-gira 34s linear infinite; }
+
+/* Expanding outward, so the field breathes as well as turns. It starts inside
+   the smallest ring and ends just past the largest — 33 × 2.7 ≈ 89cqmin — so
+   the pulse dies at the edge of the composition instead of leaving it. */
+.auth-onda {
+  width: 33cqmin;
+  height: 33cqmin;
+  border: 1.5px solid rgba(232, 196, 180, .55);
+  opacity: 0;
+  animation: auth-onda 6s ease-out infinite;
+}
+
+.auth-onda-2 { animation-delay: 3s; }
+
+/* -------------------------------------------------------------- the centre */
+
+.auth-centro {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 0 1.5rem;
+}
+
+/**
+ * The signature.
+ *
+ * Thirty characters at this tracking is a wide line, and the phone band is the
+ * narrowest place it has to live. Two things keep it honest:
+ *
+ *   · the size is clamped against `cqi`, the field's own WIDTH — width is what
+ *     causes the break, and the band's height is fixed, so measuring against
+ *     the shorter side would have pinned it at the floor and only looked like
+ *     it adapted. In practice it sits at the 9px floor on a phone and at the
+ *     11px ceiling beside the form; the middle of the range is what a tablet in
+ *     portrait and a half-width window get, with no breakpoint for either
+ *   · each word is `nowrap` and the row may wrap, so if it ever does break, it
+ *     breaks between words and stays centred — never mid-word, never with a
+ *     dot stranded at the end of a line
+ *
+ * Measured at 320, 360, 390, 430 and 500px: one line at every width.
+ */
+.auth-assinatura {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .375rem .8125rem;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: clamp(.5625rem, 1.9cqi, .6875rem);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  /* Tracking this wide leaves a gap after the last letter that reads as an
+     off-centre block; the padding puts the optical centre back. */
+  padding-left: .3em;
+  color: var(--sobre-bloco);
+}
+
+.auth-assinatura span { white-space: nowrap; }
+
+.auth-ponto {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--dado-bloco);
+  box-shadow: 0 0 9px 1px rgba(232, 196, 180, .8);
+  animation: auth-cintila 3.4s ease-in-out infinite;
+}
+
+.auth-ponto:nth-of-type(2) { animation-delay: 1.1s; }
+
+/* A hairline with a glow pooled at its middle — the only thing under the words,
+   and what keeps them from floating unanchored in the field. */
+.auth-fio {
+  position: relative;
+  display: block;
+  width: 15rem;
+  max-width: 70vw;
+  height: 1px;
+  margin: 1rem auto 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(232, 196, 180, .12) 18%,
+    rgba(245, 216, 202, .9) 50%,
+    rgba(232, 196, 180, .12) 82%,
+    transparent
+  );
+}
+
+.auth-fio::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 5.625rem;
+  height: 8px;
+  border-radius: 50%;
+  filter: blur(3px);
+  background: radial-gradient(ellipse, rgba(245, 216, 202, .8), transparent 70%);
+  animation: auth-pulsa 5s ease-in-out infinite;
+}
+
+/* ------------------------------------------------------------- the right side */
+
+/* The card is centred and the credit sits under it, so the pair is what gets
+   centred rather than the card alone — otherwise the credit pushes the card up
+   by half its own height and the composition lands off-centre. */
+.auth-lado {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1.5rem;
+  /* `env(safe-area-inset-*)` keeps the button clear of the iPhone home
+     indicator. She opens this on a phone; without it the button sits under
+     the bar. */
+  padding: 3rem 1.5rem calc(3rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 56rem) {
+  .auth-lado { padding: 3rem 6vw calc(3rem + env(safe-area-inset-bottom)); }
+}
+
+/* The form is a raised card, not text on the page.
+
+   In the dark theme this is what makes the right half a place rather than a
+   continuation of the field: a card and its ground are 1.09 apart, so the edge
+   and the shadow are doing the separating, not the fill. In light it is the
+   familiar white card on warm paper. Same construction, and it happens to be
+   the one that survives both. */
 .auth-card {
   width: 100%;
   max-width: 25rem;
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  box-shadow: var(--sombra);
+  animation: auth-sobe .7s cubic-bezier(.2, .8, .2, 1) both;
 }
 
-.auth-mark {
-  font-size: .75rem;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--suave);
-  margin: 0 0 1.75rem;
+@media (min-width: 30rem) {
+  .auth-card { padding: 2.75rem 2.5rem; }
 }
 
 .auth-card h1 {
-  font-size: 1.75rem;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  margin: 0 0 .5rem;
-  font-weight: 600;
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(2rem, 1.5rem + 1.8vw, 2.75rem);
+  line-height: 1.06;
+  letter-spacing: -0.012em;
+  margin: 0 0 .625rem;
+  /* Same reasoning as `.display` in base.css: the global antialiasing eats the
+     thin strokes of this face at display size. */
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
 .auth-lead {
@@ -37,76 +360,6 @@
   margin: 0 0 2rem;
   font-size: .95rem;
 }
-
-.campo { margin-bottom: 1.125rem; }
-
-.campo label {
-  display: block;
-  font-size: .8125rem;
-  font-weight: 600;
-  margin-bottom: .4375rem;
-  color: var(--tinta2);
-}
-
-.campo input {
-  width: 100%;
-  /* 16px exactly. Anything smaller makes iOS Safari zoom the page on focus,
-     and the layout never comes back. */
-  font-size: 1rem;
-  font-family: inherit;
-  color: var(--tinta);
-  background: var(--cartao);
-  border: 1px solid var(--linha);
-  border-radius: 10px;
-  padding: .8125rem .875rem;
-  transition: border-color .15s, box-shadow .15s;
-}
-
-.campo input:focus-visible {
-  outline: none;
-  border-color: var(--caramelo);
-  box-shadow: 0 0 0 3px var(--foco);
-}
-
-.campo input::placeholder { color: var(--suave); }
-
-.campo .dica {
-  display: block;
-  font-size: .8125rem;
-  color: var(--suave);
-  margin-top: .4375rem;
-}
-
-.btn {
-  width: 100%;
-  font: inherit;
-  font-size: .9375rem;
-  font-weight: 600;
-  color: var(--sobre-tinta);
-  background: var(--tinta);
-  border: 1px solid var(--tinta);
-  border-radius: 10px;
-  /* 48px tall: the smallest target that a thumb hits reliably. */
-  padding: .875rem 1rem;
-  cursor: pointer;
-  margin-top: .5rem;
-  transition: opacity .15s;
-}
-
-.btn:hover { opacity: .88; }
-.btn:focus-visible { outline: 2px solid var(--caramelo); outline-offset: 2px; }
-.btn[disabled] { opacity: .55; cursor: progress; }
-
-.aviso {
-  font-size: .875rem;
-  border-radius: 10px;
-  padding: .75rem .875rem;
-  margin: 0 0 1.25rem;
-  border: 1px solid;
-}
-
-.aviso-erro { color: var(--tijolo); background: var(--urg-bg); border-color: var(--tijolo); }
-.aviso-ok   { color: var(--ok);     background: var(--ok-bg);  border-color: var(--ok); }
 
 .auth-rodape {
   margin-top: 1.75rem;
@@ -116,6 +369,74 @@
   color: var(--suave);
 }
 
+.auth-credito {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: .625rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--suave);
+}
+
 .auth-rodape a { color: var(--caramelo); text-decoration: none; font-weight: 600; }
 .auth-rodape a:hover { text-decoration: underline; }
 .auth-rodape a:focus-visible { outline: 2px solid var(--caramelo); outline-offset: 2px; border-radius: 3px; }
+
+/* `.campo`, `.btn` and `.aviso` used to live here. They moved to `app/base.css`
+   when `Conta → Sua senha` turned out to render the same components without
+   this stylesheet — a route group cannot own the styles of a shared form. */
+
+/* ------------------------------------------------------------------ motion */
+
+@keyframes auth-sobe {
+  from { opacity: 0; transform: translateY(1rem); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes auth-gira     { to { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes auth-gira-inv { to { transform: translate(-50%, -50%) rotate(-360deg); } }
+
+@keyframes auth-onda {
+  0%   { transform: translate(-50%, -50%) scale(.5); opacity: .5; }
+  100% { transform: translate(-50%, -50%) scale(2.7); opacity: 0; }
+}
+
+@keyframes auth-pulsa {
+  0%, 100% { opacity: .6; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 1;  transform: translate(-50%, -50%) scale(1.1); }
+}
+
+@keyframes auth-cintila {
+  0%, 100% { opacity: 1;  box-shadow: 0 0 9px 1px rgba(232, 196, 180, .8); }
+  50%      { opacity: .5; box-shadow: 0 0 4px 0 rgba(232, 196, 180, .45); }
+}
+
+@keyframes auth-deriva-a {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(-3.75rem, 3.125rem); }
+}
+
+@keyframes auth-deriva-b {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(3.75rem, -2.5rem); }
+}
+
+/* On a phone the field is a 13rem band, so the two outer rings are wider than
+   the screen and only their sides would show — two vertical streaks with no
+   circle to belong to. The small ring and the ripples stay: at that size they
+   still read as what they are. */
+/* The rings need no breakpoint — `cqmin` already fits them to whatever shape the
+   field has. What does change on a phone is the type, which is set for a half
+   screen and has to survive a 500px band, and the alignment of the form. */
+@media (max-width: 55.99rem) {
+  .auth-assinatura { letter-spacing: .22em; gap: .3125rem .5rem; }
+  .auth-fio { width: 11rem; }
+
+  /* Top-aligned, not centred: with the band taking 13rem, centring what is left
+     pushed the heading into the middle of the screen and left a hole under the
+     band. On a phone the form should start where the band ends. */
+  .auth-lado {
+    align-content: start;
+    padding-top: 2.5rem;
+  }
+}

@@ -83,16 +83,39 @@ Myfavorite/
 │   ├── dominio/               # lógica pura, sem I/O
 │   └── infra/                 # CSV, CLI, validador de skills
 ├── test/                      # Vitest (AAA, cobertura ≥ 80%)
+├── platform/                  # a plataforma que a CLIENTE abre (Next.js + MySQL)
+│   ├── README.md              # ler antes de mexer — schema, marca, contraste
+│   ├── db/                    # schema Drizzle, migrações e seed
+│   ├── lib/dashboard.ts       # tudo que as telas leem
+│   ├── app/(app)/             # painel, plano, pedidos, conteúdo, conta
+│   └── test/                  # Vitest, nomeados `should ...`
 └── dados/
     ├── metricas/              # seus CSVs reais (fora do git)
     └── exemplos/              # CSV de exemplo versionado
 ```
 
-### As três camadas e como se conectam
+### As quatro camadas e como se conectam
 
 1. **Dados** (`src/` + `dados/`) — determinístico. Calcula números. Nunca opina.
 2. **Skills** (`.claude/skills/`) — julgamento. Lê números e contexto do `perfil/`, produz decisão.
 3. **Memória** (`openspec/` + `perfil/`) — continuidade. O que foi decidido, por quê, e o que aconteceu depois.
+4. **Entrega** (`platform/`) — o que a cliente abre. Não calcula estratégia: apresenta o que as outras três produziram.
+
+### Onde mora a verdade quando ela existe em dois lugares
+
+`perfil/` é onde a estratégia é **pensada**; `platform/db/seed.ts` é como ela
+**chega até a cliente**. Alguns conteúdos existem nos dois:
+
+| Conteúdo | Fonte de verdade | Como chega na tela |
+|---|---|---|
+| Pilares e mix | `perfil/pilares.md` | tabela `pillar`, via seed |
+| Trade-off do ciclo | `perfil/pilares.md` | `cycle.trade_off`, via seed |
+| Metas e alvos | `perfil/metas.md` | `metric_target`, via seed |
+| Link com etiqueta | `perfil/perfil.md` | `step.copy_value`, via seed |
+
+**Mudou em `perfil/`? Mude no seed e rode `npm run db:seed`.** Só o markdown
+muda nada para ela — e o inverso é pior: o banco passa a discordar do arquivo
+que justifica ele, sem ninguém perceber.
 
 A regra que amarra tudo: **não calcule métrica na cabeça.** Se precisa de um número derivado (ER por alcance, delta vs. baseline, benchmark), rode o motor:
 
@@ -189,6 +212,18 @@ que são URLs que ela vê e compartilha.
 ```bash
 npm run validar:tudo    # tsc --noEmit + vitest + validar skills + openspec validate
 ```
+
+**`validar:tudo` roda na raiz e não entra em `platform/`.** Mexeu lá, rode
+também:
+
+```bash
+cd platform && npm run lint && npm test
+```
+
+E se mexeu em tela, **abra no navegador nos dois temas** antes de dar por
+pronta. Três dos defeitos encontrados em 06/08/2026 — formulário sem CSS, seis
+tokens reprovando contraste, erro de hidratação em toda navegação — passavam por
+`lint`, por `test` e por leitura de código. Só apareceram renderizados.
 
 ---
 

@@ -113,6 +113,8 @@ export const cycle = mysqlTable('cycle', {
   clientId: fk('client_id').notNull(),
   title: varchar({ length: 160 }).notNull(),
   goal: text(),
+  /** What this cycle knowingly gives up, agreed before it starts. */
+  tradeOff: text('trade_off'),
   northStarMetric: varchar('north_star_metric', { length: 160 }),
   startsOn: date('starts_on', { mode: 'string' }).notNull(),
   endsOn: date('ends_on', { mode: 'string' }),
@@ -159,12 +161,46 @@ export const step = mysqlTable('step', {
   urgency: mysqlEnum(['today', 'this_week', 'ongoing']).notNull().default('this_week'),
   evidenceValue: varchar('evidence_value', { length: 60 }),
   evidenceLabel: varchar('evidence_label', { length: 160 }),
+  /** The exact string she has to paste, where it goes, and what to know about it. */
+  copyValue: text('copy_value'),
+  copyLabel: varchar('copy_label', { length: 120 }),
+  copyNote: text('copy_note'),
   position: smallint({ unsigned: true }).notNull().default(0),
   createdAt: createdAt(),
   updatedAt: updatedAt()
 }, t => [
   uniqueIndex('uq_step_delivery_code').on(t.deliveryId, t.code),
   index('ix_step_client').on(t.clientId)
+])
+
+/**
+ * The editorial pillars: the mix, and the argument for it.
+ *
+ * Scoped to a cycle, because a pillar is a bet with an expiry date — see
+ * `db/migrations/003-pillars-and-copy-value.sql`.
+ */
+export const pillar = mysqlTable('pillar', {
+  id: id(),
+  clientId: fk('client_id').notNull(),
+  cycleId: fk('cycle_id').notNull(),
+  pillarKey: varchar('pillar_key', { length: 40 }).notNull(),
+  name: varchar({ length: 80 }).notNull(),
+  sharePct: tinyint('share_pct', { unsigned: true }),
+  perWeek: varchar('per_week', { length: 40 }),
+  thesis: text(),
+  roleNote: text('role_note'),
+  evidence: text(),
+  /** By `metric_def.metric_key`, not by id — the seed writes both in one run. */
+  metricKey: varchar('metric_key', { length: 60 }),
+  successLabel: varchar('success_label', { length: 200 }),
+  /** The pillar that must NOT change: the control the reallocation is read against. */
+  isControl: tinyint('is_control').notNull().default(0),
+  position: smallint({ unsigned: true }).notNull().default(0),
+  createdAt: createdAt(),
+  updatedAt: updatedAt()
+}, t => [
+  uniqueIndex('uq_pillar_cycle_key').on(t.cycleId, t.pillarKey),
+  index('ix_pillar_client').on(t.clientId)
 ])
 
 /** Three states, not two: `blocked` is what a checkbox threw away. */

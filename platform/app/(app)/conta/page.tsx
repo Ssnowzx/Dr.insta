@@ -6,7 +6,7 @@ import { clientProfile, clientUsers } from '@/lib/dashboard'
 import { clientScope, requireSession } from '@/lib/dal'
 import { shortDate } from '@/lib/format'
 
-export const metadata: Metadata = { title: 'Conta — My Favorite' }
+export const metadata: Metadata = { title: 'Conta' }
 export const dynamic = 'force-dynamic'
 
 export default async function Conta () {

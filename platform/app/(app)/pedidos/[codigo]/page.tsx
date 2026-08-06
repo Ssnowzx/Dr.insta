@@ -7,7 +7,7 @@ import { requireSession } from '@/lib/dal'
 import { canReach } from '@/lib/scope'
 import { longDate, shortDate } from '@/lib/format'
 
-export const metadata: Metadata = { title: 'Pedido — My Favorite' }
+export const metadata: Metadata = { title: 'Pedido' }
 export const dynamic = 'force-dynamic'
 
 const TIPO: Record<string, string> = {

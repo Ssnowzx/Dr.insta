@@ -52,11 +52,30 @@ diretora criativa da @myfavorite.oficial
 assessoria@biancaolivo.com.br
 ```
 
-- **Link na bio:** `https://www.myfavorite.com.br` — **sem UTM**. Adicionado entre 30/07 e
-  04/08/2026 (na auditoria de julho não havia link; resposta 3 dizia que ia incluir).
-  ⚠️ Sem parâmetro, todo clique cai como tráfego direto no GA4 e o canal dela não recebe o
-  crédito. Correção proposta:
+- **Link na bio:** `https://www.myfavorite.com.br` — Adicionado entre 30/07 e 04/08/2026 (na
+  auditoria de julho não havia link; resposta 3 dizia que ia incluir).
+
+  **Verificado no perfil dela em 06/08/2026, duas vezes no mesmo dia.** De manhã: sem
+  parâmetro nenhum. À tarde: passou a ter `utm_source` e `utm_medium` — mas **nenhum dos dois
+  contém `bianca`, `olivo` nem `influencer`**. Contém `ig` e `bio`.
+
+  ⚠️ Isso **não** identifica o canal dela: o @myfavorite.oficial também tem link na bio e cai
+  na mesma origem. O painel do sistema procura `influencer/bianca-olivo` e `bianca.olivo` no
+  GA4 — nada disso vai aparecer. *Como foi medido:* o classificador de segurança recusa
+  devolver query string, então o teste foi por presença de substring, não leitura do valor; e
+  pode ser parâmetro do redirecionador `l.instagram.com`. **Conferir no GA4 antes de tratar
+  como fato.**
+
+  Correção, que a plataforma agora entrega pronta para copiar em `/plano` (`step.copy_value`):
   `https://www.myfavorite.com.br/?utm_source=influencer&utm_medium=bianca.olivo&utm_campaign=bio`
+
+  **Ela reclamou que fica comprido e feio no perfil.** Metade da objeção não procede — o
+  Instagram exibe só `www.myfavorite.com.br`, medido no perfil dela; o endereço inteiro só
+  aparece na tela de edição, que só ela vê. A outra metade procede, e a solução é um caminho
+  curto no domínio dela: `myfavorite.com.br/bia` → 301 para a URL com etiqueta. A loja é
+  **VTEX** (verificado pelo `generator`), então isso se faz em *Storefront → Redirects*, sem
+  desenvolvedor. `/bia`, `/bianca` e `/bianca-olivo` estão livres — testados, 404.
+  **Enquanto o redirect não existir, encurtar põe um 404 na bio dela**, e o app avisa isso.
 - **CTA da bio:** nenhum. A bio descreve cargo e dá e-mail de assessoria; não diz ao visitante
   o que fazer. Com 347.482 visitas ao perfil em 30 dias, é a linha mais cara do perfil.
 - **Destaques:** 48 no total, **37 são viagens ou lugares** (portugal, kyoto, osaka, tokyo ×4,
@@ -100,4 +119,4 @@ Fonte: respostas 2 e 7. Faixa de preço não foi perguntada.
 
 ---
 
-**Última atualização:** 04/08/2026
+**Última atualização:** 06/08/2026

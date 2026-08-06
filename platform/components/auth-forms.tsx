@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useId, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import type { FormState } from '@/lib/auth-actions'
 import { acceptInvite, changePassword, requestReset, setNewPassword, signIn } from '@/lib/auth-actions'
@@ -28,6 +28,87 @@ function Botao ({ children }: { children: string }) {
     </button>
   )
 }
+
+/**
+ * A password field that can be read.
+ *
+ * `type` is swapped on the element rather than a second input being rendered:
+ * two inputs means two values to keep in step, and a password manager filling
+ * the hidden one.
+ *
+ * The button is `tabIndex={-1}` on purpose. Tabbing out of a password field
+ * should reach the submit button; landing on a reveal toggle first is the kind
+ * of detour that only shows up for someone who never touches the mouse.
+ */
+function CampoSenha ({
+  nome,
+  rotulo,
+  autoComplete,
+  dica
+}: {
+  nome: string
+  rotulo: string
+  autoComplete: 'current-password' | 'new-password'
+  dica?: string
+}) {
+  const id = useId()
+  const [visivel, setVisivel] = useState(false)
+
+  return (
+    <div className="campo">
+      <label htmlFor={id}>{rotulo}</label>
+      <div className="campo-inp">
+        <input
+          id={id}
+          name={nome}
+          type={visivel ? 'text' : 'password'}
+          required
+          autoComplete={autoComplete}
+          {...(autoComplete === 'new-password' ? { minLength: 12 } : {})}
+        />
+        <button
+          type="button"
+          className="campo-olho"
+          tabIndex={-1}
+          onClick={() => { setVisivel(v => !v) }}
+          aria-label={visivel ? 'Esconder a senha' : 'Mostrar a senha'}
+          title={visivel ? 'Esconder a senha' : 'Mostrar a senha'}
+        >
+          <Olho aberto={visivel} />
+        </button>
+      </div>
+      {dica !== undefined && <span className="dica">{dica}</span>}
+    </div>
+  )
+}
+
+function Olho ({ aberto }: { aberto: boolean }) {
+  const comum = {
+    width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'currentColor', strokeWidth: 1.7,
+    strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+    'aria-hidden': true
+  }
+
+  return aberto
+    ? (
+      <svg {...comum}>
+        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+        <circle cx="12" cy="12" r="3" />
+        <path d="m3 3 18 18" />
+      </svg>
+      )
+    : (
+      <svg {...comum}>
+        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+      )
+}
+
+const DICA_SENHA =
+  'Pelo menos 12 caracteres. Uma frase curta que só você lembra funciona ' +
+  'melhor que uma palavra com símbolos.'
 
 function Aviso ({ estado }: { estado: FormState }) {
   if (estado.error !== undefined) {
@@ -60,13 +141,7 @@ export function FormEntrar ({ destino }: { destino?: string }) {
         />
       </div>
 
-      <div className="campo">
-        <label htmlFor="senha">Sua senha</label>
-        <input
-          id="senha" name="senha" type="password" required
-          autoComplete="current-password"
-        />
-      </div>
+      <CampoSenha nome="senha" rotulo="Sua senha" autoComplete="current-password" />
 
       <Botao>Entrar</Botao>
     </form>
@@ -88,25 +163,14 @@ function FormSenha ({
     <form action={enviar} noValidate>
       <Aviso estado={estado} />
 
-      <div className="campo">
-        <label htmlFor="senha">Escolha uma senha</label>
-        <input
-          id="senha" name="senha" type="password" required
-          autoComplete="new-password" minLength={12}
-        />
-        <span className="dica">
-          Pelo menos 12 caracteres. Uma frase curta que só você lembra funciona
-          melhor que uma palavra com símbolos.
-        </span>
-      </div>
-
-      <div className="campo">
-        <label htmlFor="confirmacao">Repita a senha</label>
-        <input
-          id="confirmacao" name="confirmacao" type="password" required
-          autoComplete="new-password" minLength={12}
-        />
-      </div>
+      <CampoSenha
+        nome="senha" rotulo="Escolha uma senha"
+        autoComplete="new-password" dica={DICA_SENHA}
+      />
+      <CampoSenha
+        nome="confirmacao" rotulo="Repita a senha"
+        autoComplete="new-password"
+      />
 
       <Botao>{rotuloBotao}</Botao>
     </form>
@@ -141,33 +205,18 @@ export function FormTrocarSenha () {
     <form action={acao} noValidate className="form-senha">
       <Aviso estado={estado} />
 
-      <div className="campo">
-        <label htmlFor="atual">Sua senha atual</label>
-        <input
-          id="atual" name="atual" type="password" required
-          autoComplete="current-password"
-        />
-      </div>
-
-      <div className="campo">
-        <label htmlFor="nova">Senha nova</label>
-        <input
-          id="nova" name="senha" type="password" required
-          autoComplete="new-password" minLength={12}
-        />
-        <span className="dica">
-          Pelo menos 12 caracteres. Uma frase curta que só você lembra funciona
-          melhor que uma palavra com símbolos.
-        </span>
-      </div>
-
-      <div className="campo">
-        <label htmlFor="confirmacao-nova">Repita a senha nova</label>
-        <input
-          id="confirmacao-nova" name="confirmacao" type="password" required
-          autoComplete="new-password" minLength={12}
-        />
-      </div>
+      <CampoSenha
+        nome="atual" rotulo="Sua senha atual"
+        autoComplete="current-password"
+      />
+      <CampoSenha
+        nome="senha" rotulo="Senha nova"
+        autoComplete="new-password" dica={DICA_SENHA}
+      />
+      <CampoSenha
+        nome="confirmacao" rotulo="Repita a senha nova"
+        autoComplete="new-password"
+      />
 
       <Botao>Trocar a senha</Botao>
     </form>

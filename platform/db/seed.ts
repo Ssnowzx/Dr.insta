@@ -3,7 +3,7 @@ import { orm } from './client.ts'
 import { db, waitForDatabase } from './connection.ts'
 import {
   benchmark, client, cycle, delivery, experiment, metricDef, metricTarget,
-  metricValue, request, step
+  metricValue, pillar, request, step
 } from './schema.ts'
 import { ulid } from '../lib/ulid.ts'
 
@@ -244,12 +244,35 @@ const BENCHMARKS: Array<{ key: string; value: string }> = [
   { key: 'product_reel_retention', value: '0.480000' }
 ]
 
+/* The tagged bio link, written out once and reused: the step below hands it to
+   her, and `perfil/perfil.md` proposes the same string. `utm_medium` carries her
+   handle because the brand's own account also has a link in its bio — a generic
+   `ig / bio` credits both of them to the same place, which is exactly what
+   happened when she pasted one without it. */
+const LINK_BIO =
+  'https://www.myfavorite.com.br/?utm_source=influencer' +
+  '&utm_medium=bianca.olivo&utm_campaign=bio'
+
 const STEPS = [
   {
     code: 'a1', urgency: 'today' as const, deadlineLabel: 'hoje, se der',
     title: 'Trocar o link da sua bio por um link com etiqueta',
     summary: 'O link que está lá hoje funciona, mas chega na loja sem dizer que veio de você. A etiqueta faz o relatório creditar cada visita à sua conta.',
-    evidenceValue: '0', evidenceLabel: 'visitas creditadas a você hoje'
+    evidenceValue: '0', evidenceLabel: 'visitas creditadas a você hoje',
+    copyValue: LINK_BIO,
+    copyLabel: 'Cole exatamente isto no link da sua bio',
+    /* Answers the objection she actually raised — "fica comprido e feio no
+       perfil" — with what was measured on her profile, and then stops her from
+       fixing it herself with a link that does not exist yet. */
+    copyNote:
+      'Parece comprido, mas ninguém vê. No seu perfil o Instagram mostra só ' +
+      '"myfavorite.com.br" — conferi hoje. O endereço inteiro aparece só para ' +
+      'você, na tela de edição, e o pedaço depois da interrogação é justamente ' +
+      'o que faz o relatório saber que a visita veio de você.\n\n' +
+      'Dá para deixar curto de verdade, tipo "myfavorite.com.br/bia", mas isso ' +
+      'depende de um ajuste na loja. Não mexe nisso por enquanto: um link curto ' +
+      'antes do ajuste dá erro no seu perfil. Quando estiver pronto, eu troco ' +
+      'aqui e te aviso.'
   },
   {
     code: 'a2', urgency: 'this_week' as const, deadlineLabel: 'esta semana',
@@ -274,6 +297,51 @@ const STEPS = [
     title: 'Postar o conteúdo de peça às 18h',
     summary: 'Seu pico é às 18h, e os dias mais movimentados são domingo e segunda. Vale segurar o que envolve peça e link para o fim da tarde.',
     evidenceValue: '18h', evidenceLabel: 'pico de gente sua online'
+  }
+]
+
+/**
+ * The mix. Percentages, roles and criteria come from `perfil/pilares.md`.
+ *
+ * Ordered by what each one is for and not by size: the engine first, then the
+ * two that are being added, then the one that sustains the founder side.
+ */
+const PILLARS = [
+  {
+    key: 'espelho', name: 'Espelho', share: 50, perWeek: '4 por semana',
+    control: true,
+    thesis: 'Cenas de cotidiano, casal, família e humor em que a pessoa se reconhece ou reconhece alguém. É o que você já faz e é o que te distribui.',
+    role: 'Motor de distribuição. É o que traz quem ainda não te segue. Este não se mexe.',
+    evidence: '"diálogos de todo casal" (11/07, 13s): 1,44M de views, 48 mil compartilhamentos, 5,38% de sends por alcance — mais de 3× a média do nicho.',
+    metricKey: 'sends_reach',
+    success: 'Não piorar. Se este cair, a realocação foi longe demais.'
+  },
+  {
+    key: 'provador', name: 'Provador', share: 25, perWeek: '2 por semana',
+    control: false,
+    thesis: 'Depois de ver, a pessoa sabe como aquela peça se comporta na vida real: veste como, combina com quê, aguenta o dia e a noite.',
+    role: 'Conserta o salvamento. Leva para o permanente o que já converte no Story e some em 24h.',
+    evidence: 'Seus Stories que mais puxam clique são exatamente peça nomeada com contexto: "o vestido que escolhi" (600 cliques), "esse body é em malha pesada" (487).',
+    metricKey: 'saves_reach',
+    success: 'Salvamentos por alcance sair de 0,23% para 0,8% em 14 dias, com no mínimo 7 posts.'
+  },
+  {
+    key: 'padrao', name: 'Padrão', share: 15, perWeek: '1 a 2 por semana',
+    control: false,
+    thesis: 'A My Favorite usada lado a lado com marcas internacionais, como escolha de estilo — não como comparação de preço.',
+    role: 'Único pilar que ataca status: "compartilhar isso me posiciona". É a sua tese de posicionamento, e hoje ninguém no perfil está executando ela.',
+    evidence: 'Suas palavras: "se eu faço k pro e miu miu, a my tá no mesmo parâmetro".',
+    metricKey: 'sends_reach',
+    success: 'Sends por alcance ≥ 1,6% sem a retenção cair abaixo de 40%.'
+  },
+  {
+    key: 'bastidor', name: 'Bastidor', share: 10, perWeek: '1 a cada 2 semanas',
+    control: false,
+    thesis: 'O trabalho de diretora criativa: como a peça nasce, por que essa cor, o que foi cortado e por quê.',
+    role: 'Sustenta o lado fundadora sem soar comercial. Bastidor sem tensão vira diário — precisa ter decisão, erro ou custo.',
+    evidence: 'Você mesma disse que trazer bastidor te coloca "em outro patamar de autoridade" e te diferencia de outras influenciadoras de moda.',
+    metricKey: 'comments_reach',
+    success: 'Comentário com substância, não emoji solto.'
   }
 ]
 
@@ -333,17 +401,46 @@ async function main (): Promise<void> {
   if (clientId === undefined) throw new Error('Client was not created.')
 
   // ----------------------------------------------------------------- cycle
+  const CYCLE_GOAL =
+    'Transformar quem já te assiste em quem compra. Você vê, ela quer — falta ela conseguir chegar.'
+
+  /* Said out loud, before it happens. Left unsaid, the fall in reach is the only
+     visible effect for the first three weeks and she reverts. */
+  const CYCLE_TRADE_OFF =
+    'Suas views médias vão cair, e isso é o combinado. Provador e Padrão não fazem ' +
+    '2 milhões como o humor faz — a troca é alcance por gente que chega na loja. ' +
+    'Nas primeiras semanas isso vai parecer piora se a régua continuar sendo alcance. ' +
+    'É por isso que a métrica que manda no ciclo passou a ser visita rastreada, e não view.'
+
   await o.insert(cycle).values({
     publicCode: ulid(),
     clientId,
     title: 'Caminho até a compra',
-    goal: 'Transformar quem já te assiste em quem compra. Você vê, ela quer — falta ela conseguir chegar.',
+    goal: CYCLE_GOAL,
+    tradeOff: CYCLE_TRADE_OFF,
     northStarMetric: 'Visitas à loja vindas das suas origens',
     startsOn: CYCLE_START,
     state: 'active',
     createdAt: now,
     updatedAt: now
-  }).onDuplicateKeyUpdate({ set: { updatedAt: now } })
+  }).onDuplicateKeyUpdate({
+    /* Everything the file owns, not just the timestamp.
+       `onDuplicateKeyUpdate` used to carry `updatedAt` alone here, which meant
+       correcting a sentence in this file, re-running the seed and watching it
+       print success while the database kept the old text. It was caught twice
+       before, in two different tables; the same shape was in every one of them.
+       The rule: whatever the seed AUTHORS, the seed OVERWRITES. Ids, public
+       codes and anything a person edited in the app stay out. */
+    set: {
+      title: 'Caminho até a compra',
+      goal: CYCLE_GOAL,
+      tradeOff: CYCLE_TRADE_OFF,
+      northStarMetric: 'Visitas à loja vindas das suas origens',
+      startsOn: CYCLE_START,
+      state: 'active',
+      updatedAt: now
+    }
+  })
 
   const [cy] = await o.select({ id: cycle.id }).from(cycle)
     .where(eq(cycle.clientId, clientId)).limit(1)
@@ -517,10 +614,67 @@ async function main (): Promise<void> {
       urgency: s.urgency,
       evidenceValue: s.evidenceValue,
       evidenceLabel: s.evidenceLabel,
+      copyValue: 'copyValue' in s ? s.copyValue : null,
+      copyLabel: 'copyLabel' in s ? s.copyLabel : null,
+      copyNote: 'copyNote' in s ? s.copyNote : null,
       position: i + 1,
       createdAt: now,
       updatedAt: now
-    }).onDuplicateKeyUpdate({ set: { title: s.title, updatedAt: now } })
+    }).onDuplicateKeyUpdate({
+      /* Same rule as the cycle above: everything this file authors. `title`
+         alone meant a corrected summary, a fixed deadline or — as of this
+         change — a link to paste never reached a database that already had the
+         row. `step_status` is hers and lives in its own table, so nothing she
+         answered is at risk here. */
+      set: {
+        title: s.title,
+        summary: s.summary,
+        deadlineLabel: s.deadlineLabel,
+        urgency: s.urgency,
+        evidenceValue: s.evidenceValue,
+        evidenceLabel: s.evidenceLabel,
+        copyValue: 'copyValue' in s ? s.copyValue : null,
+        copyLabel: 'copyLabel' in s ? s.copyLabel : null,
+        copyNote: 'copyNote' in s ? s.copyNote : null,
+        position: i + 1,
+        updatedAt: now
+      }
+    })
+  }
+
+  // -------------------------------------------------------------- pillars
+  for (const [i, p] of PILLARS.entries()) {
+    await o.insert(pillar).values({
+      clientId,
+      cycleId,
+      pillarKey: p.key,
+      name: p.name,
+      sharePct: p.share,
+      perWeek: p.perWeek,
+      thesis: p.thesis,
+      roleNote: p.role,
+      evidence: p.evidence,
+      metricKey: p.metricKey,
+      successLabel: p.success,
+      isControl: p.control ? 1 : 0,
+      position: i + 1,
+      createdAt: now,
+      updatedAt: now
+    }).onDuplicateKeyUpdate({
+      set: {
+        name: p.name,
+        sharePct: p.share,
+        perWeek: p.perWeek,
+        thesis: p.thesis,
+        roleNote: p.role,
+        evidence: p.evidence,
+        metricKey: p.metricKey,
+        successLabel: p.success,
+        isControl: p.control ? 1 : 0,
+        position: i + 1,
+        updatedAt: now
+      }
+    })
   }
 
   // -------------------------------------------------------------- requests
@@ -552,7 +706,7 @@ async function main (): Promise<void> {
   console.log(`Seeded client #${clientId}, cycle #${cycleId}, delivery #${deliveryId}.`)
   console.log(`  ${DEFS.length} metric definitions, ${VALUES.length} values, ${TARGETS.length} targets`)
   console.log(`  ${BENCHMARKS.length} benchmarks, ${EXPERIMENTS.length} experiments`)
-  console.log(`  ${STEPS.length} steps, ${REQUESTS.length} requests`)
+  console.log(`  ${STEPS.length} steps, ${REQUESTS.length} requests, ${PILLARS.length} pillars`)
 }
 
 main()

@@ -67,6 +67,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Anchors `.contador-barra`. The active indicator below is also absolute but
+     sets no offsets, so it sits at its static position either way — this does
+     not move it. */
+  position: relative;
   gap: .1875rem;
   /* 44px is the smallest target a thumb hits without aiming. */
   min-height: 3.25rem;
@@ -77,7 +81,7 @@
   text-decoration: none;
 }
 
-.barra-item-ativo { color: var(--dado); }
+.barra-item-ativo { color: var(--dado-texto); }
 
 /* The active state is not colour alone: a bar appears above the icon, so it
    survives greyscale, colour-blindness and a forced-colours mode. */
@@ -826,7 +830,7 @@ a.secao-nota:hover { text-decoration: underline; }
 
 .etapa-dado-valor {
   font-size: 1.0625rem;
-  color: var(--dado);
+  color: var(--dado-texto);
 }
 
 .etapa-dado-rot {
@@ -912,7 +916,7 @@ a.secao-nota:hover { text-decoration: underline; }
   color: var(--suave);
 }
 
-.pedido-pe strong { color: var(--dado); }
+.pedido-pe strong { color: var(--dado-texto); }
 
 /* =============================================================================
    ACCOUNT
@@ -1324,7 +1328,7 @@ a.secao-nota:hover { text-decoration: underline; }
 .btn-fechar { border-color: var(--ok); color: var(--ok); }
 .btn-fechar:hover { background: var(--ok-bg); }
 .btn-dispensar:hover { border-color: var(--suave); color: var(--tinta); }
-.btn-reabrir { border-color: var(--dado); color: var(--dado); }
+.btn-reabrir { border-color: var(--dado-texto); color: var(--dado-texto); }
 
 .btn-fechar[disabled],
 .btn-dispensar[disabled],
@@ -1597,12 +1601,43 @@ a.secao-nota:hover { text-decoration: underline; }
   line-height: 1.55;
 }
 
+/* Two axes, side by side when there is room and stacked when there is not.
+   They are separate groups because they combine: a single row of five chips
+   reads as one question with five answers, which is what made "duração" and
+   "legenda" look mutually exclusive when they never were. */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  margin-bottom: .875rem;
+}
+
+.filtro-rot {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin: 0 0 .5rem;
+}
+
+.filtro-estado {
+  font-size: .8125rem;
+  color: var(--suave);
+  margin: 0 0 1.5rem;
+}
+
+.filtro-estado a { color: var(--caramelo); font-weight: 600; }
+
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
   margin-bottom: 1.5rem;
 }
+
+/* Inside a `.filtro-eixo` the spacing belongs to the group, not to the row. */
+.filtro-eixo .chips { margin-bottom: 0; }
 
 .chip {
   display: inline-flex;
@@ -1683,7 +1718,7 @@ a.secao-nota:hover { text-decoration: underline; }
   color: var(--suave);
 }
 
-.tag-curto { color: var(--dado); background: var(--dado-fraco); }
+.tag-curto { color: var(--dado-texto); background: var(--dado-fraco); }
 .tag-marca { color: var(--tinta); background: var(--papel2); font-weight: 600; }
 
 .peca-legenda {
@@ -1781,14 +1816,16 @@ a.secao-nota:hover { text-decoration: underline; }
 }
 
 .topo-sino:hover { color: var(--tinta); }
-.topo-sino-ativo { color: var(--dado); }
+.topo-sino-ativo { color: var(--dado-texto); }
 
 .contador {
   font-size: .6875rem;
   font-weight: 700;
   line-height: 1;
   color: var(--sobre-tinta);
-  background: var(--dado);
+  /* `--dado` here read 3.62:1 in light — the badge is a number a person has to
+     read, not a bar, so it answers to 4.5 and not to 3. */
+  background: var(--dado-texto);
   border-radius: var(--raio);
   padding: .1875rem .375rem;
   min-width: 1.125rem;
@@ -1801,6 +1838,17 @@ a.secao-nota:hover { text-decoration: underline; }
   right: .1875rem;
   /* A ring in the surface colour keeps the badge readable over the icon
      beneath it. */
+  box-shadow: 0 0 0 2px var(--papel);
+}
+
+/* The bottom bar sits the count over the top-right of the icon. `.barra-item`
+   is already `position: relative` for the active indicator, so this anchors to
+   the item and not to the page. */
+.contador-barra {
+  position: absolute;
+  top: .3125rem;
+  left: 50%;
+  margin-left: .25rem;
   box-shadow: 0 0 0 2px var(--papel);
 }
 
@@ -2041,6 +2089,272 @@ a.secao-nota:hover { text-decoration: underline; }
   padding: 0 .3125rem;
   border-radius: var(--raio-menor);
 }
+
+/* ----------------------------------------------------------------- pillars
+
+   The editorial mix: what the five adjustments are FOR. It lived in a markdown
+   file the client never opened, which made the plan arrive as five chores with
+   the reasoning stripped out.
+
+   Four hues off one warm ramp, dark to light. Not four different colours: these
+   are parts of one week, and a categorical palette would present them as four
+   unrelated things. Order matters — the darkest is the engine that already
+   works, and the eye reads it first. */
+
+.mix { margin-bottom: 1.75rem; }
+
+.mix-trilho {
+  display: flex;
+  height: 14px;
+  border-radius: var(--raio-menor);
+  overflow: hidden;
+  background: var(--dado-fraco);
+  /* A contour, inset so it costs no height and the percentages keep summing to
+     the track. Whichever end of the ramp is closest to the ground — the pale
+     band in light, the dark one in dark — would otherwise bleed into the page
+     and make the bar look like it stops early. */
+  box-shadow: inset 0 0 0 1px var(--linha);
+}
+
+/* A hairline between the bands, in the surface colour, so two adjacent shades
+   never fuse into one. Inset rather than a border: a border would add width and
+   the percentages would stop summing to the track. */
+.mix-faixa + .mix-faixa { box-shadow: inset 1px 0 0 var(--cartao); }
+
+/* The ramp lifts as a whole in the dark theme. Keeping the light values there
+   put the largest band — the 50% one — at 2.08 against the ground, which is a
+   band you have to know is there to see. The ORDER is what carries the meaning
+   and it is preserved; only the floor moves. */
+.mix-faixa-1 { background: light-dark(#6f3b2a, #965944); }
+.mix-faixa-2 { background: light-dark(#a0523f, #b4715c); }
+.mix-faixa-3 { background: light-dark(#c98a6f, #d99678); }
+.mix-faixa-4 { background: light-dark(#e8c4b4, #f0d9cc); }
+
+.mix-legenda {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1.25rem;
+  margin: .75rem 0 0;
+  padding: 0;
+  font-size: .8125rem;
+  color: var(--tinta2);
+}
+
+.mix-legenda li { display: flex; align-items: center; gap: .4375rem; }
+
+.mix-ponto {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+.pilares {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 48rem) {
+  .pilares { grid-template-columns: repeat(2, 1fr); }
+}
+
+.pilar {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1.25rem;
+}
+
+/* The one that must not change. A different edge, not a different fill: it is
+   the same kind of thing as the others, with a different instruction. */
+.pilar-controle { border-left: 3px solid var(--dado); }
+
+.pilar-cab {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+
+.pilar-nome {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.pilar-share {
+  font-size: 1.375rem;
+  color: var(--dado-texto);
+}
+
+.pilar-ritmo {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin: 0 0 .75rem;
+}
+
+.pilar-tese {
+  font-size: .9375rem;
+  line-height: 1.55;
+  margin: 0 0 .75rem;
+}
+
+.pilar-papel {
+  font-size: .875rem;
+  line-height: 1.55;
+  color: var(--tinta2);
+  margin: 0 0 .75rem;
+}
+
+/* The post and the number that justify the pillar. Set apart because it is
+   evidence and not argument — she can check it. */
+.pilar-prova {
+  font-size: .8125rem;
+  line-height: 1.5;
+  color: var(--suave);
+  border-left: 2px solid var(--linha);
+  padding-left: .75rem;
+  margin: 0 0 .875rem;
+}
+
+.pilar-regras {
+  margin: 0;
+  padding-top: .75rem;
+  border-top: 1px solid var(--linha2);
+  display: grid;
+  gap: .5rem;
+  font-size: .8125rem;
+}
+
+.pilar-regras div { display: flex; gap: .625rem; }
+
+.pilar-regras dt {
+  font-family: var(--mono);
+  font-size: .625rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--suave);
+  flex: 0 0 5.5rem;
+  padding-top: .1875rem;
+}
+
+.pilar-regras dd { margin: 0; color: var(--tinta2); line-height: 1.5; }
+
+/* What the mix costs, said out loud. Marked `atencao` and not `critico`: it is
+   a term of the deal, not a problem — and a warning that looks urgent when
+   nothing is wrong is a warning that stops being read. */
+.troca {
+  margin: 1.5rem 0 0;
+  padding: 1rem 1.125rem;
+  border-radius: var(--raio);
+  background: var(--atencao-bg);
+  border: 1px solid var(--atencao);
+  color: var(--atencao);
+  font-size: .9375rem;
+  line-height: 1.55;
+}
+
+.troca-rot {
+  display: block;
+  font-family: var(--mono);
+  font-size: .625rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: .375rem;
+  opacity: .85;
+}
+
+/* -------------------------------------------------------------- copy a value
+
+   A string handed over instead of described. The step that named a tagged link
+   without giving her the link got a link with the wrong tag pasted into the
+   bio — see `components/copy-value.tsx`. */
+
+.copiar {
+  margin: 1rem 0 0;
+  padding: .875rem;
+  border-radius: var(--raio);
+  background: var(--papel2);
+  border: 1px solid var(--linha);
+}
+
+.copiar-rot {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--tinta2);
+  margin: 0 0 .625rem;
+}
+
+.copiar-linha { display: flex; gap: .5rem; }
+
+/* Monospace, because this is a string to be compared character by character —
+   a wrong `utm_medium` is the failure this exists to prevent, and it is spotted
+   by looking. */
+.copiar-valor {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: .75rem;
+  color: var(--tinta);
+  background: var(--campo-fundo);
+  border: 1px solid var(--linha-campo);
+  border-radius: 10px;
+  padding: .625rem .6875rem;
+}
+
+.copiar-valor:focus-visible {
+  outline: none;
+  border-color: var(--caramelo);
+  box-shadow: 0 0 0 3px var(--foco);
+}
+
+.copiar-btn {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--sobre-tinta);
+  background: var(--tinta);
+  border: 1px solid var(--tinta);
+  border-radius: 10px;
+  padding: 0 1rem;
+  cursor: pointer;
+  /* 44px, and the same height as the field beside it. */
+  min-height: 2.75rem;
+}
+
+.copiar-btn:hover { opacity: .88; }
+.copiar-btn:focus-visible { outline: 2px solid var(--caramelo); outline-offset: 2px; }
+
+.copiar-erro {
+  font-size: .8125rem;
+  color: var(--tijolo);
+  margin: .625rem 0 0;
+}
+
+/* What to know about the value. Separated by a rule rather than by a colour:
+   this is not a warning — it is the answer to "why is this so long", and
+   dressing it as an alert would make an explanation look like a problem. */
+.copiar-nota {
+  margin-top: .875rem;
+  padding-top: .875rem;
+  border-top: 1px solid var(--linha);
+  font-size: .8125rem;
+  line-height: 1.55;
+  color: var(--tinta2);
+}
+
+.copiar-nota p { margin: 0; }
+.copiar-nota p + p { margin-top: .625rem; }
 
 /* ------------------------------------------------------------- experiments
 

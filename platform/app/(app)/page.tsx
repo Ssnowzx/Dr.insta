@@ -11,7 +11,7 @@ import {
 import { clientScope } from '@/lib/dal'
 import { longDate, monthLabel } from '@/lib/format'
 
-export const metadata: Metadata = { title: 'Painel — My Favorite' }
+export const metadata: Metadata = { title: 'Painel' }
 export const dynamic = 'force-dynamic'
 
 /**
@@ -137,10 +137,18 @@ export default async function Painel () {
               </article>
             ))}
           </div>
+          {/* The fall is expected, and this is the screen where she will see it
+              first. Saying it here and not only on the plan is the difference
+              between "the trade-off was agreed" and "the trade-off was agreed
+              somewhere she is not looking". The sentence is short and points at
+              the plan; the full text lives there, next to the mix that causes
+              it, so the two can never drift apart. */}
           <p className="rodape-nota">
             Estes dois vêm da exportação pública dos seus Reels, não dos Insights.
-            Servem para ver esforço e resultado lado a lado — e para a gente
-            perceber quando as views caírem, o que é esperado quando o mix mudar.
+            Servem para ver esforço e resultado lado a lado.{' '}
+            <strong>Se as views caírem, é o combinado</strong> — a troca é alcance
+            por gente que chega na loja, e está escrita em{' '}
+            <Link href="/plano">o que isso custa</Link>, no seu plano.
           </p>
         </section>
       )}

@@ -14,6 +14,13 @@ import { BotaoTema } from './tema'
  * "Novidades" is consultant-only and never enters the bottom bar. Six items
  * across 360px leaves 60px each, and the longest label already needs 53 —
  * so on a phone it becomes a bell in the top bar, where a count fits.
+ *
+ * "Pedidos" carries a count for BOTH roles, and that is the one signal she has.
+ * Nothing is emailed by decision, and `/novidades` is his screen — so before
+ * this, a request opened for her was invisible until she thought to look. The
+ * count rides the destination it is about rather than becoming a second bell:
+ * a badge on a nav item is read on the way past, which is the only moment she
+ * is guaranteed to have.
  */
 
 interface Destino {
@@ -61,16 +68,28 @@ function ativo (pathname: string, href: string): boolean {
   return href === '/' ? pathname === '/' : pathname.startsWith(href)
 }
 
+/**
+ * What the count on a destination means, spelled out for a screen reader.
+ *
+ * A bare "3" beside "Pedidos" is announced as "Pedidos 3", which could be a
+ * position in a list as easily as a number of open items.
+ */
+function rotuloCom (label: string, n: number): string | undefined {
+  return n === 0 ? undefined : `${label}: ${n} em aberto`
+}
+
 export function NavLateral ({
   marca,
   conta,
   consultor,
-  novidades
+  novidades,
+  pedidos
 }: {
   marca: string
   conta: string
   consultor: boolean
   novidades: number
+  pedidos: number
 }) {
   const pathname = usePathname()
 
@@ -96,18 +115,23 @@ export function NavLateral ({
           </li>
         )}
 
-        {DESTINOS.map(d => (
-          <li key={d.href}>
-            <Link
-              href={d.href}
-              className={ativo(pathname, d.href) ? 'rail-item rail-item-ativo' : 'rail-item'}
-              aria-current={ativo(pathname, d.href) ? 'page' : undefined}
-            >
-              <Icone nome={d.icon} />
-              <span>{d.label}</span>
-            </Link>
-          </li>
-        ))}
+        {DESTINOS.map(d => {
+          const n = d.href === '/pedidos' ? pedidos : 0
+          return (
+            <li key={d.href}>
+              <Link
+                href={d.href}
+                className={ativo(pathname, d.href) ? 'rail-item rail-item-ativo' : 'rail-item'}
+                aria-current={ativo(pathname, d.href) ? 'page' : undefined}
+                aria-label={rotuloCom(d.label, n)}
+              >
+                <Icone nome={d.icon} />
+                <span>{d.label}</span>
+                {n > 0 && <span className="numero contador">{n}</span>}
+              </Link>
+            </li>
+          )
+        })}
       </ul>
 
       {/* Pushed to the bottom of the rail: it is a setting, not a destination,
@@ -135,22 +159,30 @@ export function SinoTopo ({ novidades }: { novidades: number }) {
   )
 }
 
-export function NavInferior () {
+export function NavInferior ({ pedidos }: { pedidos: number }) {
   const pathname = usePathname()
 
   return (
     <nav className="barra" aria-label="Seções">
-      {DESTINOS.map(d => (
-        <Link
-          key={d.href}
-          href={d.href}
-          className={ativo(pathname, d.href) ? 'barra-item barra-item-ativo' : 'barra-item'}
-          aria-current={ativo(pathname, d.href) ? 'page' : undefined}
-        >
-          <Icone nome={d.icon} />
-          <span>{d.label}</span>
-        </Link>
-      ))}
+      {DESTINOS.map(d => {
+        const n = d.href === '/pedidos' ? pedidos : 0
+        return (
+          <Link
+            key={d.href}
+            href={d.href}
+            className={ativo(pathname, d.href) ? 'barra-item barra-item-ativo' : 'barra-item'}
+            aria-current={ativo(pathname, d.href) ? 'page' : undefined}
+            aria-label={rotuloCom(d.label, n)}
+          >
+            <Icone nome={d.icon} />
+            <span>{d.label}</span>
+            {/* Over the icon rather than beside the label: the bar gives each
+                item 60px on a 360px phone, and a badge on the baseline would
+                push "Conteúdo" into two lines. */}
+            {n > 0 && <span className="numero contador contador-barra">{n}</span>}
+          </Link>
+        )
+      })}
     </nav>
   )
 }

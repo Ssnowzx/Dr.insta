@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { AuthShell } from '@/components/auth-shell'
 import { FormEntrar } from '@/components/auth-forms'
 import { currentSession } from '@/lib/dal'
 import '../auth.css'
 
-export const metadata: Metadata = { title: 'Entrar — My Favorite' }
+export const metadata: Metadata = { title: 'Entrar' }
 
 /**
  * Sign-in screen.
@@ -28,21 +29,17 @@ export default async function Entrar ({
   const { destino } = await searchParams
 
   return (
-    <div className="auth-wrap">
-      <main className="auth-card">
-        <p className="auth-mark">My Favorite</p>
+    <AuthShell>
+      <h1>Bom te ver.</h1>
+      <p className="auth-lead">
+        Entre para ver o seu plano, o que já foi feito e o que ainda falta.
+      </p>
 
-        <h1>Bom te ver.</h1>
-        <p className="auth-lead">
-          Entre para ver o seu plano, o que já foi feito e o que ainda falta.
-        </p>
+      <FormEntrar {...(destino === undefined ? {} : { destino })} />
 
-        <FormEntrar {...(destino === undefined ? {} : { destino })} />
-
-        <p className="auth-rodape">
-          Esqueceu a senha? <a href="/recuperar">Crie uma nova</a>.
-        </p>
-      </main>
-    </div>
+      <p className="auth-rodape">
+        Esqueceu a senha? <a href="/recuperar">Crie uma nova</a>.
+      </p>
+    </AuthShell>
   )
 }

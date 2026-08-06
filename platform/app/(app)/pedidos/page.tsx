@@ -4,7 +4,7 @@ import { requests } from '@/lib/dashboard'
 import { clientScope } from '@/lib/dal'
 import { shortDate } from '@/lib/format'
 
-export const metadata: Metadata = { title: 'Pedidos — My Favorite' }
+export const metadata: Metadata = { title: 'Pedidos' }
 export const dynamic = 'force-dynamic'
 
 const TIPO: Record<string, string> = {
