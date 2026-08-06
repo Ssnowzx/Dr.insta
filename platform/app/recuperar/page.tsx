@@ -1,10 +1,15 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { FormRecuperar } from '@/components/auth-forms'
+import { currentSession } from '@/lib/dal'
 import '../auth.css'
 
 export const metadata: Metadata = { title: 'Criar uma senha nova — My Favorite' }
 
-export default function Recuperar () {
+export default async function Recuperar () {
+  /* Same reasoning as `/entrar`: the database decides, not the cookie. */
+  if (await currentSession() !== null) redirect('/')
+
   return (
     <div className="auth-wrap">
       <main className="auth-card">

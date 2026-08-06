@@ -10,6 +10,11 @@ and the discarded alternatives live in `openspec/changes/plataforma-cliente/`.
 > English. Anything a person reads on screen — labels, error messages, delivery
 > content — is Brazilian Portuguese.
 
+> **One client per instance.** `TENANT_SLUG` names the client this deployment
+> serves, and there is no client picker in the interface. A second client means
+> a second instance with a different slug and its own database — not a second
+> row on the same screen. See [Tenancy](#tenancy).
+
 ---
 
 ## Stack
@@ -57,7 +62,7 @@ npm run dev
 | `npm run db:status` | Lists what has been applied, changes nothing |
 | `npm run db:seed` | Initial data |
 | `npm run db:import-reels -- <csv>` | Imports the public Reels export |
-| `npm run invite -- --email … --name … --client …` | Creates a user and emails the invite |
+| `npm run invite -- --email … --name …` | Creates a user on `TENANT_SLUG` and prints an invite link (`--consultant` for an unscoped one) |
 | `npm run digest -- --seco` | Prints the daily summary without sending |
 
 ---
@@ -98,6 +103,39 @@ Full detail in the comments of `db/migrations/001-initial-schema.sql`.
 - Reserved words checked against a live MySQL 8.4: `rank` and `groups` are not
   usable as identifiers, which is why `position` and `tier` appear where "order"
   and "group" would read more naturally.
+
+---
+
+## Tenancy
+
+**One client per instance.** `TENANT_SLUG` names it, by `client.slug`. There is
+no picker: both roles land on the same client, and the difference between them
+is what they may *do*, not which client they see.
+
+`lib/tenant.ts` resolves the slug to a `client_id` once per render pass;
+`clientScope()` in `lib/dal.ts` is the only thing pages call:
+
+```ts
+const clientId = await clientScope()   // a client user's own id, or the tenant
+```
+
+It cannot return `null`, so no page has a "which client?" branch to get wrong.
+
+Three properties worth keeping when this changes:
+
+1. **The slug comes from the environment, never from the data.** Deriving it
+   from "the only row in `client`" would let a forgotten seed row silently
+   change who the instance serves, with a panel that renders perfectly.
+2. **The slug comes from the environment, never from the request.** It used to
+   arrive as `?cliente=`, which is why `clientScope()` consulted a client user's
+   own `client_id` first. Nothing a request carries may widen a scope.
+3. **`client_id` stays in the schema and in every query.** Single-tenancy is a
+   property of the deployment, not a reason to drop the column that isolates one
+   client's revenue figures from another's. `canReach` in `lib/scope.ts` is
+   still the predicate, and still tested on its own.
+
+A wrong or missing slug throws on the first request naming the variable and the
+value — it does not fall back to a default and serve the wrong client.
 
 ---
 
@@ -182,7 +220,7 @@ self-service path. Two things close that gap:
 - The sign-in screen records the attempt, and it surfaces on `/novidades` as
   "não conseguiu entrar" — so the consultant learns about it without her having
   to remember to message him.
-- **Conta → Acesso das clientes** mints a fresh link and copies it, to be
+- **Conta → Acesso dela** mints a fresh link and copies it, to be
   relayed over whatever channel they already use. An invite link for someone who
   has never signed in (7 days), a reset link for someone who has (1 hour).
   Generating a new one invalidates the previous.

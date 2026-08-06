@@ -171,8 +171,23 @@ const VALUES: ValueSeed[] = [
   { key: 'tracked_sessions', value: '7976', source: 'ga4', note: 'Gerado sem link na bio — só sticker manual em Stories.' },
   { key: 'conversion_rate', value: '0.002900', source: 'ga4' },
 
-  { key: 'transactions', value: '23', source: 'store' },
-  { key: 'revenue', value: '10583.280000', source: 'store' },
+  /* July had no tagged link in the bio, so the store attributed these orders by
+     a rule of its own that is recorded nowhere. The figure is the best one
+     available and it is NOT a tracked measurement — a distinction the reader
+     cannot make from "23" alone, and the reason the first step of the plan
+     exists. */
+  {
+    key: 'transactions',
+    value: '23',
+    source: 'store',
+    note: 'Em julho não havia link etiquetado. A loja atribuiu estes pedidos por critério próprio, que não está registrado aqui — é o melhor número disponível, não uma medição rastreada. Com a etiqueta no ar, o mês seguinte passa a ser comparável.'
+  },
+  {
+    key: 'revenue',
+    value: '10583.280000',
+    source: 'store',
+    note: 'Mesmo período sem link etiquetado: a atribuição é da loja, por critério não registrado aqui.'
+  },
   /* The disagreement the schema exists to preserve: the form said R$ 12.7k and
      the panel said R$ 10,583.28. She confirmed ~10k, so the panel is what
      counts — but deleting the other number would erase the fact that they ever
@@ -371,7 +386,13 @@ async function main (): Promise<void> {
       updatedAt: now,
       ...(v.sample === undefined ? {} : { sampleSize: v.sample }),
       ...(v.note === undefined ? {} : { note: v.note })
-    }).onDuplicateKeyUpdate({ set: { value: v.value, updatedAt: now } })
+      /* `note` travels in the update, not only in the insert. Without it a
+         corrected caveat would sit in this file and never reach a database
+         that already had the row — the seed would report success and change
+         nothing, which is the worst shape a fix can take. */
+    }).onDuplicateKeyUpdate({
+      set: { value: v.value, note: v.note ?? null, updatedAt: now }
+    })
   }
 
   // -------------------------------------------------------------- targets
@@ -405,7 +426,7 @@ async function main (): Promise<void> {
   const EXPERIMENTS = [
     {
       name: 'Etiqueta no link da bio',
-      hypothesis: 'Sem parâmetro, o tráfego da bio não é creditado ao canal dela.',
+      hypothesis: 'Sem a etiqueta, a visita que sai da sua bio chega na loja sem dizer que veio de você — e o relatório credita a ninguém.',
       isolated: 'link da bio',
       successLabel: 'Volume mensurável na campanha bio',
       position: 1
@@ -420,7 +441,7 @@ async function main (): Promise<void> {
     },
     {
       name: 'Voz única para marca',
-      hypothesis: 'Post de produto performa mal em parte porque ela troca de voz ao falar da própria marca.',
+      hypothesis: 'O post de produto rende menos em parte porque a sua voz muda quando o assunto é a própria marca.',
       isolated: 'legenda',
       key: 'product_reel_retention', successValue: '0.400000',
       successLabel: 'retenção de Reel de produto ≥ 40%',
@@ -428,7 +449,7 @@ async function main (): Promise<void> {
     },
     {
       name: 'Unboxing natural no closet',
-      hypothesis: 'Produto mostrado no ambiente dela converte melhor que apresentação formal.',
+      hypothesis: 'Peça mostrada no seu ambiente converte melhor que apresentação formal.',
       isolated: 'formato do conteúdo de produto',
       key: 'conversion_rate', successValue: '0.005000',
       successLabel: 'conversão do dia ≥ 0,50%',
@@ -453,7 +474,13 @@ async function main (): Promise<void> {
       ...(e.successValue === undefined ? {} : { successValue: e.successValue }),
       ...(e.minSample === undefined ? {} : { minSample: e.minSample }),
       ...(e.minDays === undefined ? {} : { minDays: e.minDays })
-    }).onDuplicateKeyUpdate({ set: { updatedAt: now } })
+          /* Copy corrected in this file has to reach a database that already
+         holds the row. Updating only `updatedAt` meant a reworded hypothesis
+         sat here and never shipped — the seed reporting success while changing
+         nothing, which is the worst shape a fix can take. */
+    }).onDuplicateKeyUpdate({
+      set: { name: e.name, hypothesis: e.hypothesis, successLabel: e.successLabel, updatedAt: now }
+    })
   }
 
   // ------------------------------------------------------ delivery + steps

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { FormEntrar } from '@/components/auth-forms'
+import { currentSession } from '@/lib/dal'
 import '../auth.css'
 
 export const metadata: Metadata = { title: 'Entrar — My Favorite' }
@@ -15,6 +17,14 @@ export default async function Entrar ({
 }: {
   searchParams: Promise<{ destino?: string }>
 }) {
+  /* Sending an already-signed-in person home belongs here and not in `proxy.ts`,
+     which can only see that a cookie exists. A cookie whose session is gone,
+     expired, or owned by a deactivated user would bounce her away from the one
+     screen that could let her back in — and `requireSession()` would bounce her
+     straight back, forever. Asking the database costs one query on a screen
+     nobody opens in a loop. */
+  if (await currentSession() !== null) redirect('/')
+
   const { destino } = await searchParams
 
   return (

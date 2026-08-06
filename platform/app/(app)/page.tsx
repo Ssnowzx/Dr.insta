@@ -1,15 +1,14 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ClientPicker } from '@/components/client-picker'
 import { DataAge } from '@/components/freshness'
 import { Funnel } from '@/components/funnel'
 import { Series } from '@/components/series'
 import { MetricBar, MetricStat } from '@/components/metric-bar'
 import {
-  activeCycle, clientBySlug, clientProfile, funnel, latestPeriod, metrics,
+  activeCycle, clientProfile, funnel, latestPeriod, metrics,
   monthlySeries, requests
 } from '@/lib/dashboard'
-import { requireSession } from '@/lib/dal'
+import { clientScope } from '@/lib/dal'
 import { longDate, monthLabel } from '@/lib/format'
 
 export const metadata: Metadata = { title: 'Painel — My Favorite' }
@@ -28,21 +27,8 @@ export const dynamic = 'force-dynamic'
  * page if they came first — and this client\'s risk is precisely that she reads
  * the big numbers and concludes nothing is wrong.
  */
-export default async function Painel ({
-  searchParams
-}: {
-  searchParams: Promise<{ cliente?: string }>
-}) {
-  const identity = await requireSession()
-  const { cliente } = await searchParams
-
-  /* A client user's own id always wins; the query string is only consulted for
-     a consultant, who has none. Reading the parameter first would let a client
-     open another client by editing the URL. */
-  const clientId = identity.clientId
-    ?? (cliente === undefined ? null : (await clientBySlug(cliente))?.id ?? null)
-
-  if (clientId === null) return <ClientPicker base="/" />
+export default async function Painel () {
+  const clientId = await clientScope()
 
   const [profile, cycle, period] = await Promise.all([
     clientProfile(clientId),
@@ -69,10 +55,12 @@ export default async function Painel ({
     monthlySeries(clientId, ['views', 'posts_published'])
   ])
 
-  const decidem = todas
-    .filter(m => (m.tier === 'decision' || m.tier === 'north_star') && m.value !== null)
-    .sort((a, b) => (a.tier === 'north_star' ? -1 : 0) - (b.tier === 'north_star' ? -1 : 0))
-
+  /* The north-star metric leaves the grid and gets the full width. Sorting it
+     first inside a grid of identical cards made it *first*, not *primary* — and
+     a reader scanning nine equal rectangles has no way to tell which one the
+     cycle is decided on. */
+  const norte = todas.find(m => m.tier === 'north_star' && m.value !== null) ?? null
+  const decidem = todas.filter(m => m.tier === 'decision' && m.value !== null)
   const acompanhar = todas.filter(m => m.tier === 'monitor' && m.value !== null)
   const abertos = pedidos.filter(p => p.state === 'open' || p.state === 'in_progress')
 
@@ -87,14 +75,12 @@ export default async function Painel ({
         <DataAge period={period} />
       </header>
 
-      <section className="painel-destaque">
-        <div className="destaque-cab">
-          <h2 className="destaque-titulo">De quem te vê até quem compra</h2>
-          <p className="destaque-sub">
-            Quatro degraus, na mesma escala. O primeiro é o tamanho da sua
-            audiência; o último é quanta gente chegou a comprar.
-          </p>
-        </div>
+      <section className="placa">
+        <h2 className="placa-sobrancelha">De quem te vê até quem compra</h2>
+        <p className="placa-sub">
+          Quatro degraus, na mesma escala. O primeiro é o tamanho da sua
+          audiência; o último é quanta gente chegou a comprar.
+        </p>
         <Funnel stages={etapas} />
       </section>
 
@@ -124,6 +110,8 @@ export default async function Painel ({
           <h2 className="titulo-secao">O que decide este ciclo</h2>
           <p className="secao-nota">seguir estes, não a média</p>
         </div>
+        {norte !== null && <MetricBar metric={norte} destaque />}
+
         <div className="grade-metricas">
           {decidem.map(m => <MetricBar key={m.key} metric={m} />)}
         </div>

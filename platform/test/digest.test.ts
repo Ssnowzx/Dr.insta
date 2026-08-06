@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { orm } from '../db/client.ts'
 import { db } from '../db/connection.ts'
 import { auditLog, client, delivery, step, stepStatus, user } from '../db/schema.ts'
-import { activeClientIds, digestFor } from '../lib/digest.ts'
+import { digestFor } from '../lib/digest.ts'
 import { ulid } from '../lib/ulid.ts'
 
 /**
@@ -193,26 +193,6 @@ describe('digestFor', () => {
   })
 })
 
-describe('activeClientIds', () => {
-  it('should list a client that is not archived', async () => {
-    // ARRANGE / ACT
-    const ids = await activeClientIds()
-
-    // ASSERT
-    expect(ids).toContain(clientId)
-  })
-
-  it('should leave out an archived client', async () => {
-    // ARRANGE — `isNull` and not `eq(column, null)`: in SQL nothing equals NULL,
-    // so the equality form would match no rows and the digest would go out
-    // about nobody
-    await orm().update(client).set({ archivedAt: new Date() }).where(eq(client.id, clientId))
-
-    // ACT
-    const ids = await activeClientIds()
-
-    // ASSERT
-    expect(ids).not.toContain(clientId)
-    await orm().update(client).set({ archivedAt: null }).where(eq(client.id, clientId))
-  })
-})
+/* `activeClientIds` is gone: the instance serves one client, resolved from
+   `TENANT_SLUG` by `lib/tenant.ts`, so there is no list to walk. What replaced
+   those two tests lives in `test/tenant.test.ts`. */

@@ -53,7 +53,7 @@ export default async function Convite ({
             addressing the wrong person. */}
         <p className="auth-lead">
           {holder.role === 'consultant'
-            ? 'Escolha uma senha e o acesso de consultor fica pronto: os painéis, os planos e o retorno de cada cliente num lugar só.'
+            ? 'Escolha uma senha e o acesso de consultor fica pronto: o painel, o plano e o retorno dela num lugar só.'
             : 'Escolha uma senha e a sua área fica pronta. É onde vão viver o plano, os números e o que eu precisar te pedir — tudo num lugar só, sem link novo a cada vez.'}
         </p>
 

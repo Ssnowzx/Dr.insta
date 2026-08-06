@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ClientPicker } from '@/components/client-picker'
-import { clientBySlug, requests } from '@/lib/dashboard'
-import { requireSession } from '@/lib/dal'
+import { requests } from '@/lib/dashboard'
+import { clientScope } from '@/lib/dal'
 import { shortDate } from '@/lib/format'
 
 export const metadata: Metadata = { title: 'Pedidos — My Favorite' }
@@ -29,20 +28,8 @@ const ESTADO: Record<string, { rot: string; classe: string }> = {
  * Four of these five are just "send me the data" — saying so up front is what
  * keeps the list from reading as five pieces of homework.
  */
-export default async function Pedidos ({
-  searchParams
-}: {
-  searchParams: Promise<{ cliente?: string }>
-}) {
-  const identity = await requireSession()
-  const { cliente } = await searchParams
-
-  const clientId = identity.clientId
-    ?? (cliente === undefined ? null : (await clientBySlug(cliente))?.id ?? null)
-
-  if (clientId === null) return <ClientPicker base="/pedidos" />
-
-  const lista = await requests(clientId)
+export default async function Pedidos () {
+  const lista = await requests(await clientScope())
   const abertos = lista.filter(p => p.state === 'open' || p.state === 'in_progress')
   const fechados = lista.filter(p => p.state === 'delivered' || p.state === 'dropped')
   const soDado = abertos.filter(p => p.kind === 'data').length

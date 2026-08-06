@@ -2,6 +2,7 @@ import 'server-only'
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { readSession } from './session.ts'
+import { tenantId } from './tenant.ts'
 import type { Identity } from './session.ts'
 
 
@@ -39,37 +40,25 @@ export async function requireConsultant (): Promise<Identity> {
 /**
  * The `client_id` this request is allowed to see.
  *
- * For a client user it is theirs, full stop. For the consultant it is whichever
- * one was asked for — which is why `wanted` exists: without it the consultant
- * could not open any client at all.
+ * For a client user it is theirs, full stop. For the consultant — who has no
+ * `client_id` — it is the one client this instance was deployed to serve.
  *
- * Returns `null` when the consultant picked no client (overview). Returning an
- * arbitrary client's id in that case would be worse than returning nothing.
+ * Never `null`: a domain query never runs without a `client_id`, and a function
+ * that could return "no client" would turn one unhandled branch into a blank
+ * screen or, worse, an unscoped query.
+ *
+ * It used to take the client as an argument, read from the query string, so the
+ * consultant could pick one. That is gone with the picker: the tenant is a
+ * property of the deployment now, not of the URL.
  */
-export async function clientScope (wanted?: number): Promise<number | null> {
+export async function clientScope (): Promise<number> {
   const identity = await requireSession()
 
-  if (identity.clientId !== null) {
-    /* A client user asking for another client: the request is ignored, not
-       denied. Denying with 403 would confirm that the other client exists. */
-    return identity.clientId
-  }
+  /* A client user's own id always wins, and it is the only thing consulted for
+     them — nothing a request can carry may widen a client's own scope. */
+  if (identity.clientId !== null) return identity.clientId
 
-  return wanted ?? null
-}
-
-/**
- * Mandatory scope: fails when no client could be resolved.
- *
- * A domain query never runs without `client_id`. A function that defaulted to
- * "all clients" would turn one forgotten argument into a cross-client leak.
- */
-export async function requireClientScope (wanted?: number): Promise<number> {
-  const clientId = await clientScope(wanted)
-  if (clientId === null) {
-    throw new Error('Domain query with no resolved client.')
-  }
-  return clientId
+  return await tenantId()
 }
 
 /* Re-exported so callers have one import for the whole access story. The rule

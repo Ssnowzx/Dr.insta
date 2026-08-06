@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { eq, lt } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import { session, user } from '@/db/schema'
-import { SESSION_COOKIE, SESSION_TTL_MS } from './constants.ts'
+import { SESSION_COOKIE, SESSION_COOKIE_TTL_MS, SESSION_TTL_MS } from './constants.ts'
 
 /**
  * Sessions with an opaque token.
@@ -18,8 +18,27 @@ import { SESSION_COOKIE, SESSION_TTL_MS } from './constants.ts'
  * for an Argon2 on every request would buy nothing.
  */
 
-/** Renew when less than a third is left — avoids an UPDATE on every request. */
-const RENEW_THRESHOLD_MS = SESSION_TTL_MS / 3
+/**
+ * A session slides forward once a third of its life has been spent. Waiting
+ * that long is what keeps an UPDATE off every single request.
+ *
+ * The old comment here read "renew when less than a third is left", which was
+ * backwards and hid how early this fires: with a 90-day session the renewal
+ * starts on day 30, not day 60.
+ */
+const RENEW_AFTER_MS = SESSION_TTL_MS / 3
+
+/**
+ * Whether a session is far enough along to be pushed forward.
+ *
+ * Pure, and exported so the threshold can be pinned by a test: it is arithmetic
+ * on two dates, and it was wrong in the comment for months without anyone
+ * noticing, because nothing ever asserted it.
+ */
+export function precisaRenovar (expiresAt: Date, now: Date): boolean {
+  const restante = expiresAt.getTime() - now.getTime()
+  return restante < SESSION_TTL_MS - RENEW_AFTER_MS
+}
 
 export interface Identity {
   userId: number
@@ -66,15 +85,19 @@ export async function createSession (
     secure: isProduction(),
     sameSite: 'lax',
     path: '/',
-    expires: expiresAt
+    /* Not `expiresAt`. The cookie outlives the session on purpose — see
+       `SESSION_COOKIE_TTL_MS`. This is the only place the cookie is ever
+       written, which is what makes renewal safe inside a page render. */
+    maxAge: Math.floor(SESSION_COOKIE_TTL_MS / 1000)
   })
 }
 
 /**
  * Reads the session from the cookie and returns the identity, or `null`.
  *
- * Renews the expiry once two thirds have elapsed. Without that, the client
- * would be signed out on day 90 even while using the platform every week.
+ * Slides the expiry forward once a third of the session has been spent, so
+ * someone who uses the platform every week is never signed out on day 90. Only
+ * the database row moves — see the comment on the renewal below.
  */
 export async function readSession (): Promise<Identity | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value
@@ -108,22 +131,22 @@ export async function readSession (): Promise<Identity | null> {
     return null
   }
 
-  const remaining = row.expiresAt.getTime() - now.getTime()
-  if (remaining < SESSION_TTL_MS - RENEW_THRESHOLD_MS) {
-    const newExpiry = new Date(now.getTime() + SESSION_TTL_MS)
+  /* Renewal touches the DATABASE ONLY.
+
+     This runs inside a page render, and a page render may not write cookies —
+     Next allows that from a Server Action or a Route Handler and nowhere else.
+     The version of this block that also re-wrote the cookie threw on every
+     request once a session passed the threshold, and the throw surfaced as a
+     500 on every screen. An UPDATE is legal here; a Set-Cookie is not.
+
+     Nothing is lost by dropping the cookie write: the cookie is issued once at
+     sign-in with a lifetime far longer than any session, so it has no expiry to
+     keep in step. See `SESSION_COOKIE_TTL_MS`. */
+  if (precisaRenovar(row.expiresAt, now)) {
     await orm()
       .update(session)
-      .set({ expiresAt: newExpiry, usedAt: now })
+      .set({ expiresAt: new Date(now.getTime() + SESSION_TTL_MS), usedAt: now })
       .where(eq(session.id, row.sessionId))
-
-    const store = await cookies()
-    store.set(SESSION_COOKIE, token, {
-      httpOnly: true,
-      secure: isProduction(),
-      sameSite: 'lax',
-      path: '/',
-      expires: newExpiry
-    })
   }
 
   return {
@@ -170,4 +193,4 @@ export function safeCompare (a: string, b: string): boolean {
 }
 
 export { digest as digestToken }
-export { SESSION_COOKIE, SESSION_TTL_MS }
+export { SESSION_COOKIE, SESSION_COOKIE_TTL_MS, SESSION_TTL_MS }

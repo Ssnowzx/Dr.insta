@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { eq } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import { auditLog, user } from '@/db/schema'
+import { currentSession } from './dal.ts'
 import { burnEquivalentTime, hashPassword, isTooShort, MIN_LENGTH, verifyPassword } from './password.ts'
 import { createSession, destroyAllSessions, destroySession } from './session.ts'
 import { consumeToken, issueToken, resolveToken } from './tokens.ts'
@@ -158,6 +159,65 @@ export async function acceptInvite (token: string, _prev: FormState, form: FormD
 
 export async function setNewPassword (token: string, _prev: FormState, form: FormData): Promise<FormState> {
   return await applyNewPassword(token, 'reset', form)
+}
+
+// ------------------------------------------------------- changing a password
+
+/**
+ * Changes the password of whoever is signed in.
+ *
+ * This is what makes the account hers rather than something issued to her.
+ * Before it existed, the password she typed once at the invite was the password
+ * she had forever, and the only way to alter it was to ask the consultant to
+ * mint a link — which put a credential she owns behind someone else's action.
+ *
+ * The current password is required. Without it, anyone who found an unlocked
+ * phone could take the account over silently: they already have the session,
+ * and changing the password is what makes the takeover permanent.
+ */
+export async function changePassword (_prev: FormState, form: FormData): Promise<FormState> {
+  const identity = await currentSession()
+  if (identity === null) return { error: 'Sua sessão expirou. Entre de novo.' }
+
+  const atual = String(form.get('atual') ?? '')
+  const nova = String(form.get('senha') ?? '')
+  const confirmacao = String(form.get('confirmacao') ?? '')
+
+  if (atual === '') return { error: 'Escreva a sua senha atual.' }
+  if (isTooShort(nova)) {
+    return { error: `A senha nova precisa de pelo menos ${MIN_LENGTH} caracteres.` }
+  }
+  if (nova !== confirmacao) return { error: 'As duas senhas novas não são iguais.' }
+  if (nova === atual) return { error: 'A senha nova é igual à atual.' }
+
+  const rows = await orm()
+    .select({ id: user.id, clientId: user.clientId, passwordHash: user.passwordHash })
+    .from(user)
+    .where(eq(user.id, identity.userId))
+    .limit(1)
+
+  const found = rows[0]
+  if (found === undefined || found.passwordHash === null) {
+    return { error: 'Não consegui confirmar a sua senha atual.' }
+  }
+
+  const confere = await verifyPassword(found.passwordHash, atual)
+  if (!confere) return { error: 'A senha atual não confere.' }
+
+  const hash = await hashPassword(nova)
+  await orm().update(user).set({ passwordHash: hash }).where(eq(user.id, found.id))
+
+  /* Every other session ends. If the reason for changing the password is that
+     someone else had it, leaving their session alive defeats the change. The
+     one being used right now is created fresh below, so she is not signed out
+     of the screen she is standing on. */
+  await destroyAllSessions(found.id)
+
+  const context = await requestContext()
+  await createSession(found.id, context)
+  await record('changed_password', found.id, found.clientId, context.ip)
+
+  return { ok: 'Senha trocada. As outras sessões foram encerradas.' }
 }
 
 /**

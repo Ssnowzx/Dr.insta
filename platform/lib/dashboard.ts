@@ -1,10 +1,11 @@
 import 'server-only'
-import { and, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import {
-  benchmark, client, cycle, delivery, metricDef, metricTarget, metricValue,
-  file, post, request, requestEvent, step, stepStatus, user
+  benchmark, client, cycle, delivery, experiment, metricDef, metricTarget,
+  metricValue, file, post, request, requestEvent, step, stepStatus, user
 } from '@/db/schema'
+import { mediana } from './acervo.ts'
 import type { Unit } from './format.ts'
 
 /**
@@ -86,6 +87,9 @@ export interface MetricCard {
   unit: Unit
   decimals: number
   tier: 'north_star' | 'decision' | 'monitor'
+  /* Where the number is read from, in the client's own tools. It lived in the
+     database and never reached the screen — see `lib/origem.ts`. */
+  howToMeasure: string | null
   value: number | null
   sampleSize: number | null
   note: string | null
@@ -122,6 +126,7 @@ export async function metrics (
       unit: metricDef.unit,
       decimals: metricDef.decimals,
       tier: metricDef.tier,
+      howToMeasure: metricDef.howToMeasure,
       value: metricValue.value,
       sampleSize: metricValue.sampleSize,
       note: metricValue.note,
@@ -163,6 +168,7 @@ export async function metrics (
     unit: r.unit,
     decimals: r.decimals,
     tier: r.tier,
+    howToMeasure: r.howToMeasure,
     value: num(r.value),
     sampleSize: r.sampleSize,
     note: r.note,
@@ -197,6 +203,51 @@ export async function activeCycle (clientId: number): Promise<CycleSummary | nul
     .limit(1)
 
   return rows[0] ?? null
+}
+
+export interface ExperimentRow {
+  id: number
+  name: string
+  hypothesis: string
+  isolatedVariable: string | null
+  metricLabel: string | null
+  successLabel: string | null
+  minSample: number | null
+  minDays: number | null
+  state: 'not_started' | 'running' | 'read' | 'inconclusive' | 'abandoned'
+  outcome: string | null
+}
+
+/**
+ * The cycle's experiments.
+ *
+ * Four rows existed in the database from the first seed and no screen ever read
+ * them — `experiment` was referenced in zero files outside the schema. They are
+ * the part of the method that makes it falsifiable: a hypothesis, the ONE
+ * variable being changed, and the number that would settle it. A plan without
+ * them is a list of chores; with them it is an argument someone can disagree
+ * with.
+ */
+export async function experiments (clientId: number, cycleId: number): Promise<ExperimentRow[]> {
+  const rows = await orm()
+    .select({
+      id: experiment.id,
+      name: experiment.name,
+      hypothesis: experiment.hypothesis,
+      isolatedVariable: experiment.isolatedVariable,
+      metricLabel: metricDef.label,
+      successLabel: experiment.successLabel,
+      minSample: experiment.minSample,
+      minDays: experiment.minDays,
+      state: experiment.state,
+      outcome: experiment.outcome
+    })
+    .from(experiment)
+    .leftJoin(metricDef, eq(metricDef.id, experiment.metricDefId))
+    .where(and(eq(experiment.clientId, clientId), eq(experiment.cycleId, cycleId)))
+    .orderBy(experiment.position)
+
+  return rows
 }
 
 export async function clientProfile (clientId: number) {
@@ -395,15 +446,7 @@ export async function clientStepAnswers (clientId: number): Promise<StepAnswer[]
     .orderBy(desc(stepStatus.updatedAt))
 }
 
-/** Clients a consultant may open. Used by the picker until a real one exists. */
-export async function listClients () {
-  return await orm()
-    .select({ id: client.id, slug: client.slug, name: client.name, brand: client.brand })
-    .from(client)
-    .where(sql`${client.archivedAt} IS NULL`)
-    .orderBy(client.name)
-}
-
+/** Resolves the tenant slug this instance serves — see `lib/tenant.ts`. */
 export async function clientBySlug (slug: string) {
   const rows = await orm()
     .select({ id: client.id, name: client.name })
@@ -568,6 +611,10 @@ export interface PostRow {
   views: number | null
   likes: number | null
   comments: number | null
+  /* A REPOST count, not a share count. Measured against July's Insights the
+     public field read 1.986 where Insights said 48.000 shares — it is the weak
+     signal, and the label on screen says so. */
+  reposts: number | null
   reach: number | null
   provenance: 'public' | 'insights' | 'mixed'
 }
@@ -596,7 +643,7 @@ export async function posts (
       url: post.url, caption: post.caption, durationSec: post.durationSec,
       pillar: post.pillar, mentionsBrand: post.mentionsBrand,
       views: post.views, likes: post.likes, comments: post.comments,
-      reach: post.reach, provenance: post.provenance
+      reposts: post.reposts, reach: post.reach, provenance: post.provenance
     })
     .from(post)
     .where(and(...conditions))
@@ -628,6 +675,22 @@ export interface PostCounts {
  * That mismatch already hid the empty-cell callout once: `"0" === 0` is false,
  * and the finding silently never rendered.
  */
+/**
+ * The middle of her archive, for reading one post against the rest.
+ *
+ * Deliberately unfiltered: the ruler must not move when the reader clicks
+ * "até 20s". A median that follows the filter would make every post in every
+ * cut look average, which is the one thing a comparison must never do.
+ */
+export async function archiveMedian (clientId: number): Promise<number | null> {
+  const rows = await orm()
+    .select({ views: post.views })
+    .from(post)
+    .where(and(eq(post.clientId, clientId), isNotNull(post.views)))
+
+  return mediana(rows.map(r => Number(r.views)).filter(v => v > 0))
+}
+
 export async function postCounts (clientId: number): Promise<PostCounts> {
   const [row] = await orm()
     .select({
@@ -707,7 +770,7 @@ export interface ClientUser {
  * Consultants are excluded: a consultant minting a link for another consultant
  * is a privilege path, not a support one, and it has no use case here.
  */
-export async function clientUsers (): Promise<ClientUser[]> {
+export async function clientUsers (clientId: number): Promise<ClientUser[]> {
   const rows = await orm()
     .select({
       id: user.id,
@@ -717,7 +780,15 @@ export async function clientUsers (): Promise<ClientUser[]> {
       lastSeenAt: user.lastSeenAt
     })
     .from(user)
-    .where(and(eq(user.role, 'client'), eq(user.active, 1)))
+    /* Scoped by `client_id` like every other query here. On a dedicated
+       instance this is the same set either way, but a listing that ignores the
+       scope is one restored database dump away from minting an access link for
+       somebody else's client. */
+    .where(and(
+      eq(user.clientId, clientId),
+      eq(user.role, 'client'),
+      eq(user.active, 1)
+    ))
     .orderBy(user.name)
 
   return rows.map(r => ({

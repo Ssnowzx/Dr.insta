@@ -1,4 +1,5 @@
 import type { MetricCard } from '@/lib/dashboard'
+import { descreverOrigem } from '@/lib/origem'
 import { format } from '@/lib/format'
 
 /**
@@ -39,7 +40,12 @@ export function MetricStat ({ metric }: { metric: MetricCard }) {
   )
 }
 
-export function MetricBar ({ metric }: { metric: MetricCard }) {
+/**
+ * @param destaque The north-star metric. It gets the full width and a much
+ *   larger value, because "the one the cycle is decided on" has to be legible
+ *   as a rank and not only as a position in a list.
+ */
+export function MetricBar ({ metric, destaque = false }: { metric: MetricCard; destaque?: boolean }) {
   const { status, label } = statusOf(metric)
 
   /* A track needs something to compare against. With no target and no niche
@@ -71,7 +77,9 @@ export function MetricBar ({ metric }: { metric: MetricCard }) {
   const staleBenchmark = benchmarkAge !== null && benchmarkAge >= 12
 
   return (
-    <article className="metrica">
+    <article className={destaque ? 'metrica metrica-norte' : 'metrica'}>
+      {destaque && <p className="metrica-posto">a métrica que decide o ciclo</p>}
+
       <div className="metrica-cab">
         <h3 className="metrica-nome">{metric.label}</h3>
         <span className={`selo selo-${status}`}>{label}</span>
@@ -125,6 +133,46 @@ export function MetricBar ({ metric }: { metric: MetricCard }) {
       {metric.description !== null && (
         <p className="metrica-desc">{metric.description}</p>
       )}
+
+      {/* Provenance, on the card and not in a footnote. The consultant had to
+          ask where "23 purchases" came from and whether it was an average; the
+          answer was already in the database and invisible. A number arrives
+          here from four different panels, two of them disagree about revenue on
+          purpose, and one source is a person typing — none of which the reader
+          could tell from the figure alone. */}
+      {(() => {
+        const origem = descreverOrigem(metric.source)
+        if (origem === null && metric.note === null) return null
+
+        return (
+          <div className="metrica-origem">
+            <p className="metrica-origem-linha">
+              {origem !== null && (
+                <span className={origem.medido ? 'origem-selo' : 'origem-selo origem-selo-informado'}>
+                  {origem.curto}
+                </span>
+              )}
+              <span className="metrica-origem-txt">
+                {origem?.longo}
+                {metric.howToMeasure !== null && origem?.medido === true && (
+                  <>
+                    {' '}
+                    <span className="metrica-onde">{metric.howToMeasure}</span>
+                  </>
+                )}
+              </span>
+            </p>
+
+            {/* On its own line, because it is about THIS value and not about
+                the source. "No link in the bio during the period" is what turns
+                a zero from a failure into a fact — and it was stored in the
+                database and never shown. */}
+            {metric.note !== null && (
+              <p className="metrica-origem-nota">{metric.note}</p>
+            )}
+          </div>
+        )
+      })()}
 
       {metric.contaminated && (
         <p className="ressalva ressalva-atencao">

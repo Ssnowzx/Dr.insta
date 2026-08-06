@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, desc, eq, gte, isNull, lt } from 'drizzle-orm'
+import { and, desc, eq, gte, lt } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import {
   auditLog, client, delivery, file, request, requestEvent, step, stepStatus, user
@@ -189,18 +189,4 @@ export async function newsSince (userId: number, fallbackDays = 7): Promise<Date
     .limit(1)
 
   return row?.seenAt ?? new Date(Date.now() - fallbackDays * 24 * 60 * 60 * 1000)
-}
-
-/** Every client a consultant would be summarised about. */
-export async function activeClientIds (): Promise<number[]> {
-  const rows = await orm()
-    .select({ id: client.id })
-    .from(client)
-    /* `isNull`, not `eq(column, null)`: in SQL nothing equals NULL, not even
-       NULL, so the equality form silently matches no rows and the digest goes
-       out about nobody. */
-    .where(isNull(client.archivedAt))
-    .orderBy(client.name)
-
-  return rows.map(r => r.id)
 }

@@ -16,6 +16,20 @@ import { SESSION_COOKIE } from '@/lib/constants'
  * nothing would leak — a visitor would just see the screen flash before being
  * redirected.
  *
+ * WHAT THIS FILE MUST NEVER DO
+ *
+ * Send anyone AWAY from a public route on the strength of the cookie alone.
+ * A cookie proves nothing: the session row may be gone, expired, or belong to a
+ * deactivated user. This file used to bounce `/entrar` → `/` whenever a cookie
+ * existed, while `requireSession()` bounced `/` → `/entrar` whenever that cookie
+ * failed to resolve. The two rules fed each other and the browser died on
+ * ERR_TOO_MANY_REDIRECTS, with no way back that did not involve clearing cookies
+ * by hand — and deactivating a user was enough to trigger it.
+ *
+ * The "you are already signed in" redirect now lives in the sign-in and recovery
+ * pages, which ask the database. An optimistic guess may only ever ADD a
+ * restriction here, never lift one.
+ *
  * Route paths stay in pt-BR: they are URLs the client sees and shares.
  */
 
@@ -33,18 +47,15 @@ export function proxy (req: NextRequest): NextResponse {
   if (!hasCookie && !isPublic(pathname)) {
     const target = req.nextUrl.clone()
     target.pathname = '/entrar'
+    /* `clone()` carries the original query string, and `/entrar` reads only
+       `destino` — leaving the rest would repeat every parameter twice, once
+       loose and once inside the encoded destination. */
+    target.search = ''
     /* Remember where she was heading, to send her back there after signing in.
        Internal path only — a `destino` coming from outside would be an open
        redirect, which is how credentials get stolen with a legitimate-looking
        link. */
     if (pathname !== '/') target.searchParams.set('destino', pathname + search)
-    return NextResponse.redirect(target)
-  }
-
-  if (hasCookie && (pathname === '/entrar' || pathname === '/recuperar')) {
-    const target = req.nextUrl.clone()
-    target.pathname = '/'
-    target.search = ''
     return NextResponse.redirect(target)
   }
 

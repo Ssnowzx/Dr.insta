@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { BotaoTema } from './tema'
 
 /**
  * The one navigation, rendered twice: a rail on desktop, a bar at the bottom on
@@ -108,6 +109,12 @@ export function NavLateral ({
           </li>
         ))}
       </ul>
+
+      {/* Pushed to the bottom of the rail: it is a setting, not a destination,
+          and it should not sit in the same list as the pages. */}
+      <div className="rail-pe">
+        <BotaoTema />
+      </div>
     </nav>
   )
 }

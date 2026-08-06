@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MarkSeen } from '@/components/news'
-import { activeClientIds, digestFor, newsSince } from '@/lib/digest'
-import type { Digest, DigestItem } from '@/lib/digest'
-import { requireConsultant } from '@/lib/dal'
+import { digestFor, newsSince } from '@/lib/digest'
+import type { DigestItem } from '@/lib/digest'
+import { clientScope, requireConsultant } from '@/lib/dal'
 import { shortDate } from '@/lib/format'
 
 export const metadata: Metadata = { title: 'Novidades — My Favorite' }
@@ -24,11 +24,8 @@ export default async function Novidades () {
   const since = await newsSince(identity.userId)
   const until = new Date()
 
-  const ids = await activeClientIds()
-  const digests = (await Promise.all(ids.map(id => digestFor(id, since, until))))
-    .filter((d): d is Digest => d !== null && d.total > 0)
-
-  const total = digests.reduce((n, d) => n + d.total, 0)
+  const digest = await digestFor(await clientScope(), since, until)
+  const total = digest?.total ?? 0
 
   return (
     <>
@@ -39,34 +36,34 @@ export default async function Novidades () {
         </h1>
         <p className="lead">
           {total === 0
-            ? 'Quando alguma cliente marcar, mandar arquivo ou escrever, aparece aqui.'
+            ? 'Quando ela marcar, mandar arquivo ou escrever, aparece aqui.'
             : 'O que precisa de você vem primeiro. O resto é contexto.'}
         </p>
       </header>
 
-      {digests.map(d => (
-        <section className="secao" key={d.clientId}>
+      {digest !== null && total > 0 && (
+        <section className="secao">
           <div className="secao-cab">
-            <h2 className="titulo-secao">{d.clientName}</h2>
+            <h2 className="titulo-secao">{digest.clientName}</h2>
             <p className="secao-nota">
-              <span className="numero">{d.total}</span>{' '}
-              {d.total === 1 ? 'novidade' : 'novidades'}
+              <span className="numero">{total}</span>{' '}
+              {total === 1 ? 'novidade' : 'novidades'}
             </p>
           </div>
 
           <Grupo
             titulo="Não conseguiu entrar"
-            itens={d.askedForAccess}
+            itens={digest.askedForAccess}
             tom="critico"
             acao={{ href: '/conta', rotulo: 'gerar link de acesso' }}
           />
-          <Grupo titulo="Travou" itens={d.blocked} tom="critico" />
-          <Grupo titulo="Mandou arquivo" itens={d.files} tom="dado" />
-          <Grupo titulo="Escreveu" itens={d.comments} tom="neutro" />
-          <Grupo titulo="Marcou como feito" itens={d.done} tom="ok" />
-          <Grupo titulo="Fechou pedido" itens={d.delivered} tom="ok" />
+          <Grupo titulo="Travou" itens={digest.blocked} tom="critico" />
+          <Grupo titulo="Mandou arquivo" itens={digest.files} tom="dado" />
+          <Grupo titulo="Escreveu" itens={digest.comments} tom="neutro" />
+          <Grupo titulo="Marcou como feito" itens={digest.done} tom="ok" />
+          <Grupo titulo="Fechou pedido" itens={digest.delivered} tom="ok" />
         </section>
-      ))}
+      )}
 
       {total > 0 && (
         <div className="novidades-pe">

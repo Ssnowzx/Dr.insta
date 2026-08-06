@@ -3,7 +3,8 @@ import { eq } from 'drizzle-orm'
 import { orm } from '../db/client.ts'
 import { client, session, user } from '../db/schema.ts'
 import { db } from '../db/connection.ts'
-import { digestToken, purgeExpiredSessions, safeCompare } from '../lib/session.ts'
+import { digestToken, precisaRenovar, purgeExpiredSessions, safeCompare } from '../lib/session.ts'
+import { SESSION_COOKIE_TTL_MS, SESSION_TTL_MS } from '../lib/constants.ts'
 
 /**
  * The parts of session handling that do not depend on `cookies()`.
@@ -124,5 +125,69 @@ describe('purgeExpiredSessions', () => {
     const ids = remaining.map(r => r.id)
     expect(ids).toContain(validId)
     expect(ids).not.toContain(expiredId)
+  })
+})
+
+const DIA = 24 * 60 * 60 * 1000
+
+/**
+ * When a session slides forward, and why the cookie must outlive it.
+ *
+ * This is the arithmetic behind a bug that took the whole product down: the
+ * renewal ran inside a page render and re-wrote the cookie there, which Next
+ * forbids, so every request past the threshold answered 500. Nothing asserted
+ * the threshold, and the comment describing it was backwards for months —
+ * "renew when less than a third is left" when it renews with less than two
+ * thirds left. That is why these cases exist.
+ */
+describe('precisaRenovar', () => {
+  const agora = new Date('2026-08-06T12:00:00Z')
+  const daquiA = (ms: number): Date => new Date(agora.getTime() + ms)
+
+  it('should not renew a session that has just been created', () => {
+    // ARRANGE / ACT / ASSERT — a full TTL remaining is as fresh as it gets
+    expect(precisaRenovar(daquiA(SESSION_TTL_MS), agora)).toBe(false)
+  })
+
+  it('should renew once a third of the session has been spent', () => {
+    // ARRANGE — 90-day session: renewal starts on day 30, which is EARLIER
+    // than the old comment implied. The number matters because it is how soon
+    // the failure it used to cause reached a real person.
+    const umDiaAntes = daquiA(SESSION_TTL_MS - 30 * DIA + 60_000)
+    const logoDepois = daquiA(SESSION_TTL_MS - 30 * DIA - 60_000)
+
+    // ACT / ASSERT
+    expect(precisaRenovar(umDiaAntes, agora)).toBe(false)
+    expect(precisaRenovar(logoDepois, agora)).toBe(true)
+  })
+
+  it('should renew a session close to running out', () => {
+    // ARRANGE / ACT / ASSERT
+    expect(precisaRenovar(daquiA(DIA), agora)).toBe(true)
+  })
+
+  it('should renew a session that already expired', () => {
+    // ARRANGE — the caller deletes it before ever asking, but the predicate
+    // must not answer "no renewal needed" for a negative remainder
+    // ACT / ASSERT
+    expect(precisaRenovar(daquiA(-DIA), agora)).toBe(true)
+  })
+})
+
+describe('a vida do cookie contra a da sessão', () => {
+  it('should outlive any session by a wide margin', () => {
+    // ARRANGE — the cookie is written once, at sign-in, and never again: the
+    // renewal cannot touch it from inside a page render. So it must never be
+    // the thing that expires first, or she is signed out while the server
+    // still holds a valid session and no screen can explain why.
+    // ACT / ASSERT
+    expect(SESSION_COOKIE_TTL_MS).toBeGreaterThan(SESSION_TTL_MS * 4)
+  })
+
+  it('should stay inside the ceiling browsers enforce', () => {
+    // ARRANGE — anything past 400 days is silently clamped, and a constant
+    // that lies about its own effect is worse than a smaller one
+    // ACT / ASSERT
+    expect(SESSION_COOKIE_TTL_MS).toBeLessThanOrEqual(400 * DIA)
   })
 })

@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ClientPicker } from '@/components/client-picker'
 import { ArchiveAge } from '@/components/freshness'
-import { archiveAge, clientBySlug, postCounts, posts } from '@/lib/dashboard'
+import { archiveAge, archiveMedian, postCounts, posts } from '@/lib/dashboard'
+import { compararComMediana, porMilViews } from '@/lib/acervo'
 import type { PostFilter } from '@/lib/dashboard'
-import { requireSession } from '@/lib/dal'
+import { clientScope } from '@/lib/dal'
 import { format, shortDate } from '@/lib/format'
 
 export const metadata: Metadata = { title: 'Conteúdo — My Favorite' }
@@ -25,32 +25,27 @@ export const dynamic = 'force-dynamic'
 export default async function Conteudo ({
   searchParams
 }: {
-  searchParams: Promise<{ cliente?: string; duracao?: string; marca?: string }>
+  searchParams: Promise<{ duracao?: string; marca?: string }>
 }) {
-  const identity = await requireSession()
-  const { cliente, duracao, marca } = await searchParams
-
-  const clientId = identity.clientId
-    ?? (cliente === undefined ? null : (await clientBySlug(cliente))?.id ?? null)
-
-  if (clientId === null) return <ClientPicker base="/conteudo" />
+  const clientId = await clientScope()
+  const { duracao, marca } = await searchParams
 
   const filtro: PostFilter = {
     ...(duracao === 'curto' || duracao === 'longo' ? { duration: duracao } : {}),
     ...(marca === 'marca' || marca === 'pessoal' ? { brand: marca } : {})
   }
 
-  const [lista, contas, idade] = await Promise.all([
+  const [lista, contas, idade, medianaViews] = await Promise.all([
     posts(clientId, filtro),
     postCounts(clientId),
-    archiveAge(clientId)
+    archiveAge(clientId),
+    archiveMedian(clientId)
   ])
 
-  const base = cliente === undefined ? '' : `cliente=${cliente}&`
   const chip = (params: string, ativo: boolean, rotulo: string, n: number) => (
     <Link
       key={rotulo}
-      href={`/conteudo?${base}${params}`}
+      href={`/conteudo?${params}`}
       className={ativo ? 'chip chip-ativo' : 'chip'}
       aria-current={ativo ? 'true' : undefined}
     >
@@ -142,6 +137,14 @@ export default async function Conteudo ({
                     <dt>comentários</dt>
                     <dd className="numero">{format(p.comments, 'count')}</dd>
                   </div>
+                  {/* Collected on every run and thrown away until now. It is a
+                      REPOST count and never a share count — measured against
+                      July's Insights the public field read 1.986 where Insights
+                      said 48.000 shares, so the label carries the weaker word. */}
+                  <div>
+                    <dt>reposts</dt>
+                    <dd className="numero">{format(p.reposts, 'count')}</dd>
+                  </div>
                   {/* Reach is deliberately absent from the public export. Showing
                       a dash is the truth; showing views in its place would
                       fabricate the denominator every rate here depends on. */}
@@ -150,6 +153,36 @@ export default async function Conteudo ({
                     <dd className="numero peca-sem">{p.reach === null ? '—' : format(p.reach, 'count')}</dd>
                   </div>
                 </dl>
+
+                {/* The reading. Four raw numbers with no ruler beside them
+                    cannot answer the only question she has — "was this one
+                    good?" — and she has 205 posts to compare against. Both
+                    figures are against HER OWN archive: views are inflated by
+                    looping, and the inflation is roughly constant inside one
+                    account and meaningless across two. */}
+                {(() => {
+                  const contra = compararComMediana(p.views, medianaViews)
+                  const densidade = porMilViews(p.comments, p.views)
+                  if (contra === null && densidade === null) return null
+
+                  return (
+                    <p className="peca-leitura">
+                      {contra !== null && (
+                        <span className={`peca-marca peca-marca-${contra.nivel}`}>
+                          <span className="numero">{contra.texto}</span> em views
+                        </span>
+                      )}
+                      {densidade !== null && (
+                        <span className="peca-densidade">
+                          <span className="numero">
+                            {densidade.toFixed(1).replace('.', ',')}
+                          </span>{' '}
+                          comentário por mil views
+                        </span>
+                      )}
+                    </p>
+                  )
+                })()}
 
                 {p.url !== null && (
                   <a className="peca-link" href={p.url} target="_blank" rel="noreferrer noopener">

@@ -31,8 +31,34 @@ export function Funnel ({ stages }: { stages: FunnelStage[] }) {
 
   const pinned = stages.filter(s => s.ofTotal > 0 && s.ofTotal < VISIBLE_THRESHOLD)
 
+  /* The whole argument in one line, before any bar is read: how many arrived at
+     the top, how many reached the bottom. The bars below prove it; this states
+     it. Without it the reader has to hold two numbers eight lines apart and do
+     the division, and most people simply do not. */
+  const top = stages[0]
+  const bottom = stages[stages.length - 1]
+
   return (
     <figure className="funil">
+      {top !== undefined && bottom !== undefined && stages.length > 1 && (
+        <div className="colapso">
+          <div className="colapso-lado">
+            <span className="numero numero-grande colapso-n">{format(top.value, 'count')}</span>
+            <span className="colapso-rot">{top.label}</span>
+          </div>
+
+          <div className="colapso-meio" aria-hidden="true">
+            <span className="colapso-regua" />
+            <span className="numero colapso-taxa">{smallRatio(bottom.ofTotal)}</span>
+          </div>
+
+          <div className="colapso-lado colapso-lado-fim">
+            <span className="numero numero-grande colapso-n">{format(bottom.value, 'count')}</span>
+            <span className="colapso-rot">{bottom.label}</span>
+          </div>
+        </div>
+      )}
+
       <ol className="funil-lista">
         {stages.map(stage => {
           const tooSmall = stage.ofTotal > 0 && stage.ofTotal < VISIBLE_THRESHOLD

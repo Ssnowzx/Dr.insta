@@ -19,19 +19,28 @@ import { describe, expect, it } from 'vitest'
 
 const CSS = readFileSync(join(import.meta.dirname, '..', 'app', 'base.css'), 'utf8')
 
-/** Reads the custom properties of one theme block out of the stylesheet. */
+/**
+ * Reads the palette for one theme out of the stylesheet.
+ *
+ * There is no second palette to read any more. Both values live on one line,
+ * inside `light-dark(light, dark)`, which is the point: a token cannot drift
+ * between themes when its two halves are three characters apart. A token
+ * written as a plain hex is theme-independent by definition — the plate, whose
+ * surface is dark in both — and reads the same for either side.
+ */
 function readTokens (theme: 'light' | 'dark'): Record<string, string> {
-  const block = theme === 'light'
-    /* The first `:root {}` is the light theme; the dark one lives inside the
-       prefers-color-scheme media query. */
-    ? CSS.slice(CSS.indexOf(':root {'), CSS.indexOf('@media (prefers-color-scheme: dark)'))
-    : CSS.slice(CSS.indexOf('@media (prefers-color-scheme: dark)'))
+  const root = CSS.slice(CSS.indexOf(':root {'), CSS.indexOf('\n}\n'))
+  const pick = theme === 'light' ? 0 : 1
 
   const tokens: Record<string, string> = {}
-  for (const match of block.matchAll(/--([a-z0-9-]+):\s*(#[0-9a-fA-F]{3,8})\s*;/g)) {
+  for (const match of root.matchAll(
+    /--([a-z0-9-]+):\s*(?:light-dark\(\s*(#[0-9a-fA-F]{3,8})\s*,\s*(#[0-9a-fA-F]{3,8})\s*\)|(#[0-9a-fA-F]{3,8}))\s*;/g
+  )) {
     const name = match[1]
-    const value = match[2]
-    if (name !== undefined && value !== undefined) tokens[name] = value
+    if (name === undefined) continue
+    /* Either the pair or the single value matched, never both. */
+    const value = match[4] ?? [match[2], match[3]][pick]
+    if (value !== undefined) tokens[name] = value
   }
   return tokens
 }
@@ -79,6 +88,7 @@ const PAIRS: Pair[] = [
   { fg: 'caramelo', bg: 'papel', min: 4.5, why: 'link' },
   { fg: 'caramelo', bg: 'cartao', min: 4.5, why: 'link no cartão' },
   { fg: 'tijolo', bg: 'papel', min: 4.5, why: 'estado crítico' },
+  { fg: 'tijolo', bg: 'cartao', min: 4.5, why: 'estado crítico sobre o cartão' },
   { fg: 'tijolo', bg: 'urg-bg', min: 4.5, why: 'aviso de erro sobre o próprio fundo' },
   { fg: 'ok', bg: 'papel', min: 4.5, why: 'estado saudável' },
   { fg: 'ok', bg: 'ok-bg', min: 4.5, why: 'aviso de sucesso sobre o próprio fundo' },
@@ -92,11 +102,45 @@ const PAIRS: Pair[] = [
   { fg: 'sobre-tinta', bg: 'tinta', min: 4.5, why: 'texto sobre o botão principal' },
   { fg: 'sobre-bloco2', bg: 'bloco', min: 4.5, why: 'texto secundário sobre bloco escuro' },
 
+  /* The funnel plate. It is dark in BOTH themes, so these two tokens do not
+     invert — which is exactly why they need their own pairs: reusing
+     `--sobre-tinta` here would pass in light and go black-on-black in dark. */
+  { fg: 'sobre-bloco', bg: 'bloco', min: 4.5, why: 'texto forte sobre a placa do funil' },
+  /* The plate's eyebrow and percentages. NOT `--caramelo`: that token is the
+     brand hue at TEXT weight, which is dark, and dark on a dark plate is
+     unreadable. The plate uses the brand nude as the store itself uses it. */
+  { fg: 'dado-bloco', bg: 'bloco', min: 4.5, why: 'sobrancelha e percentagens sobre a placa' },
+
   // non-text (WCAG 1.4.11)
   { fg: 'dado', bg: 'cartao', min: 3, why: 'preenchimento de gráfico no cartão' },
   { fg: 'dado', bg: 'papel', min: 3, why: 'preenchimento de gráfico na página' },
+  { fg: 'dado-bloco', bg: 'bloco', min: 3, why: 'barra do funil sobre a placa escura' },
   { fg: 'linha', bg: 'cartao', min: 1.4, why: 'borda de cartão — se some, os cartões viram um bloco só' }
 ]
+
+describe('the parser itself', () => {
+  it('should read two different palettes, not the same one twice', () => {
+    // ARRANGE — if `readTokens` picked the same side of `light-dark()` for both
+    // themes, every pair below would still pass while measuring one theme
+    // twice. That is the failure this file exists to prevent, so it is checked
+    // rather than assumed.
+    const light = readTokens('light')
+    const dark = readTokens('dark')
+
+    // ACT / ASSERT
+    expect(light.papel).not.toBe(dark.papel)
+    expect(light.tinta).not.toBe(dark.tinta)
+    expect(light.caramelo).not.toBe(dark.caramelo)
+  })
+
+  it('should read a theme-independent token identically for both', () => {
+    // ARRANGE — the plate is a dark field in BOTH themes, so its tokens are
+    // written as a plain hex and must come back the same either way
+    // ACT / ASSERT
+    expect(readTokens('light')['sobre-bloco']).toBe(readTokens('dark')['sobre-bloco'])
+    expect(readTokens('light')['sobre-bloco']).toMatch(/^#[0-9a-fA-F]{6}$/)
+  })
+})
 
 for (const theme of ['light', 'dark'] as const) {
   const tokens = readTokens(theme)

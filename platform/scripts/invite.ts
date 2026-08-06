@@ -13,11 +13,13 @@ import { ulid } from '../lib/ulid.ts'
  * quietly at the worst moment. The link is printed and relayed by hand.
  *
  * Usage:
- *   npm run invite -- --email x@y.com --name "Bianca Olivo" --client bianca-olivo
+ *   npm run invite -- --email x@y.com --name "Bianca Olivo"
  *   npm run invite -- --email eu@y.com --name "Rodrigo" --consultant
  *
- * `--client` takes the client slug. Without it, and with `--consultant`, the
- * user is created with no client scope — which is what makes them a consultant.
+ * `--client` takes the client slug and defaults to `TENANT_SLUG`, the one client
+ * this instance serves. Passing it is only useful for seeding a database that
+ * holds more than one. With `--consultant` the user is created with no client
+ * scope — which is what makes them a consultant.
  */
 
 function arg (flag: string): string | undefined {
@@ -35,16 +37,24 @@ function fail (message: string): never {
 async function main (): Promise<void> {
   const email = arg('--email')?.trim().toLowerCase()
   const name = arg('--name')?.trim()
-  const clientSlug = arg('--client')?.trim()
+  const explicitSlug = arg('--client')?.trim()
   const isConsultant = process.argv.includes('--consultant')
 
   if (email === undefined || email === '') fail('Missing --email.')
   if (name === undefined || name === '') fail('Missing --name.')
-  if (!isConsultant && (clientSlug === undefined || clientSlug === '')) {
-    fail('Provide --client <slug>, or --consultant for an unscoped user.')
-  }
-  if (isConsultant && clientSlug !== undefined) {
+  if (isConsultant && explicitSlug !== undefined) {
     fail('--consultant and --client are mutually exclusive: a consultant has no client scope.')
+  }
+
+  /* A client user with no `--client` gets the instance's own tenant. Reading it
+     from the same variable the application reads keeps the CLI from creating a
+     user this deployment would never show. */
+  let clientSlug: string | undefined = explicitSlug
+  if (!isConsultant && (clientSlug === undefined || clientSlug === '')) {
+    clientSlug = process.env.TENANT_SLUG?.trim()
+    if (clientSlug === undefined || clientSlug === '') {
+      fail('Set TENANT_SLUG, pass --client <slug>, or use --consultant for an unscoped user.')
+    }
   }
   if ((process.env.APP_URL ?? '') === '') {
     fail('APP_URL is not set — the printed link would not open. See .env.exemplo.')

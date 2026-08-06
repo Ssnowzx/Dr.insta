@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
 import { NavInferior, NavLateral, SinoTopo } from '@/components/nav'
+import { BotaoTema } from '@/components/tema'
 import { clientProfile } from '@/lib/dashboard'
-import { activeClientIds, digestFor, newsSince } from '@/lib/digest'
-import { requireSession } from '@/lib/dal'
+import { digestFor, newsSince } from '@/lib/digest'
+import { clientScope, requireSession } from '@/lib/dal'
 import './app.css'
 
 /**
@@ -17,16 +18,18 @@ export default async function AppLayout ({ children }: { children: ReactNode }) 
   const identity = await requireSession()
   const consultant = identity.role === 'consultant'
 
-  const profile = identity.clientId === null ? null : await clientProfile(identity.clientId)
+  /* Both roles land on the same client now, so the header reads the same for
+     both. It used to say "Visão de consultor" because a consultant had no
+     client to name; on a dedicated instance there is always one. */
+  const clientId = await clientScope()
+  const profile = await clientProfile(clientId)
 
   /* The unread count only exists for a consultant, so a client's page load
      never pays for it. */
-  const unread = consultant ? await countUnread(identity.userId) : 0
+  const unread = consultant ? await countUnread(identity.userId, clientId) : 0
 
   const brand = profile?.brand ?? 'My Favorite'
-  const account = identity.clientId === null
-    ? 'Visão de consultor'
-    : profile?.name ?? identity.name
+  const account = profile?.name ?? identity.name
 
   return (
     <div className="casca">
@@ -37,6 +40,10 @@ export default async function AppLayout ({ children }: { children: ReactNode }) 
           <span className="topo-marca">{brand}</span>
           <span className="topo-direita">
             <span className="topo-conta">{account}</span>
+            {/* The rail carries this on desktop; the rail does not exist on a
+                phone, and a setting she cannot reach is a setting she does not
+                have. */}
+            <BotaoTema />
             {consultant && <SinoTopo novidades={unread} />}
           </span>
         </header>
@@ -52,16 +59,11 @@ export default async function AppLayout ({ children }: { children: ReactNode }) 
 /**
  * How much has happened since he last read the news.
  *
- * Runs on every page load for a consultant, so it is bounded: one small query
- * per active client, over an indexed time window. With one client that is two
- * queries; if the client list ever grows past a handful this becomes a single
- * aggregate instead.
+ * Runs on every page load for a consultant, so it is bounded: one client, one
+ * digest, over an indexed time window.
  */
-async function countUnread (userId: number): Promise<number> {
+async function countUnread (userId: number, clientId: number): Promise<number> {
   const since = await newsSince(userId)
-  const until = new Date()
-  const ids = await activeClientIds()
-
-  const digests = await Promise.all(ids.map(id => digestFor(id, since, until)))
-  return digests.reduce((n, d) => n + (d?.total ?? 0), 0)
+  const digest = await digestFor(clientId, since, new Date())
+  return digest?.total ?? 0
 }

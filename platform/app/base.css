@@ -1,102 +1,121 @@
-@import './fonts.css';
-
-/* =============================================================================
-   DESIGN TOKENS
-   Inherited from the July/August 2026 client deliveries, already measured pair
-   by pair and already approved by her. Every colour lives here as a variable;
-   no literal colour anywhere else. That is what keeps the dark theme from
-   making something invisible — and `test/contrast.test.ts` parses this file and
-   fails the build if any pair drops below its threshold.
-
-   TWO CARAMELS, on purpose:
-     --caramelo  text and links. Measured for WCAG text contrast.
-     --dado      chart fills. The text caramel has OKLCH chroma 0.094, below the
-                 0.1 floor for a fill — it reads grey as a solid area. A fill and
-                 a link have different jobs, so they get different tokens.
-                 Both validated with the dataviz palette validator on 2026-08-05.
-   ============================================================================= */
-
 :root {
-  color-scheme: light;
+  /* Both schemes are declared, so `light-dark()` below resolves against
+     whichever is active — and the toggle only has to change THIS one line's
+     effective value, never the tokens. */
+  color-scheme: light dark;
 
-  /* surfaces */
-  --papel: #fbf9f6;
-  --papel2: #f4efe8;
-  --cartao: #ffffff;
-  --bloco: #14100d;
+  /* surfaces — the store's ground is white; the app's is the same white warmed
+     toward the brand hue, so a card can still lift off it. */
+  --papel: light-dark(#faf6f3, #16110f);
+  --papel2: light-dark(#f3e7e0, #241a16);
+  --cartao: light-dark(#ffffff, #1d1613);
+  --bloco: #2a201c;
 
-  /* ink */
-  --tinta: #14100d;
-  --tinta2: #4a423a;
-  --suave: #6f6459;
-  --sobre-tinta: #fdfbf8;
-  --sobre-bloco2: #c4b8ab;
+  /* ink — warm, never blue-black. The brand has no cool tone anywhere. */
+  --tinta: light-dark(#241b17, #f7efe9);
+  --tinta2: light-dark(#5a4a43, #c7b5ab);
+  --suave: light-dark(#7a6860, #9d897e);
+  --sobre-tinta: light-dark(#faf6f3, #16110f);
+  /* On the plate — the funnel's surface. These do NOT invert with the theme:
+     the plate is a dark field in both, so anything sitting on it stays light in
+     both. `--sobre-tinta` inverts and would go black on black here. */
+  --sobre-bloco: #faf4f0;
+  --sobre-bloco2: #c9b3a8;
 
   /* lines */
-  --linha: #ded4c9;
-  --linha2: #eae2d9;
+  --linha: light-dark(#e0cdc2, #40332c);
+  --linha2: light-dark(#f0e5df, #2b211c);
 
-  /* accent and status */
-  --caramelo: #96682f;
-  --tijolo: #8f3a2c;
-  --urg-bg: #fdf0ec;
-  --ok: #3d6b4a;
-  --ok-bg: #eef4ef;
-  --atencao: #8f6224;
-  --atencao-bg: #fbf3e6;
+  /* accent and status — the brand hue (≈16°) pushed down to text weight.
+     The store's own nude sits at 75% lightness and measures 1.6:1 on white; it
+     is a colour for cloth, not for type. This is the same hue at 5.6:1. */
+  --caramelo: light-dark(#a0523f, #e8a98f);
+  --tijolo: light-dark(#a03a3a, #efa093);
+  --urg-bg: light-dark(#fbeeea, #33201c);
+  --ok: light-dark(#3f6b4f, #8fc0a0);
+  --ok-bg: light-dark(#eef4ef, #18261d);
+  --atencao: light-dark(#7a5a1e, #ddbe8b);
+  --atencao-bg: light-dark(#fbf3e4, #2d2315);
 
-  /* chart fills — validated as marks, not as text */
-  --dado: #a55f13;
-  --dado-fraco: #e8d5bb;
-  --grade: #eae2d9;
+  /* chart fills — validated as marks (3:1), not as text */
+  --dado: light-dark(#b4715c, #d99678);
+  --dado-fraco: light-dark(#f0ded5, #3a2c25);
+  /* On the dark plate the mark goes to the brand nude as it actually is — this
+     is the one place the store's own colour can be used unmodified, because
+     against #2a201c it clears the 3:1 a mark needs with room to spare. */
+  --dado-bloco: #e8c4b4;
+  --dado-bloco-fraco: #40312b;
+  --grade: light-dark(#f0e5df, #2b211c);
 
-  --foco: rgba(165, 95, 19, .25);
-  --sombra: 0 1px 2px rgba(20, 16, 13, .04), 0 8px 24px rgba(20, 16, 13, .06);
-  --raio: 14px;
+  --foco: light-dark(rgba(160, 82, 63, .28), rgba(232, 169, 143, .3));
+  /* Soft and warm, tinted with the ink rather than neutral grey: a grey shadow
+     on a warm ground reads as dirt. */
+  --sombra: 0 1px 2px rgba(36, 27, 23, .04), 0 14px 34px -10px rgba(36, 27, 23, .12);
+  --raio: 16px;
+  /* Tracks, bars and other small marks. A 16px radius on a 10px-tall bar turns
+     the bar into a lozenge. */
+  --raio-menor: 6px;
 
-  /* type */
-  --display: 'Italiana', 'Instrument Serif', Georgia, serif;
+  /* ---------------------------------------------------------------- cloth
+
+     The page is woven, not painted. Three layers, and each does one job:
+
+       · warp and weft — two 3px repeating gradients at 90° and 0°. This is a
+         real weave structure, not a decorative grid: the vertical threads are
+         the warp, the horizontal ones the weft, which is what cloth is.
+       · slub — fractal noise in an inline SVG. Linen is irregular; a pure grid
+         reads as graph paper, and the noise is what stops it.
+
+     No image file, no dependency: the noise is a data URI and the weave is two
+     gradients. It tiles forever and stays sharp at any pixel ratio.
+
+     The alphas are deliberately near the threshold of visibility. Texture that
+     announces itself competes with the numbers, and the numbers are the
+     product. `test/contrast.test.ts` measures the ink against `--papel`, so
+     anything laid on top has to stay light enough not to move that reading —
+     which is why the weave sits at 2-3% and never behind small text. */
+  --fio: light-dark(rgba(36, 27, 23, .022), rgba(250, 244, 240, .018));
+  --slub: .16;
+  --tecido:
+    repeating-linear-gradient(90deg, var(--fio) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(0deg, var(--fio) 0 1px, transparent 1px 3px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23s)' opacity='.16'/%3E%3C/svg%3E");
+
+  /* type
+
+     The display face was Italiana, and it read washed out — "apagado" — on the
+     dark theme. Two things stacked: Italiana is a hairline-contrast face whose
+     thin strokes are already fragile, and light text on a dark ground renders
+     THINNER, an effect `-webkit-font-smoothing: antialiased` deepens further.
+     At 52px the title was a ghost.
+
+     Instrument Serif carries real weight in the thins and is the store's own
+     display treatment — myfavorite.com.br sets its hero in an italic serif. It
+     ships italic only, which is not a compromise here: it is the brand. */
+  --display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
   --corpo: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* -----------------------------------------------------------------------------
+   Everything above resolves itself through `light-dark()`, which reads
+   `color-scheme`. `--sombra` cannot: `light-dark()` only accepts <color>, and a
+   shadow is a list. It is the ONE token that needs the condition spelled out
+   twice, and it is spelled out here so the duplication is visible in one place
+   instead of scattered through a second palette.
+   ----------------------------------------------------------------------------- */
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-
-    --papel: #13110f;
-    --papel2: #241e18;
-    --cartao: #1b1815;
-    --bloco: #272019;
-
-    --tinta: #f4efe9;
-    --tinta2: #cdc2b6;
-    --suave: #a89b8e;
-    --sobre-tinta: #13110f;
-    --sobre-bloco2: #c9bdb0;
-
-    /* Lifted from #342c25: at 1.29:1 against the card the border vanished and
-       the cards blurred into one another. Card edges are what make a dashboard
-       read as a product rather than a page. */
-    --linha: #443a30;
-    --linha2: #2f2820;
-
-    --caramelo: #e0aa64;
-    --tijolo: #f0a08c;
-    --urg-bg: #33211c;
-    --ok: #7cc294;
-    --ok-bg: #18261d;
-    --atencao: #eab873;
-    --atencao-bg: #2e2415;
-
-    --dado: #c08636;
-    --dado-fraco: #3a2f22;
-    --grade: #2a231d;
-
-    --foco: rgba(224, 170, 100, .3);
-    --sombra: 0 1px 2px rgba(0, 0, 0, .28), 0 8px 24px rgba(0, 0, 0, .34);
-  }
+  :root:not([data-tema='claro']) { --sombra: 0 1px 2px rgba(0, 0, 0, .3), 0 14px 34px -10px rgba(0, 0, 0, .45); }
 }
+
+:root[data-tema='escuro'] { --sombra: 0 1px 2px rgba(0, 0, 0, .3), 0 14px 34px -10px rgba(0, 0, 0, .45); }
+
+/* The toggle. Setting `color-scheme` is the whole switch: every colour token
+   follows it automatically. */
+:root[data-tema='claro'] { color-scheme: light; }
+:root[data-tema='escuro'] { color-scheme: dark; }
+
 
 /* ============================================================================= */
 
@@ -109,11 +128,18 @@ html {
 
 body {
   margin: 0;
-  background: var(--papel);
+  /* Colour and cloth are separate layers on purpose: the shorthand would drop
+     the texture every time a theme changed the ground colour, and the failure
+     would be invisible in review — the page would simply look flat again. */
+  background-color: var(--papel);
+  background-image: var(--tecido);
+  background-attachment: fixed;
   color: var(--tinta);
   font-family: var(--corpo);
   font-size: 16px;
-  line-height: 1.55;
+  /* Lifted from 1.55: with nine elements previously crowded between 11 and
+     15px, the page read as one grey mass. Leading is half of that fix. */
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* Every number in this product is tabular: a column of figures that shifts
@@ -125,13 +151,21 @@ body {
 
 .display {
   font-family: var(--display);
+  /* The only face we hold for it is the italic, which is also how the store
+     sets its own hero. Stated rather than inherited, so a future roman weight
+     does not silently change every title in the product. */
+  font-style: italic;
   font-weight: 400;
-  /* Italiana is a high-contrast face with thin strokes. Below ~28px the hairlines
-     disappear on a phone, so it is never used at body sizes. */
-  font-size: clamp(2rem, 1.4rem + 3vw, 3.25rem);
-  line-height: 1.02;
-  letter-spacing: -0.005em;
+  font-size: clamp(2.125rem, 1.4rem + 3.2vw, 3.5rem);
+  line-height: 1.06;
+  letter-spacing: -0.012em;
   margin: 0;
+  /* Restores the strokes the global antialiasing eats. Light-on-dark text is
+     already optically thinner; `antialiased` on top of that is what made the
+     previous title read as faded. Body copy keeps the global setting — it is
+     the right call at 16px and the wrong one at 56. */
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
 .sobrancelha {
@@ -154,18 +188,41 @@ body {
   margin: 0;
 }
 
+/**
+ * Figures.
+ *
+ * This used to set the mono face at weight 700 on EVERY number in the product,
+ * from a 12px reference to a 76px hero. At display size a monospace is wide and
+ * mechanical — it reads as engineering, and this is a fashion house.
+ *
+ * The mono was never load-bearing: `font-variant-numeric: tabular-nums` is set
+ * on `body`, so every figure in the product already aligns in a column no
+ * matter which family draws it. Dropping the mono here costs nothing and
+ * removes the one thing that made the numbers look like a terminal.
+ *
+ * The mono survives where it earns its keep — the tracked micro-labels
+ * (`.sobrancelha`, `.placa-sobrancelha`, `.metrica-posto`), where a fixed width
+ * and a machined look are the point.
+ */
 .numero {
-  font-family: var(--mono);
-  font-weight: 700;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
+}
+
+/* Figures at display size: lighter, tighter, and given room to breathe. A bold
+   weight at 56px is a shout; the size already carries the emphasis. */
+.numero-grande {
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
 
 .lead {
-  font-size: 1.0625rem;
-  line-height: 1.5;
+  font-size: 1.125rem;
+  line-height: 1.6;
   color: var(--tinta2);
-  margin: .75rem 0 0;
+  margin: .875rem 0 0;
   max-width: 46ch;
 }
 

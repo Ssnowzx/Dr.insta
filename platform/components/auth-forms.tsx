@@ -3,7 +3,7 @@
 import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
 import type { FormState } from '@/lib/auth-actions'
-import { acceptInvite, requestReset, setNewPassword, signIn } from '@/lib/auth-actions'
+import { acceptInvite, changePassword, requestReset, setNewPassword, signIn } from '@/lib/auth-actions'
 
 /**
  * Client components for the credential screens.
@@ -122,6 +122,56 @@ export function FormConvite ({ token }: { token: string }) {
 
 export function FormNovaSenha ({ token }: { token: string }) {
   return <FormSenha acao={setNewPassword.bind(null, token)} rotuloBotao="Salvar a senha nova" />
+}
+
+// ------------------------------------------------------------- trocar a senha
+
+/**
+ * Changing the password from inside the account.
+ *
+ * Separate from `FormSenha` because it asks for the current password first, and
+ * that field is the whole security difference between the two: the token forms
+ * are authorised by a secret in the URL, this one by knowing the password it is
+ * about to replace.
+ */
+export function FormTrocarSenha () {
+  const [estado, acao] = useActionState(changePassword, VAZIO)
+
+  return (
+    <form action={acao} noValidate className="form-senha">
+      <Aviso estado={estado} />
+
+      <div className="campo">
+        <label htmlFor="atual">Sua senha atual</label>
+        <input
+          id="atual" name="atual" type="password" required
+          autoComplete="current-password"
+        />
+      </div>
+
+      <div className="campo">
+        <label htmlFor="nova">Senha nova</label>
+        <input
+          id="nova" name="senha" type="password" required
+          autoComplete="new-password" minLength={12}
+        />
+        <span className="dica">
+          Pelo menos 12 caracteres. Uma frase curta que só você lembra funciona
+          melhor que uma palavra com símbolos.
+        </span>
+      </div>
+
+      <div className="campo">
+        <label htmlFor="confirmacao-nova">Repita a senha nova</label>
+        <input
+          id="confirmacao-nova" name="confirmacao" type="password" required
+          autoComplete="new-password" minLength={12}
+        />
+      </div>
+
+      <Botao>Trocar a senha</Botao>
+    </form>
+  )
 }
 
 // ----------------------------------------------------------------- recuperar

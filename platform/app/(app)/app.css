@@ -87,7 +87,7 @@
   margin-top: -.5rem;
   width: 1.75rem;
   height: 2px;
-  border-radius: 0 0 2px 2px;
+  border-radius: var(--raio-menor);
   background: var(--dado);
 }
 
@@ -106,11 +106,11 @@
   .rail {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 2.5rem;
     position: sticky;
     top: 0;
     height: 100dvh;
-    padding: 2rem 1rem;
+    padding: 3rem 1.25rem;
     background: var(--papel2);
     border-right: 1px solid var(--linha);
   }
@@ -154,34 +154,194 @@
   display: flex;
   align-items: center;
   gap: .75rem;
-  padding: .625rem .75rem;
-  border-radius: 10px;
+  padding: .5rem .75rem;
+  border-left: 2px solid transparent;
   font-size: .9375rem;
-  font-weight: 600;
+  font-weight: 400;
+  letter-spacing: .01em;
   color: var(--tinta2);
   text-decoration: none;
-  transition: background .12s, color .12s;
+  transition: color .12s, border-color .12s;
 }
 
-.rail-item:hover { background: var(--cartao); color: var(--tinta); }
+.rail-item:hover { color: var(--tinta); }
 
+/* The current page is a filled, rounded tab — the same shape language the store
+   uses for its own buttons. The left rule stays as the second signal, so the
+   state survives greyscale and forced-colours mode. */
 .rail-item-ativo {
   background: var(--cartao);
-  color: var(--dado);
-  box-shadow: inset 2px 0 0 var(--dado);
+  color: var(--caramelo);
+  font-weight: 600;
+  border-left-color: var(--dado);
+  border-radius: var(--raio-menor);
 }
+
+/* ------------------------------------------------------------- theme switch */
+
+/* `margin-top: auto` pushes it to the floor of the rail, below the page list:
+   it is a setting, not a destination. */
+.rail-pe {
+  margin-top: auto;
+  padding: 0 .25rem;
+}
+
+.btn-tema {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: .8125rem;
+  color: var(--suave);
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+
+.btn-tema:hover {
+  background: var(--cartao);
+  border-color: var(--linha);
+  color: var(--tinta);
+}
+
+.btn-tema:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--foco);
+  color: var(--tinta);
+}
+
+/* On the phone the button lives in the top bar, where the label would eat the
+   room the account name needs. The icon carries it; `aria-label` still says
+   the state in full. */
+.topo .btn-tema {
+  padding: .375rem;
+  gap: 0;
+}
+
+.topo .btn-tema-rot { display: none; }
 
 /* =============================================================================
    PAGE HEADER
    ============================================================================= */
 
-.pagina-cab { margin-bottom: 2.5rem; }
+.pagina-cab { margin-bottom: 3.25rem; }
 
 .pagina-cab .display { color: var(--tinta); }
 
 /* =============================================================================
    THE FUNNEL — the signature element
+
+   It sits on a dark plate, and the plate is dark in BOTH themes. That is the
+   one deliberate inversion in the product: on the cream page it reads as a
+   plate of instruments set down on paper; in the dark theme it is the single
+   lit surface. Everything else on the page is quiet so that this is not.
+
+   Before, the funnel was a card among eight other cards of the same width,
+   border and radius, which gave the argument of the whole cycle exactly the
+   same weight as a footnote.
+
+   Every colour here comes from the `--*-bloco` tokens, which do not invert —
+   see the comment in `app/base.css`. Reaching for `--tinta` or `--cartao`
+   inside the plate is the bug this arrangement exists to prevent.
    ============================================================================= */
+
+.placa {
+  background-color: var(--bloco);
+  /* Redefining `--fio` re-resolves `--tecido` here, because custom properties
+     substitute where they are used, not where they are declared. One token, two
+     cloths: the page is linen, the plate is a heavier wool. */
+  --fio: rgba(244, 241, 236, .030);
+  background-image: var(--tecido);
+  padding: 2rem 1.5rem 1.75rem;
+  border-radius: calc(var(--raio) + 4px);
+  box-shadow: var(--sombra);
+}
+
+@media (min-width: 64rem) {
+  .placa { padding: 3rem 2.5rem 2.5rem; }
+}
+
+.placa-sobrancelha {
+  font-family: var(--mono);
+  font-size: .625rem;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  /* NOT `--caramelo`: that token is the brand hue at text weight, which is
+     dark, and dark on the dark plate is unreadable. Here the store's own nude
+     is used exactly as the store uses it. */
+  color: var(--dado-bloco);
+  margin: 0;
+}
+
+.placa-sub {
+  margin: .625rem 0 0;
+  font-size: .9375rem;
+  line-height: 1.55;
+  color: var(--sobre-bloco2);
+  max-width: 52ch;
+}
+
+/* --------------------------------------------------- the collapse, stated */
+
+.colapso {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.75rem 0 2.25rem;
+  flex-wrap: wrap;
+}
+
+.colapso-lado {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  min-width: 0;
+}
+
+.colapso-lado-fim { text-align: right; }
+
+.colapso-n {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  line-height: 1;
+  color: var(--sobre-bloco);
+}
+
+.colapso-rot {
+  font-size: .875rem;
+  color: var(--sobre-bloco2);
+}
+
+/* The measure between the two numbers. It is a rule, not an arrow: an arrow
+   suggests a flow that succeeds, and what happens between these two numbers is
+   a loss of 99,9996% of it. */
+.colapso-meio {
+  flex: 1 1 6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .4375rem;
+  min-width: 5rem;
+}
+
+.colapso-regua {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    var(--dado-bloco) 0%,
+    color-mix(in srgb, var(--dado-bloco) 25%, transparent) 45%,
+    color-mix(in srgb, var(--dado-bloco) 8%, transparent) 100%
+  );
+}
+
+.colapso-taxa {
+  font-size: .875rem;
+  color: var(--dado-bloco);
+  white-space: nowrap;
+}
 
 .funil { margin: 0; }
 
@@ -191,7 +351,10 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  /* The four steps each carry a label row, a bar and a line of percentages.
+     At 1.5rem they read as one block of noise; the eye needs to see four
+     things, not twelve lines. */
+  gap: 2.25rem;
 }
 
 .funil-cab {
@@ -205,28 +368,28 @@
 .funil-rot {
   font-size: .9375rem;
   font-weight: 600;
-  color: var(--tinta);
+  color: var(--sobre-bloco);
 }
 
 .funil-valor {
-  font-size: 1.0625rem;
-  color: var(--tinta);
+  font-size: 1.25rem;
+  color: var(--sobre-bloco);
 }
 
 .funil-trilho {
-  height: 14px;
-  border-radius: 3px;
-  background: var(--dado-fraco);
+  height: 10px;
+  border-radius: var(--raio-menor);
+  background: var(--dado-bloco-fraco);
   overflow: hidden;
 }
 
 .funil-barra {
   height: 100%;
-  background: var(--dado);
+  background: var(--dado-bloco);
   /* Rounded only on the data end, anchored flat at the baseline: the bar starts
      at zero and stops at its value, and a rounded left edge would suggest it
      starts somewhere after zero. */
-  border-radius: 0 4px 4px 0;
+  border-radius: var(--raio-menor);
   /* Keeps a stage visible when its true share is a fraction of a pixel. */
   min-width: 3px;
 }
@@ -237,8 +400,8 @@
 .funil-barra-fina {
   background-image: repeating-linear-gradient(
     45deg,
-    var(--dado) 0 3px,
-    color-mix(in srgb, var(--dado) 55%, var(--cartao)) 3px 6px
+    var(--dado-bloco) 0 3px,
+    color-mix(in srgb, var(--dado-bloco) 45%, var(--bloco)) 3px 6px
   );
   min-width: 6px;
 }
@@ -253,13 +416,13 @@
 
 .funil-parte {
   font-size: .875rem;
-  color: var(--dado);
+  color: var(--dado-bloco);
 }
 
 .funil-parte-rot,
 .funil-sobrevida {
-  font-size: .8125rem;
-  color: var(--suave);
+  font-size: .875rem;
+  color: var(--sobre-bloco2);
 }
 
 .funil-sobrevida::before {
@@ -268,12 +431,12 @@
 }
 
 .funil-nota {
-  margin: 1.75rem 0 0;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--linha2);
-  font-size: .8125rem;
-  line-height: 1.55;
-  color: var(--suave);
+  margin: 2rem 0 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--sobre-bloco2) 22%, transparent);
+  font-size: .875rem;
+  line-height: 1.65;
+  color: var(--sobre-bloco2);
   max-width: 56ch;
 }
 
@@ -283,8 +446,12 @@
 
 .grade-metricas {
   display: grid;
-  gap: 1rem;
+  gap: 1.25rem;
   grid-template-columns: 1fr;
+  /* Without this the grid stretches every card to the tallest in its row, so a
+     two-line card next to a card carrying two caveats gets a block of empty
+     white as tall as the caveats. Cards end where their content ends. */
+  align-items: start;
 }
 
 @media (min-width: 48rem) {
@@ -295,7 +462,54 @@
   background: var(--cartao);
   border: 1px solid var(--linha);
   border-radius: var(--raio);
-  padding: 1.25rem;
+  padding: 1.75rem 1.625rem;
+  box-shadow: var(--sombra);
+}
+
+/* ------------------------------------------------------ the north-star card
+
+   One card in the product looks like this, and only one. It is out of the grid,
+   full width, with the value at display size — the rank is carried by the
+   layout, not by a badge someone has to read. */
+
+/* One card in the product looks like this, and only one: out of the grid, full
+   width, value at display size. The rank is carried by the layout, not by a
+   badge someone has to read. */
+.metrica-norte {
+  margin-bottom: 1rem;
+  padding: 1.75rem 1.5rem;
+  border-color: var(--dado);
+  box-shadow: inset 3px 0 0 var(--dado), var(--sombra);
+}
+
+@media (min-width: 48rem) {
+  .metrica-norte { padding: 2.25rem 2.25rem 2rem; }
+}
+
+.metrica-posto {
+  margin: 0 0 .5rem;
+  font-family: var(--mono);
+  font-size: .625rem;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: var(--caramelo);
+}
+
+.metrica-norte .metrica-valor {
+  font-size: clamp(2.75rem, 6.5vw, 4rem);
+  /* At 64px the size is the emphasis; a medium weight on top of it is a shout. */
+  font-weight: 400;
+  letter-spacing: -.03em;
+  margin-top: 1rem;
+}
+
+/* The bullet track earns more room here, because at this size the reference
+   ticks are what the eye lands on next. */
+.metrica-norte .metrica-trilho { height: 12px; }
+
+@media (min-width: 48rem) {
+  .metrica-norte .metrica-desc,
+  .metrica-norte .ressalva { max-width: 62ch; }
 }
 
 .metrica-cab {
@@ -324,7 +538,7 @@
 .metrica-trilho {
   position: relative;
   height: 10px;
-  border-radius: 3px;
+  border-radius: var(--raio-menor);
   background: var(--dado-fraco);
   margin-bottom: .875rem;
 }
@@ -332,7 +546,7 @@
 .metrica-barra {
   height: 100%;
   background: var(--dado);
-  border-radius: 0 3px 3px 0;
+  border-radius: var(--raio-menor);
   min-width: 2px;
 }
 
@@ -344,7 +558,7 @@
   top: -4px;
   bottom: -4px;
   width: 2px;
-  border-radius: 1px;
+  border-radius: var(--raio);
 }
 
 .metrica-alvo { background: var(--tinta); }
@@ -379,18 +593,20 @@
 
 .metrica-desc {
   margin: 0;
-  font-size: .8125rem;
-  line-height: 1.5;
+  /* This is the sentence that explains what the number means — reading text,
+     not a label. At 13px it sat in the same grey mass as the captions. */
+  font-size: .9375rem;
+  line-height: 1.6;
   color: var(--suave);
 }
 
 .ressalva {
-  margin: .875rem 0 0;
-  padding: .625rem .75rem;
-  border-radius: 8px;
+  margin: 1rem 0 0;
+  padding: .625rem .875rem;
+  border-radius: var(--raio-menor);
   background: var(--papel2);
-  font-size: .8125rem;
-  line-height: 1.5;
+  font-size: .875rem;
+  line-height: 1.6;
   color: var(--tinta2);
 }
 
@@ -398,24 +614,25 @@
   background: var(--atencao-bg);
   color: var(--atencao);
 }
-
 .ressalva-atencao strong { color: var(--atencao); }
 
-/* --------------------------------------------------------------- status pill */
+/* -------------------------------------------------------------- status label */
 
+/* Not a pill. Tracked small caps in the mono face, the way a garment tag is
+   set — the pill was the loudest object on a page whose whole argument is
+   restraint, and it repeated nine times. Status still ships as a WORD, so the
+   colour is never the only signal. */
 .selo {
   flex-shrink: 0;
   font-size: .6875rem;
   font-weight: 700;
   letter-spacing: .02em;
-  padding: .1875rem .5rem;
+  padding: .25rem .625rem;
   border-radius: 999px;
   white-space: nowrap;
   border: 1px solid;
 }
 
-/* Status always ships with its word. The colour is the second signal, never
-   the only one. */
 .selo-ok { color: var(--ok); background: var(--ok-bg); border-color: var(--ok); }
 .selo-atencao { color: var(--atencao); background: var(--atencao-bg); border-color: var(--atencao); }
 .selo-critico { color: var(--tijolo); background: var(--urg-bg); border-color: var(--tijolo); }
@@ -425,7 +642,7 @@
    SECTIONS AND SIMPLE STATS
    ============================================================================= */
 
-.secao { margin-top: 3rem; }
+.secao { margin-top: 3.25rem; }
 
 .secao-cab {
   display: flex;
@@ -438,7 +655,8 @@
 }
 
 .secao-nota {
-  font-size: .8125rem;
+  font-size: .6875rem;
+  letter-spacing: .08em;
   color: var(--suave);
   text-align: right;
 }
@@ -475,38 +693,9 @@
   color: var(--tinta);
 }
 
-/* =============================================================================
-   CARD THAT HOLDS THE FUNNEL
-   ============================================================================= */
-
-.painel-destaque {
-  background: var(--cartao);
-  border: 1px solid var(--linha);
-  border-radius: var(--raio);
-  padding: 1.5rem 1.25rem;
-  box-shadow: var(--sombra);
-}
-
-@media (min-width: 48rem) {
-  .painel-destaque { padding: 2rem; }
-}
-
-.destaque-cab { margin-bottom: 1.75rem; }
-
-.destaque-titulo {
-  margin: 0 0 .375rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--tinta);
-}
-
-.destaque-sub {
-  margin: 0;
-  font-size: .875rem;
-  line-height: 1.5;
-  color: var(--tinta2);
-  max-width: 52ch;
-}
+/* The card that used to hold the funnel is gone. The funnel now defines its own
+   surface — see `.placa` above. Leaving the rules here would be dead CSS that
+   the next reader has to prove is unused. */
 
 /* =============================================================================
    LISTS AND SECONDARY TEXT
@@ -520,6 +709,7 @@
   border-radius: var(--raio);
   overflow: hidden;
   background: var(--cartao);
+  box-shadow: var(--sombra);
 }
 
 .lista-simples > li + li { border-top: 1px solid var(--linha2); }
@@ -529,7 +719,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
-  padding: .875rem 1rem;
+  padding: .9375rem 1.125rem;
   text-decoration: none;
   color: inherit;
   transition: background .12s;
@@ -699,7 +889,7 @@ a.secao-nota:hover { text-decoration: underline; }
 .pedido-porque {
   margin: .875rem 0 0;
   padding: .875rem;
-  border-radius: 10px;
+  border-radius: var(--raio);
   background: var(--papel2);
   font-size: .875rem;
   line-height: 1.55;
@@ -764,7 +954,7 @@ a.secao-nota:hover { text-decoration: underline; }
   color: var(--tinta2);
   background: none;
   border: 1px solid var(--linha);
-  border-radius: 10px;
+  border-radius: var(--raio);
   padding: .75rem 1.25rem;
   cursor: pointer;
   transition: border-color .15s, color .15s;
@@ -794,7 +984,7 @@ a.secao-nota:hover { text-decoration: underline; }
 
 .placar-trilho {
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--raio-menor);
   background: var(--dado-fraco);
   overflow: hidden;
 }
@@ -802,7 +992,7 @@ a.secao-nota:hover { text-decoration: underline; }
 .placar-barra {
   height: 100%;
   background: var(--dado);
-  border-radius: 0 3px 3px 0;
+  border-radius: var(--raio-menor);
   transition: width .25s ease;
 }
 
@@ -827,7 +1017,7 @@ a.secao-nota:hover { text-decoration: underline; }
   padding: 3px;
   background: var(--papel2);
   border: 1px solid var(--linha);
-  border-radius: 12px;
+  border-radius: var(--raio);
 }
 
 .segmento {
@@ -837,7 +1027,7 @@ a.secao-nota:hover { text-decoration: underline; }
   color: var(--tinta2);
   background: none;
   border: none;
-  border-radius: 9px;
+  border-radius: var(--raio);
   /* 44px tall: a thumb target that does not need aiming. */
   min-height: 2.75rem;
   padding: .5rem .25rem;
@@ -890,7 +1080,7 @@ a.secao-nota:hover { text-decoration: underline; }
   color: var(--tinta);
   background: var(--papel2);
   border: 1px solid var(--linha);
-  border-radius: 10px;
+  border-radius: var(--raio);
   padding: .75rem;
   resize: vertical;
 }
@@ -915,7 +1105,7 @@ a.secao-nota:hover { text-decoration: underline; }
   color: var(--sobre-tinta);
   background: var(--tinta);
   border: 1px solid var(--tinta);
-  border-radius: 9px;
+  border-radius: var(--raio);
   padding: .5625rem 1rem;
   cursor: pointer;
 }
@@ -927,7 +1117,7 @@ a.secao-nota:hover { text-decoration: underline; }
 .nota-erro {
   margin: .75rem 0 0;
   padding: .625rem .75rem;
-  border-radius: 8px;
+  border-radius: var(--raio);
   background: var(--urg-bg);
   border: 1px solid var(--tijolo);
   color: var(--tijolo);
@@ -955,7 +1145,7 @@ a.secao-nota:hover { text-decoration: underline; }
 .resposta-nota {
   margin: .625rem 0 0;
   padding: .75rem .875rem;
-  border-radius: 10px;
+  border-radius: var(--raio);
   background: var(--papel2);
   font-size: .875rem;
   line-height: 1.55;
@@ -998,7 +1188,7 @@ a.secao-nota:hover { text-decoration: underline; }
   font-weight: 600;
   color: var(--sobre-tinta);
   background: var(--tinta);
-  border-radius: 10px;
+  border-radius: var(--raio);
   padding: .6875rem 1.125rem;
   text-decoration: none;
 }
@@ -1037,7 +1227,7 @@ a.secao-nota:hover { text-decoration: underline; }
   color: var(--tinta);
   background: var(--papel2);
   border: 1px dashed var(--linha);
-  border-radius: 10px;
+  border-radius: var(--raio);
   padding: .875rem 1.25rem;
   cursor: pointer;
   transition: border-color .15s, background .15s;
@@ -1090,7 +1280,7 @@ a.secao-nota:hover { text-decoration: underline; }
 .envio-trilho {
   grid-column: 1 / -1;
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--raio);
   background: var(--dado-fraco);
   overflow: hidden;
 }
@@ -1098,7 +1288,7 @@ a.secao-nota:hover { text-decoration: underline; }
 .envio-barra {
   height: 100%;
   background: var(--dado);
-  border-radius: 0 3px 3px 0;
+  border-radius: var(--raio);
   transition: width .15s linear;
 }
 
@@ -1122,7 +1312,7 @@ a.secao-nota:hover { text-decoration: underline; }
   font: inherit;
   font-size: .875rem;
   font-weight: 600;
-  border-radius: 10px;
+  border-radius: var(--raio);
   padding: .75rem 1.125rem;
   cursor: pointer;
   border: 1px solid var(--linha);
@@ -1202,7 +1392,7 @@ a.secao-nota:hover { text-decoration: underline; }
 
 .evento-fala {
   padding: .75rem .875rem;
-  border-radius: 10px;
+  border-radius: var(--raio);
   background: var(--papel2);
   font-style: italic;
 }
@@ -1244,11 +1434,90 @@ a.secao-nota:hover { text-decoration: underline; }
 
 .serie { margin: 0; }
 
+/* --------------------------------------------------- the reading, above the plot
+
+   A fixed slot, present at rest showing the latest month. It is above the chart
+   and not under the pointer because this is read on a phone, where a tooltip
+   that follows the finger is covered by the hand holding it.
+
+   `min-height` pins the row so changing months never reflows the page. Two of
+   these charts sit side by side and a jump in one would shove the other. */
+
+.serie-leitura {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .25rem .625rem;
+  min-height: 2.25rem;
+  margin-bottom: .25rem;
+}
+
+.serie-leitura-mes {
+  font-size: .75rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--suave);
+}
+
+.serie-leitura-valor {
+  font-size: 1.375rem;
+  font-weight: 500;
+  color: var(--tinta);
+  line-height: 1.1;
+}
+
+.serie-delta {
+  font-size: .8125rem;
+  font-weight: 600;
+}
+
+.serie-delta-sobe { color: var(--ok); }
+.serie-delta-cai { color: var(--tijolo); }
+
+.serie-delta-rot {
+  font-weight: 400;
+  color: var(--suave);
+}
+
 .serie-svg {
   display: block;
   width: 100%;
   height: auto;
   overflow: visible;
+  /* `pan-y` and not `none`: the chart takes the horizontal drag and leaves the
+     vertical one to the page. With `none` the plot would swallow the scroll and
+     the page would feel stuck under the thumb — the whole column is a chart. */
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: crosshair;
+}
+
+.serie-svg:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--foco);
+  border-radius: var(--raio-menor);
+}
+
+/* The guide is a hairline, not a band: it marks the column without covering the
+   line it exists to explain. */
+.serie-guia {
+  stroke: var(--dado);
+  stroke-width: 1;
+  opacity: .5;
+  pointer-events: none;
+}
+
+.serie-ponto-ativo {
+  stroke-width: 3;
+  /* Redundant with the size change on purpose — the ring survives greyscale
+     and forced colours, where a fill difference does not. */
+  stroke: var(--tinta);
+}
+
+.serie-mes-ativo {
+  fill: var(--tinta);
+  font-weight: 700;
 }
 
 /* Recessive grid: present enough to read a level against, quiet enough not to
@@ -1344,7 +1613,7 @@ a.secao-nota:hover { text-decoration: underline; }
   color: var(--tinta2);
   background: var(--cartao);
   border: 1px solid var(--linha);
-  border-radius: 999px;
+  border-radius: var(--raio);
   padding: .5rem .875rem;
   text-decoration: none;
   /* 40px tall so a thumb can hit it without aiming. */
@@ -1409,7 +1678,7 @@ a.secao-nota:hover { text-decoration: underline; }
   font-family: var(--mono);
   font-size: .6875rem;
   padding: .125rem .4375rem;
-  border-radius: 5px;
+  border-radius: var(--raio);
   background: var(--papel2);
   color: var(--suave);
 }
@@ -1460,7 +1729,7 @@ a.secao-nota:hover { text-decoration: underline; }
 .idade {
   margin: 1rem 0 0;
   padding: .75rem .875rem;
-  border-radius: 10px;
+  border-radius: var(--raio);
   font-size: .875rem;
   line-height: 1.55;
   border: 1px solid;
@@ -1508,7 +1777,7 @@ a.secao-nota:hover { text-decoration: underline; }
   height: 2.75rem;
   margin: -.75rem -.5rem -.75rem 0;
   color: var(--tinta2);
-  border-radius: 10px;
+  border-radius: var(--raio);
 }
 
 .topo-sino:hover { color: var(--tinta); }
@@ -1520,7 +1789,7 @@ a.secao-nota:hover { text-decoration: underline; }
   line-height: 1;
   color: var(--sobre-tinta);
   background: var(--dado);
-  border-radius: 999px;
+  border-radius: var(--raio);
   padding: .1875rem .375rem;
   min-width: 1.125rem;
   text-align: center;
@@ -1580,7 +1849,7 @@ a.secao-nota:hover { text-decoration: underline; }
 .grupo-detalhe {
   margin: .375rem 0 0;
   padding: .625rem .75rem;
-  border-radius: 8px;
+  border-radius: var(--raio);
   background: var(--papel2);
   font-size: .875rem;
   line-height: 1.55;
@@ -1614,7 +1883,7 @@ a.secao-nota:hover { text-decoration: underline; }
   color: var(--sobre-tinta);
   background: var(--tinta);
   border: 1px solid var(--tinta);
-  border-radius: 10px;
+  border-radius: var(--raio);
   padding: .75rem 1.25rem;
   cursor: pointer;
 }
@@ -1652,7 +1921,7 @@ a.secao-nota:hover { text-decoration: underline; }
   color: var(--tinta);
   background: var(--papel2);
   border: 1px solid var(--linha);
-  border-radius: 10px;
+  border-radius: var(--raio);
   padding: .75rem 1.125rem;
   cursor: pointer;
 }
@@ -1663,7 +1932,7 @@ a.secao-nota:hover { text-decoration: underline; }
 .acesso-saida {
   margin-top: .875rem;
   padding: .875rem;
-  border-radius: 10px;
+  border-radius: var(--raio);
   background: var(--papel2);
   border: 1px solid var(--linha);
 }
@@ -1683,3 +1952,188 @@ a.secao-nota:hover { text-decoration: underline; }
 }
 
 .acesso-prazo { margin: .625rem 0 0; font-size: .75rem; color: var(--suave); }
+
+/* ------------------------------------------------- the reading, on each post
+
+   Four raw numbers cannot answer "was this one good?", and the archive holds
+   205 of them. This line is the judgement: where the post sits against her own
+   median, and how dense its comments are once size is divided out. */
+
+.peca-leitura {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .375rem .875rem;
+  margin: .875rem 0 0;
+  padding-top: .75rem;
+  border-top: 1px solid var(--linha2);
+  font-size: .8125rem;
+  color: var(--suave);
+}
+
+/* Status is carried by a word — "2,4× a mediana" — so colour is the second
+   signal, never the only one. */
+.peca-marca-acima .numero { color: var(--ok); font-weight: 600; }
+.peca-marca-abaixo .numero { color: var(--tijolo); font-weight: 600; }
+.peca-marca-tipico .numero { color: var(--tinta2); font-weight: 600; }
+
+.peca-densidade .numero { color: var(--tinta2); font-weight: 600; }
+
+/* ------------------------------------------------------- provenance, on card
+
+   The number's address: which panel it was read from, and why it is what it is.
+   Recessive on purpose — it answers a question rather than competing with the
+   figure that raised it. */
+
+.metrica-origem {
+  margin: 1rem 0 0;
+  padding-top: .75rem;
+  border-top: 1px solid var(--linha2);
+  font-size: .8125rem;
+  line-height: 1.55;
+  color: var(--suave);
+}
+
+.metrica-origem-linha {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .375rem .5rem;
+  margin: 0;
+}
+
+/* The caveat that belongs to this value, set apart from the source that
+   produced it. Indented under a rule so the two never read as one sentence. */
+.metrica-origem-nota {
+  margin: .5rem 0 0;
+  padding-left: .75rem;
+  border-left: 2px solid var(--linha);
+  color: var(--tinta2);
+}
+
+.origem-selo {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: .625rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: .125rem .4375rem;
+  border-radius: var(--raio-menor);
+  background: var(--papel2);
+  color: var(--tinta2);
+}
+
+/* A figure somebody typed is not the same kind of figure as one an instrument
+   counted. The badge says which before anyone decides on it. */
+.origem-selo-informado {
+  background: var(--atencao-bg);
+  color: var(--atencao);
+}
+
+.metrica-origem-txt { flex: 1 1 14rem; min-width: 0; }
+
+.metrica-onde {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: .75rem;
+  color: var(--tinta2);
+  background: var(--papel2);
+  padding: 0 .3125rem;
+  border-radius: var(--raio-menor);
+}
+
+/* ------------------------------------------------------------- experiments
+
+   Four of these sat in the database from the first seed and no screen read
+   them. They are what makes the plan falsifiable: one hypothesis, ONE variable,
+   and the number that would settle it. */
+
+.ensaios {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 48rem) {
+  .ensaios { grid-template-columns: repeat(2, 1fr); align-items: start; }
+}
+
+.ensaio {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1.5rem 1.375rem;
+  box-shadow: var(--sombra);
+}
+
+.ensaio-cab {
+  display: flex;
+  align-items: baseline;
+  gap: .625rem;
+  margin-bottom: .625rem;
+}
+
+/* Numbered because the order is real: the cycle's own rule is that the tagged
+   link comes before anything that would be measured through it. */
+.ensaio-n {
+  font-size: .8125rem;
+  color: var(--suave);
+  flex-shrink: 0;
+}
+
+.ensaio-nome {
+  margin: 0;
+  flex: 1 1 auto;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--tinta);
+  line-height: 1.3;
+}
+
+.ensaio-hip {
+  margin: 0 0 1rem;
+  font-size: .9375rem;
+  line-height: 1.6;
+  color: var(--tinta2);
+}
+
+.ensaio-regras {
+  margin: 0;
+  display: grid;
+  gap: .5rem;
+  padding-top: .875rem;
+  border-top: 1px solid var(--linha2);
+}
+
+.ensaio-regras > div {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.ensaio-regras dt {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: .625rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--suave);
+}
+
+.ensaio-regras dd {
+  margin: 0;
+  font-size: .875rem;
+  color: var(--tinta);
+}
+
+.ensaio-saida {
+  margin: 1rem 0 0;
+  padding: .625rem .875rem;
+  border-radius: var(--raio-menor);
+  background: var(--papel2);
+  font-size: .875rem;
+  color: var(--tinta2);
+}
