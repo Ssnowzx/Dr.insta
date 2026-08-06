@@ -19,7 +19,8 @@
     "db:status": "tsx --env-file-if-exists=.env db/migrate.ts --status",
     "db:seed": "tsx --env-file-if-exists=.env db/seed.ts",
     "db:import-reels": "tsx --conditions=react-server --env-file-if-exists=.env db/import-reels.ts",
-    "invite": "tsx --conditions=react-server --env-file-if-exists=.env scripts/invite.ts"
+    "invite": "tsx --conditions=react-server --env-file-if-exists=.env scripts/invite.ts",
+    "digest": "tsx --conditions=react-server --env-file-if-exists=.env scripts/digest.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",

@@ -112,9 +112,13 @@ export default async function Conteudo ({
                 <div className="peca-cab">
                   <span className="peca-data">{shortDate(p.publishedAt)}</span>
                   <span className="peca-tags">
+                    {/* Seconds below a minute, minutes above. The 20-second
+                        line is the cycle's rule for product content, so it has
+                        to be legible at a glance — "0min09" turns that into
+                        arithmetic. Above a minute nobody says "121 seconds". */}
                     {p.durationSec !== null && (
                       <span className={p.durationSec <= 20 ? 'tag tag-curto' : 'tag'}>
-                        {p.durationSec}s
+                        {format(p.durationSec, 'seconds')}
                       </span>
                     )}
                     {p.mentionsBrand === true && <span className="tag tag-marca">marca</span>}

@@ -55,7 +55,10 @@ npm run dev
 | `npm test` | Vitest (needs the database running) |
 | `npm run db:migrate` | Applies pending migrations |
 | `npm run db:status` | Lists what has been applied, changes nothing |
-| `npm run db:seed` | Initial data (phase 3) |
+| `npm run db:seed` | Initial data |
+| `npm run db:import-reels -- <csv>` | Imports the public Reels export |
+| `npm run invite -- --email … --name … --client …` | Creates a user and emails the invite |
+| `npm run digest -- --seco` | Prints the daily summary without sending |
 
 ---
 
@@ -145,6 +148,43 @@ counts every loop of the video; reach is a different measurement only Insights
 has. A reach copied from views would be a wrong denominator for every rate
 computed afterwards, with nothing downstream looking broken.
 `test/import.test.ts` asserts the invariant.
+
+---
+
+## Being told what happened
+
+Nothing notifies the consultant today unless he opens a page: if the client
+marks "travou" at 11pm on a Sunday, it sits there until he looks. `scripts/
+digest.ts` closes that with one email a day.
+
+```bash
+npm run digest -- --seco        # prints what it would send, sends nothing
+npm run digest                  # last 24 hours
+npm run digest -- --horas 48    # a wider window
+```
+
+Cron on the host, 8am São Paulo:
+
+```cron
+0 8 * * * cd /srv/myfavorite && docker compose exec -T app \
+          node --env-file-if-exists=.env node_modules/.bin/tsx scripts/digest.ts \
+          >> /var/log/myfavorite-digest.log 2>&1
+```
+
+Three rules shape it:
+
+- **A window with nothing in it sends nothing.** A summary that arrives every
+  day regardless gets filtered, and then the one that mattered is filtered too.
+- **Blocked comes first, and leads the subject line.** "Bianca Olivo travou em 1
+  item" is what decides whether this gets opened now or later. A step she could
+  not finish is a problem with the instruction, not with her.
+- **Only the client's own actions are reported.** The consultant marking
+  something is not news about the client, and the platform telling him what he
+  just did is noise.
+
+The window is half-open — inclusive at the start, exclusive at the end — so two
+consecutive daily runs can neither repeat an event nor drop one between them.
+Both bounds are pinned by tests.
 
 ---
 

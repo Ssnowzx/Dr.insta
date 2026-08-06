@@ -149,6 +149,85 @@ export async function sendInvite (
   return { sent: true }
 }
 
+/**
+ * The daily summary of what a client did.
+ *
+ * Blocked items come first and get their own block, because they are the only
+ * part that changes what the consultant does today — a step she could not
+ * finish is a problem with the instruction, not with her.
+ *
+ * Never called with an empty digest: a summary that arrives whether or not
+ * anything happened gets filtered, and then the one that mattered is filtered
+ * with it.
+ */
+export async function sendDigest (
+  to: string,
+  digest: {
+    clientName: string
+    blocked: Array<{ title: string; detail: string | null }>
+    done: Array<{ title: string }>
+    files: Array<{ title: string; detail: string | null }>
+    comments: Array<{ title: string; detail: string | null }>
+    delivered: Array<{ title: string }>
+    total: number
+  },
+  appUrl: string
+): Promise<{ sent: boolean }> {
+  if (!mailConfigured()) {
+    console.warn(`[resumo] sem SMTP. ${digest.clientName}: ${digest.total} novidade(s).`)
+    return { sent: false }
+  }
+
+  const lista = (itens: Array<{ title: string; detail?: string | null }>): string =>
+    itens.map(i =>
+      `<li style="margin:0 0 10px;">${escapeHtml(i.title)}` +
+      (i.detail == null || i.detail === ''
+        ? ''
+        : `<br><span style="color:#6f6459;font-style:italic;">${escapeHtml(i.detail)}</span>`) +
+      '</li>'
+    ).join('')
+
+  const bloco = (titulo: string, itens: Array<{ title: string; detail?: string | null }>, cor: string): string =>
+    itens.length === 0
+      ? ''
+      : `<p style="margin:24px 0 8px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:${cor};font-weight:700;">${titulo}</p>` +
+        `<ul style="margin:0;padding-left:18px;font-size:15px;line-height:1.6;color:#4a423a;">${lista(itens)}</ul>`
+
+  const corpo =
+    bloco(`Travou (${digest.blocked.length})`, digest.blocked, '#8f3a2c') +
+    bloco(`Marcou como feito (${digest.done.length})`, digest.done, '#3d6b4a') +
+    bloco(`Mandou arquivo (${digest.files.length})`, digest.files, '#96682f') +
+    bloco(`Escreveu (${digest.comments.length})`, digest.comments, '#4a423a') +
+    bloco(`Fechou pedido (${digest.delivered.length})`, digest.delivered, '#3d6b4a')
+
+  const texto = [
+    `${digest.clientName} — ${digest.total} novidade(s).`,
+    '',
+    ...digest.blocked.map(i => `TRAVOU: ${i.title}${i.detail == null ? '' : `\n  "${i.detail}"`}`),
+    ...digest.done.map(i => `feito: ${i.title}`),
+    ...digest.files.map(i => `arquivo: ${i.detail ?? i.title}`),
+    ...digest.comments.map(i => `escreveu em "${i.title}": ${i.detail ?? ''}`),
+    ...digest.delivered.map(i => `fechou: ${i.title}`),
+    '',
+    appUrl
+  ].join('\n')
+
+  /* The subject leads with what blocked, because that is what decides whether
+     this gets opened now or later. */
+  const assunto = digest.blocked.length > 0
+    ? `${digest.clientName} travou em ${digest.blocked.length} ${digest.blocked.length === 1 ? 'item' : 'itens'}`
+    : `${digest.clientName}: ${digest.total} novidade(s)`
+
+  await send({
+    to,
+    subject: assunto,
+    text: texto,
+    html: shell(digest.clientName, corpo, { url: appUrl, label: 'Abrir a plataforma' })
+  })
+
+  return { sent: true }
+}
+
 export async function sendReset (to: string, name: string, url: string): Promise<{ sent: boolean }> {
   if (!mailConfigured()) {
     logInstead('recuperacao', to, url)
