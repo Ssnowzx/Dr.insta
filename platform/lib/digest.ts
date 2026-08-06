@@ -2,7 +2,7 @@ import 'server-only'
 import { and, desc, eq, gte, isNull, lt } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import {
-  client, delivery, file, request, requestEvent, step, stepStatus, user
+  auditLog, client, delivery, file, request, requestEvent, step, stepStatus, user
 } from '@/db/schema'
 
 /**
@@ -33,6 +33,8 @@ export interface Digest {
   files: DigestItem[]
   comments: DigestItem[]
   delivered: DigestItem[]
+  /** Someone tried to sign in and could not. There is no reset email, so this is how he finds out. */
+  askedForAccess: DigestItem[]
   total: number
 }
 
@@ -130,7 +132,31 @@ export async function digestFor (
        double-count the very event that caused them. */
   }
 
-  const total = blocked.length + done.length + files.length + comments.length + delivered.length
+  // ------------------------------------------------ asked for access
+  /* With no reset email, a client who cannot get in has no self-service path.
+     The sign-in screen records the attempt and it surfaces here — otherwise the
+     only signal would be her remembering to message him. */
+  const accessRows = await orm()
+    .select({ at: auditLog.createdAt, who: user.name })
+    .from(auditLog)
+    .innerJoin(user, eq(user.id, auditLog.userId))
+    .where(and(
+      eq(auditLog.clientId, clientId),
+      eq(auditLog.action, 'asked_for_access'),
+      gte(auditLog.createdAt, since),
+      lt(auditLog.createdAt, until)
+    ))
+    .orderBy(desc(auditLog.createdAt))
+
+  const askedForAccess: DigestItem[] = accessRows.map(r => ({
+    title: 'não conseguiu entrar',
+    detail: 'Ela pediu um link novo. Gere um em Conta e mande.',
+    at: r.at,
+    who: r.who
+  }))
+
+  const total = blocked.length + done.length + files.length +
+    comments.length + delivered.length + askedForAccess.length
 
   return {
     clientId: c.id,
@@ -142,8 +168,27 @@ export async function digestFor (
     files,
     comments,
     delivered,
+    askedForAccess,
     total
   }
+}
+
+/**
+ * Since when this user has not read the news.
+ *
+ * `newsSeenAt` and not `lastSeenAt`: the latter advances on every sign-in, so
+ * opening the app would mark everything read without anyone having looked.
+ * Never having opened the screen falls back to a week, which is long enough to
+ * be useful on a first visit and short enough not to dump months of history.
+ */
+export async function newsSince (userId: number, fallbackDays = 7): Promise<Date> {
+  const [row] = await orm()
+    .select({ seenAt: user.newsSeenAt })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1)
+
+  return row?.seenAt ?? new Date(Date.now() - fallbackDays * 24 * 60 * 60 * 1000)
 }
 
 /** Every client a consultant would be summarised about. */

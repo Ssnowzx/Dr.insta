@@ -153,38 +153,54 @@ computed afterwards, with nothing downstream looking broken.
 
 ## Being told what happened
 
-Nothing notifies the consultant today unless he opens a page: if the client
-marks "travou" at 11pm on a Sunday, it sits there until he looks. `scripts/
-digest.ts` closes that with one email a day.
+**This product sends no email.** Everything happens inside the platform, by
+decision: a mail server nobody maintains is a dependency that fails quietly at
+the worst moment, and a summary going to an unmonitored inbox is the same as no
+summary.
 
-```bash
-npm run digest -- --seco        # prints what it would send, sends nothing
-npm run digest                  # last 24 hours
-npm run digest -- --horas 48    # a wider window
-```
-
-Cron on the host, 8am São Paulo:
-
-```cron
-0 8 * * * cd /srv/myfavorite && docker compose exec -T app \
-          node --env-file-if-exists=.env node_modules/.bin/tsx scripts/digest.ts \
-          >> /var/log/myfavorite-digest.log 2>&1
-```
+**`/novidades`** is the consultant's activity screen — what each client marked,
+uploaded, wrote or could not do since he last read it. A bell in the top bar
+carries the unread count on a phone; on desktop it is the first rail item.
 
 Three rules shape it:
 
-- **A window with nothing in it sends nothing.** A summary that arrives every
-  day regardless gets filtered, and then the one that mattered is filtered too.
-- **Blocked comes first, and leads the subject line.** "Bianca Olivo travou em 1
-  item" is what decides whether this gets opened now or later. A step she could
-  not finish is a problem with the instruction, not with her.
-- **Only the client's own actions are reported.** The consultant marking
-  something is not news about the client, and the platform telling him what he
-  just did is noise.
+- **Blocked and "could not get in" come first.** They are the only two that
+  change what he does today. A step she could not finish is a problem with the
+  instruction, not with her.
+- **Only the client's own actions appear.** The consultant marking something is
+  not news about the client, and the platform telling him what he just did is
+  noise.
+- **"Marcar como lido" moves the cut**, stored in `user.news_seen_at` — a
+  separate column from `last_seen_at`, which advances on every sign-in and would
+  mark everything read just for opening the app.
 
-The window is half-open — inclusive at the start, exclusive at the end — so two
-consecutive daily runs can neither repeat an event nor drop one between them.
-Both bounds are pinned by tests.
+### Access, without email
+
+There is no password-reset email, so a client who cannot get in has no
+self-service path. Two things close that gap:
+
+- The sign-in screen records the attempt, and it surfaces on `/novidades` as
+  "não conseguiu entrar" — so the consultant learns about it without her having
+  to remember to message him.
+- **Conta → Acesso das clientes** mints a fresh link and copies it, to be
+  relayed over whatever channel they already use. An invite link for someone who
+  has never signed in (7 days), a reset link for someone who has (1 hour).
+  Generating a new one invalidates the previous.
+
+The link is displayed as well as copied: `navigator.clipboard` needs a secure
+context and does nothing over plain HTTP, so the copy can fail silently while
+the feature still has to work.
+
+Minting is consultant-only. An unauthenticated visitor able to mint one could
+burn the pending link of someone mid-recovery just by typing their address.
+
+For the very first account, before anyone can sign in:
+
+```bash
+npm run invite -- --email eu@dominio.com --name "Rodrigo" --consultant
+```
+
+It prints a link. Nothing is emailed.
 
 ---
 

@@ -1490,3 +1490,196 @@ a.secao-nota:hover { text-decoration: underline; }
 }
 
 .idade-stale strong { color: var(--tijolo); }
+
+/* =============================================================================
+   ACTIVITY SCREEN — replaced the daily email
+   ============================================================================= */
+
+.topo-direita { display: flex; align-items: center; gap: .875rem; }
+
+.topo-sino {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44px target: the bell is the consultant's only entry point to the news on
+     a phone, so it cannot be a 20px icon. */
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: -.75rem -.5rem -.75rem 0;
+  color: var(--tinta2);
+  border-radius: 10px;
+}
+
+.topo-sino:hover { color: var(--tinta); }
+.topo-sino-ativo { color: var(--dado); }
+
+.contador {
+  font-size: .6875rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--sobre-tinta);
+  background: var(--dado);
+  border-radius: 999px;
+  padding: .1875rem .375rem;
+  min-width: 1.125rem;
+  text-align: center;
+}
+
+.contador-topo {
+  position: absolute;
+  top: .3125rem;
+  right: .1875rem;
+  /* A ring in the surface colour keeps the badge readable over the icon
+     beneath it. */
+  box-shadow: 0 0 0 2px var(--papel);
+}
+
+.rail-item .contador { margin-left: auto; }
+
+/* ------------------------------------------------------------------- groups */
+
+.grupo {
+  border-left: 3px solid var(--linha);
+  padding: 0 0 0 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.grupo-critico { border-left-color: var(--tijolo); }
+.grupo-ok { border-left-color: var(--ok); }
+.grupo-dado { border-left-color: var(--dado); }
+.grupo-neutro { border-left-color: var(--suave); }
+
+.grupo-titulo {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0 0 .75rem;
+  font-size: .8125rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--tinta2);
+}
+
+.grupo-critico .grupo-titulo { color: var(--tijolo); }
+.grupo-n { background: var(--papel2); color: var(--tinta2); }
+.grupo-critico .grupo-n { background: var(--urg-bg); color: var(--tijolo); }
+
+.grupo-lista { list-style: none; margin: 0; padding: 0; }
+.grupo-lista > li + li { margin-top: 1rem; }
+
+.grupo-item {
+  margin: 0;
+  font-size: .9375rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--tinta);
+}
+
+.grupo-detalhe {
+  margin: .375rem 0 0;
+  padding: .625rem .75rem;
+  border-radius: 8px;
+  background: var(--papel2);
+  font-size: .875rem;
+  line-height: 1.55;
+  font-style: italic;
+  color: var(--tinta2);
+}
+
+.grupo-quem { margin: .3125rem 0 0; font-size: .75rem; color: var(--suave); }
+
+.grupo-acao {
+  display: inline-block;
+  margin-top: .75rem;
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--caramelo);
+  text-decoration: none;
+}
+
+.grupo-acao:hover { text-decoration: underline; }
+
+.novidades-pe {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--linha2);
+}
+
+.btn-lido {
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--sobre-tinta);
+  background: var(--tinta);
+  border: 1px solid var(--tinta);
+  border-radius: 10px;
+  padding: .75rem 1.25rem;
+  cursor: pointer;
+}
+
+.btn-lido[disabled] { opacity: .6; cursor: progress; }
+
+/* =============================================================================
+   ACCESS LINKS — what replaced the reset email
+   ============================================================================= */
+
+.pessoas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1rem; }
+
+.pessoa {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1.125rem;
+}
+
+.pessoa-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .3125rem;
+}
+
+.pessoa-nome { font-size: .9375rem; font-weight: 600; color: var(--tinta); }
+.pessoa-meta { margin: 0 0 1rem; font-size: .8125rem; color: var(--suave); overflow-wrap: anywhere; }
+
+.btn-acesso {
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--tinta);
+  background: var(--papel2);
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  padding: .75rem 1.125rem;
+  cursor: pointer;
+}
+
+.btn-acesso:hover { border-color: var(--dado); }
+.btn-acesso[disabled] { opacity: .6; cursor: progress; }
+
+.acesso-saida {
+  margin-top: .875rem;
+  padding: .875rem;
+  border-radius: 10px;
+  background: var(--papel2);
+  border: 1px solid var(--linha);
+}
+
+.acesso-rot { margin: 0 0 .5rem; font-size: .8125rem; font-weight: 600; color: var(--ok); }
+
+.acesso-url {
+  display: block;
+  font-family: var(--mono);
+  font-size: .75rem;
+  line-height: 1.5;
+  color: var(--tinta);
+  overflow-wrap: anywhere;
+  /* The link is shown as well as copied: navigator.clipboard needs a secure
+     context and does nothing over plain HTTP, so the copy can fail silently. */
+  user-select: all;
+}
+
+.acesso-prazo { margin: .625rem 0 0; font-size: .75rem; color: var(--suave); }

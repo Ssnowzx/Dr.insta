@@ -3,15 +3,14 @@ import { orm } from '../db/client.ts'
 import { db, waitForDatabase } from '../db/connection.ts'
 import { client, user } from '../db/schema.ts'
 import { issueToken } from '../lib/tokens.ts'
-import { mailConfigured, sendInvite } from '../lib/mail.ts'
 import { ulid } from '../lib/ulid.ts'
 
 /**
  * Creates (or finds) a user and prints an invite link.
  *
- * Exists so the platform can onboard someone before SMTP is configured, and so
- * there is always a way in when email fails — a consultancy of two people does
- * not need a mail server to be the single point of failure for access.
+ * This product sends no email at all, by decision: everything happens inside
+ * the platform, and a mail server nobody maintains is a dependency that fails
+ * quietly at the worst moment. The link is printed and relayed by hand.
  *
  * Usage:
  *   npm run invite -- --email x@y.com --name "Bianca Olivo" --client bianca-olivo
@@ -109,19 +108,7 @@ async function main (): Promise<void> {
   console.log('\nInvite link (single use, valid until ' + issued.expiresAt.toISOString() + '):\n')
   console.log(`  ${issued.url}\n`)
 
-  if (mailConfigured()) {
-    try {
-      await sendInvite(email, name, issued.url, isConsultant ? 'consultant' : 'client')
-      console.log(`Emailed to ${email}.\n`)
-    } catch (error) {
-      console.error('Could not send the email:',
-        error instanceof Error ? error.message : error)
-      console.error('The link above is still valid — send it by hand.\n')
-    }
-  } else {
-    console.log('SMTP is not configured, so nothing was emailed.')
-    console.log('Send the link over a channel you trust.\n')
-  }
+  console.log('Send it over a channel you trust. This product sends no email.\n')
 }
 
 main()

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { orm } from '../db/client.ts'
 import { db } from '../db/connection.ts'
-import { client, delivery, step, stepStatus, user } from '../db/schema.ts'
+import { auditLog, client, delivery, step, stepStatus, user } from '../db/schema.ts'
 import { activeClientIds, digestFor } from '../lib/digest.ts'
 import { ulid } from '../lib/ulid.ts'
 
@@ -62,6 +62,7 @@ beforeEach(async () => {
 })
 
 afterAll(async () => {
+  await orm().delete(auditLog).where(eq(auditLog.clientId, clientId))
   await orm().delete(stepStatus).where(eq(stepStatus.stepId, stepId))
   await orm().delete(step).where(eq(step.id, stepId))
   await orm().delete(delivery).where(eq(delivery.id, deliveryId))
@@ -162,6 +163,27 @@ describe('digestFor', () => {
 
     // ASSERT
     expect(digest?.total).toBe(1)
+  })
+
+  it('should surface someone who could not get in', async () => {
+    // ARRANGE — with no reset email, a client who cannot sign in has no
+    // self-service path. The attempt is recorded so it reaches this screen
+    // instead of depending on her remembering to message him.
+    await orm().insert(auditLog).values({
+      action: 'asked_for_access',
+      userId: clientUser,
+      clientId,
+      createdAt: at('2026-03-10T14:00:00Z')
+    })
+
+    // ACT
+    const digest = await digestFor(clientId, at('2026-03-10T00:00:00Z'), at('2026-03-11T00:00:00Z'))
+
+    // ASSERT
+    expect(digest?.askedForAccess).toHaveLength(1)
+    expect(digest?.total).toBe(1)
+
+    await orm().delete(auditLog).where(eq(auditLog.clientId, clientId))
   })
 
   it('should return null for a client that does not exist', async () => {

@@ -8,11 +8,11 @@ import { usePathname } from 'next/navigation'
  * a phone. Same list, same active state, no duplicated source of truth.
  *
  * Bottom bar and not a hamburger: she opens this on a phone, one-handed, and a
- * menu hidden behind a tap is a menu nobody uses. Four destinations fit across
- * a 360px screen with 44px targets.
+ * menu hidden behind a tap is a menu nobody uses.
  *
- * Icons are inline SVG at `stroke: currentColor` so they inherit the active
- * colour and the theme without a second set of assets.
+ * "Novidades" is consultant-only and never enters the bottom bar. Six items
+ * across 360px leaves 60px each, and the longest label already needs 53 —
+ * so on a phone it becomes a bell in the top bar, where a count fits.
  */
 
 interface Destino {
@@ -29,35 +29,48 @@ const DESTINOS: Destino[] = [
   { href: '/conta', label: 'Conta', icon: 'conta' }
 ]
 
-function Icone ({ nome }: { nome: Destino['icon'] }) {
-  const comum = {
-    width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none',
-    stroke: 'currentColor', strokeWidth: 1.7,
-    strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
-    'aria-hidden': true
-  }
+const COMUM = {
+  width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none',
+  stroke: 'currentColor', strokeWidth: 1.7,
+  strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+  'aria-hidden': true
+}
 
+function Icone ({ nome }: { nome: Destino['icon'] }) {
   switch (nome) {
     case 'painel':
       /* Three descending bars — the funnel, which is what the panel is about. */
-      return <svg {...comum}><path d="M4 6h16M4 12h9M4 18h4" /></svg>
+      return <svg {...COMUM}><path d="M4 6h16M4 12h9M4 18h4" /></svg>
     case 'plano':
-      return <svg {...comum}><path d="M4 6.5 6 8.5 9.5 5M4 12.5l2 2L9.5 11M4 18.5l2 2 3.5-3.5M13 7h7M13 13h7M13 19h7" /></svg>
+      return <svg {...COMUM}><path d="M4 6.5 6 8.5 9.5 5M4 12.5l2 2L9.5 11M4 18.5l2 2 3.5-3.5M13 7h7M13 13h7M13 19h7" /></svg>
     case 'pedidos':
-      return <svg {...comum}><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
+      return <svg {...COMUM}><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
     case 'conteudo':
-      /* A play triangle inside a frame: the archive is Reels. */
-      return <svg {...comum}><rect x="3.2" y="4.2" width="17.6" height="15.6" rx="3" /><path d="M10.4 9.2 15 12l-4.6 2.8z" /></svg>
+      return <svg {...COMUM}><rect x="3.2" y="4.2" width="17.6" height="15.6" rx="3" /><path d="M10.4 9.2 15 12l-4.6 2.8z" /></svg>
     case 'conta':
-      return <svg {...comum}><circle cx="12" cy="8" r="3.6" /><path d="M4.5 20a7.5 7.5 0 0 1 15 0" /></svg>
+      return <svg {...COMUM}><circle cx="12" cy="8" r="3.6" /><path d="M4.5 20a7.5 7.5 0 0 1 15 0" /></svg>
   }
+}
+
+function Sino () {
+  return <svg {...COMUM}><path d="M18 8.5a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7M13.7 20a2 2 0 0 1-3.4 0" /></svg>
 }
 
 function ativo (pathname: string, href: string): boolean {
   return href === '/' ? pathname === '/' : pathname.startsWith(href)
 }
 
-export function NavLateral ({ marca, conta }: { marca: string; conta: string }) {
+export function NavLateral ({
+  marca,
+  conta,
+  consultor,
+  novidades
+}: {
+  marca: string
+  conta: string
+  consultor: boolean
+  novidades: number
+}) {
   const pathname = usePathname()
 
   return (
@@ -68,6 +81,20 @@ export function NavLateral ({ marca, conta }: { marca: string; conta: string }) 
       </div>
 
       <ul className="rail-lista">
+        {consultor && (
+          <li>
+            <Link
+              href="/novidades"
+              className={ativo(pathname, '/novidades') ? 'rail-item rail-item-ativo' : 'rail-item'}
+              aria-current={ativo(pathname, '/novidades') ? 'page' : undefined}
+            >
+              <Sino />
+              <span>Novidades</span>
+              {novidades > 0 && <span className="numero contador">{novidades}</span>}
+            </Link>
+          </li>
+        )}
+
         {DESTINOS.map(d => (
           <li key={d.href}>
             <Link
@@ -82,6 +109,22 @@ export function NavLateral ({ marca, conta }: { marca: string; conta: string }) 
         ))}
       </ul>
     </nav>
+  )
+}
+
+/** The bell in the top bar, which is where "Novidades" lives on a phone. */
+export function SinoTopo ({ novidades }: { novidades: number }) {
+  const pathname = usePathname()
+
+  return (
+    <Link
+      href="/novidades"
+      className={ativo(pathname, '/novidades') ? 'topo-sino topo-sino-ativo' : 'topo-sino'}
+      aria-label={novidades === 0 ? 'Novidades' : `Novidades: ${novidades} sem ler`}
+    >
+      <Sino />
+      {novidades > 0 && <span className="numero contador contador-topo">{novidades}</span>}
+    </Link>
   )
 }
 

@@ -11,9 +11,11 @@ export default function Recuperar () {
         <p className="auth-mark">My Favorite</p>
 
         <h1>Sem problema.</h1>
+        {/* The truth, not a promise of an email that never comes. This product
+            sends none — the consultant mints a link and passes it on. */}
         <p className="auth-lead">
-          Escreva o e-mail que você usa aqui e eu mando um link para criar uma
-          senha nova. O link vale por uma hora.
+          Escreva o e-mail que você usa aqui. Eu aviso o Rodrigo e ele te manda
+          um link novo por onde vocês conversam — normalmente no mesmo dia.
         </p>
 
         <FormRecuperar />

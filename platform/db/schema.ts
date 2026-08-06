@@ -66,6 +66,10 @@ export const user = mysqlTable('user', {
   role: mysqlEnum(['consultant', 'client']).notNull(),
   active: tinyint().notNull().default(1),
   lastSeenAt: datetime('last_seen_at'),
+  /* When this user last opened the activity screen. Distinct from
+     `lastSeenAt`, which advances on every sign-in and would mark everything
+     read just for opening the app. */
+  newsSeenAt: datetime('news_seen_at'),
   createdAt: createdAt(),
   updatedAt: updatedAt()
 }, t => [

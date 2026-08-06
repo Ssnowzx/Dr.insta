@@ -692,3 +692,39 @@ export async function archiveAge (
   if (importedAt === null || lastPostAt === null) return null
   return { importedAt, lastPostAt }
 }
+
+export interface ClientUser {
+  id: number
+  name: string
+  email: string
+  hasPassword: boolean
+  lastSeenAt: Date | null
+}
+
+/**
+ * The client-side people a consultant can mint an access link for.
+ *
+ * Consultants are excluded: a consultant minting a link for another consultant
+ * is a privilege path, not a support one, and it has no use case here.
+ */
+export async function clientUsers (): Promise<ClientUser[]> {
+  const rows = await orm()
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      passwordHash: user.passwordHash,
+      lastSeenAt: user.lastSeenAt
+    })
+    .from(user)
+    .where(and(eq(user.role, 'client'), eq(user.active, 1)))
+    .orderBy(user.name)
+
+  return rows.map(r => ({
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    hasPassword: r.passwordHash !== null,
+    lastSeenAt: r.lastSeenAt
+  }))
+}

@@ -9,7 +9,6 @@ import { burnEquivalentTime, hashPassword, isTooShort, MIN_LENGTH, verifyPasswor
 import { createSession, destroyAllSessions, destroySession } from './session.ts'
 import { consumeToken, issueToken, resolveToken } from './tokens.ts'
 import { safeDestination } from './redirect.ts'
-import { sendReset } from './mail.ts'
 
 /**
  * Server Actions for the whole credential lifecycle.
@@ -162,15 +161,20 @@ export async function setNewPassword (token: string, _prev: FormState, form: For
 }
 
 /**
- * Starts a password reset.
+ * Records that someone could not get in.
  *
- * Always answers the same thing, whether or not the email exists. A different
- * message would make this a membership oracle, same as the sign-in screen.
+ * There is no email in this product, so nothing is sent: the consultant
+ * generates a fresh access link inside the platform and passes it on. What this
+ * does is leave a trace, so a request for help is visible on his activity
+ * screen instead of depending on her remembering to message him.
+ *
+ * The answer is the same whether or not the address exists — a different one
+ * would turn this into a way to ask who has an account here.
  */
 export async function requestReset (_prev: FormState, form: FormData): Promise<FormState> {
   const email = String(form.get('email') ?? '').trim().toLowerCase()
   const SAME_ANSWER =
-    'Se esse e-mail estiver cadastrado, o link para criar uma senha nova chega em instantes.'
+    'Avisei o Rodrigo. Ele te manda um link novo — normalmente no mesmo dia.'
 
   if (email === '') return { error: 'Escreva o seu e-mail.' }
 
@@ -186,20 +190,11 @@ export async function requestReset (_prev: FormState, form: FormData): Promise<F
     return { ok: SAME_ANSWER }
   }
 
-  const issued = await issueToken(found.id, 'reset')
-
-  /* A send that fails must not change the answer: telling this person the mail
-     bounced would tell them the address exists here. The failure goes to the
-     log, where the consultant can find it and relay the link by hand. */
-  try {
-    await sendReset(email, found.name, issued.url)
-  } catch (error) {
-    console.error(`[reset] falha ao enviar para ${email}:`,
-      error instanceof Error ? error.message : error)
-  }
-
+  /* No token is minted here. Issuing one on an unauthenticated request would
+     let anyone burn the pending link of a person who is mid-recovery, just by
+     typing their address. The consultant mints it from inside the platform. */
   const context = await requestContext()
-  await record('requested_reset', found.id, found.clientId, context.ip)
+  await record('asked_for_access', found.id, found.clientId, context.ip)
 
   return { ok: SAME_ANSWER }
 }
