@@ -77,3 +77,28 @@ describe('mailConfigured', () => {
     process.env.SMTP_HOST = before
   })
 })
+
+describe('undeliverable addresses', () => {
+  it('should refuse an address that can never receive mail', async () => {
+    // ARRANGE — the failure this prevents is the quietest kind: the SMTP server
+    // accepts the handoff, the log says "sent", and nobody ever receives
+    // anything. The daily summary would report to nowhere every morning and
+    // look healthy doing it.
+    const before = { host: process.env.SMTP_HOST, from: process.env.SMTP_FROM }
+    process.env.SMTP_HOST = '127.0.0.1'
+    process.env.SMTP_FROM = 'Teste <teste@exemplo.invalido>'
+
+    const { sendReset } = await import('../lib/mail.ts')
+
+    // ACT / ASSERT
+    await expect(sendReset('rodrigo@exemplo.invalido', 'Rodrigo', 'https://x/y'))
+      .rejects.toThrow(/never receive mail/)
+    await expect(sendReset('alguem@example.com', 'Alguém', 'https://x/y'))
+      .rejects.toThrow(/never receive mail/)
+    await expect(sendReset('alguem@teste.test', 'Alguém', 'https://x/y'))
+      .rejects.toThrow(/never receive mail/)
+
+    process.env.SMTP_HOST = before.host
+    process.env.SMTP_FROM = before.from
+  })
+})

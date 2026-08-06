@@ -59,9 +59,38 @@ interface Message {
   html: string
 }
 
+/**
+ * Domains that can never receive mail.
+ *
+ * `.invalid` and `.test` are reserved by RFC 2606 and `example.*` by RFC 2606
+ * too; `.invalido` is the Portuguese spelling that shows up in seed data. All
+ * of them accept a handoff to the SMTP server and then vanish.
+ *
+ * Worth checking because the failure is silent in the worst way: the log says
+ * "sent", the server took the message, and nobody ever receives anything. This
+ * platform's daily summary would report to nowhere every morning and look
+ * healthy doing it.
+ */
+function undeliverable (address: string): boolean {
+  const domain = address.split('@')[1]?.toLowerCase() ?? ''
+  return /(^|\.)(invalid|invalido|test|localhost|example|exemplo)$/.test(domain) ||
+         /^example\.(com|org|net)$/.test(domain) ||
+         /^exemplo\./.test(domain)
+}
+
 async function send (message: Message): Promise<void> {
   const from = (process.env.SMTP_FROM ?? '').trim()
   if (from === '') throw new Error('SMTP_FROM is not set.')
+
+  if (undeliverable(message.to)) {
+    /* Refused rather than warned. A warning in a cron log is a warning nobody
+       reads, and this is precisely the address that seed and test data leave
+       behind. */
+    throw new Error(
+      `"${message.to}" is a reserved address that can never receive mail. ` +
+      'Set a real one before this goes to production.'
+    )
+  }
 
   await transport().sendMail({
     from,
