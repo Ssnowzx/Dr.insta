@@ -107,10 +107,10 @@
 
 ## 7. Produção
 
-- [ ] 7.1 Provisionar a VPS: Docker, firewall, usuário, pasta de arquivos
-- [ ] 7.2 Deploy, TLS pelo certbot e conferência dos cabeçalhos em produção
-- [ ] 7.3 Cron de backup diário do banco e dos arquivos
-- [ ] 7.4 **Restaurar o backup num banco vazio e conferir contagem por tabela**
+- [x] 7.1 Provisionar a VPS: Docker, firewall, usuário, pasta de arquivos
+- [x] 7.2 Deploy, TLS pelo certbot e conferência dos cabeçalhos em produção
+- [x] 7.3 Cron de backup diário do banco e dos arquivos
+- [x] 7.4 **Restaurar o backup num banco vazio e conferir contagem por tabela**
 - [ ] 7.5 Percurso completo com a conta da cliente antes de convidar, e trocar os e-mails de teste (`*@exemplo.invalido`) pelos reais
 - [ ] 7.6 Gerar o link de convite dela em Conta → Acesso das clientes, mandar pelo canal de sempre e registrar a data (marca o início da janela de 14 dias)
 - [ ] 7.7 Confirmar que ela entrou; se passar 7 dias sem acesso, tratar como sinal de alarme
