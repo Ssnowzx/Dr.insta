@@ -1,10 +1,11 @@
 import 'server-only'
-import { randomBytes, createHash, timingSafeEqual } from 'node:crypto'
+import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { cookies } from 'next/headers'
 import { eq, lt } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import { session, user } from '@/db/schema'
 import { SESSION_COOKIE, SESSION_COOKIE_TTL_MS, SESSION_TTL_MS } from './constants.ts'
+import { digestToken as digest } from './token-hash.ts'
 
 /**
  * Sessions with an opaque token.
@@ -46,10 +47,6 @@ export interface Identity {
   role: 'consultant' | 'client'
   name: string
   email: string
-}
-
-function digest (token: string): string {
-  return createHash('sha256').update(token, 'utf8').digest('hex')
 }
 
 /**

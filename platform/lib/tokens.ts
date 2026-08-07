@@ -3,7 +3,10 @@ import { randomBytes } from 'node:crypto'
 import { and, eq, isNull } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import { credentialToken, user } from '@/db/schema'
-import { digestToken } from './session.ts'
+/* Deliberately NOT from './session.ts', which re-exports the same function:
+   that file imports `next/headers`, and this one is reached by the CLI, where
+   there is no request and no cookie jar to import. */
+import { digestToken } from './token-hash.ts'
 import { INVITE_TTL_MS, RESET_TTL_MS } from './constants.ts'
 
 /**

@@ -27,6 +27,33 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 
+# ---- admin tooling ----------------------------------------------------------
+# What `db/` and `scripts/` need to run, and nothing else.
+#
+# The standalone server bundles its imports into `server.js`, so the runtime
+# `node_modules` holds almost nothing — no drizzle-orm, no mysql2. The admin
+# scripts run through tsx WITHOUT bundling, so they need the real packages.
+# Copying them was not optional: without this stage `db:migrate`, `db:seed`,
+# `invite` and `link` all died with ERR_MODULE_NOT_FOUND, which meant a fresh
+# VPS could not be migrated, seeded, or given its first user.
+#
+# The list is the resolved dependency graph of tsx, drizzle-orm, mysql2 and
+# server-only — computed, not hand-picked. `@esbuild` carries esbuild's
+# platform binary, an optional dependency the graph walk does not report.
+FROM base AS admin
+COPY --from=deps /app/node_modules ./all
+RUN mkdir -p /out/node_modules/.bin && \
+    for p in tsx esbuild @esbuild drizzle-orm mysql2 server-only \
+             aws-ssl-profiles denque generate-function iconv-lite is-property \
+             long lru.min named-placeholders safer-buffer sql-escaper; do \
+      [ -e "./all/$p" ] && cp -R "./all/$p" /out/node_modules/ || true; \
+    done && \
+    # A symlink, not a copy. `COPY` dereferences symlinks, and a dereferenced
+    # cli.mjs sitting in `.bin/` resolves its own relative imports against
+    # `.bin/` — where nothing lives. That is the exact failure this replaces.
+    ln -s ../tsx/dist/cli.mjs /out/node_modules/.bin/tsx
+
+
 # ---- runtime ----------------------------------------------------------------
 FROM base AS runtime
 ENV NODE_ENV=production
@@ -43,12 +70,17 @@ COPY --from=build --chown=app:app /app/.next/standalone ./
 COPY --from=build --chown=app:app /app/.next/static ./.next/static
 COPY --from=build --chown=app:app /app/public ./public
 
-# Migration and seeding run from inside the container
-# (`docker compose exec app`), so they need the TypeScript runtime and the .sql
-# files.
+# Migration, seeding and access links run from inside the container
+# (`docker compose exec app npm run …`), so the sources those commands execute
+# have to be here — not just the .sql files. `scripts/` holds invite and link,
+# `lib/` is what both import, and `tsconfig.json` is what resolves the `@/`
+# alias for tsx. `package.json` comes with the standalone output and already
+# carries the npm scripts.
 COPY --from=build --chown=app:app /app/db ./db
-COPY --from=deps  --chown=app:app /app/node_modules/tsx ./node_modules/tsx
-COPY --from=deps  --chown=app:app /app/node_modules/.bin/tsx ./node_modules/.bin/tsx
+COPY --from=build --chown=app:app /app/lib ./lib
+COPY --from=build --chown=app:app /app/scripts ./scripts
+COPY --from=build --chown=app:app /app/tsconfig.json ./tsconfig.json
+COPY --from=admin --chown=app:app /out/node_modules ./node_modules
 
 # The mount point exists before the bind mount, with the right owner.
 RUN mkdir -p /var/lib/myfavorite/files && chown -R app:app /var/lib/myfavorite

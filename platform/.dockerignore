@@ -1,0 +1,48 @@
+# What must never enter the build context.
+#
+# This file did not exist, and its absence broke production in three ways at
+# once — none of which the build, the image, or the healthcheck complained
+# about. `COPY . .` in the build stage runs AFTER `COPY --from=deps
+# node_modules`, so everything here was copied over the top of it.
+#
+# 1. `node_modules` from the developer's macOS replaced the Linux one that
+#    `npm ci` had just installed. The image shipped
+#    @node-rs/argon2-darwin-arm64 and no Linux binary, so argon2 died with
+#    "Failed to load native binding" — meaning nobody could sign in. The
+#    healthcheck still answered {"ok":true}, because /api/health never hashes
+#    a password.
+# 2. `.env` — the local database password — was baked into the image. It also
+#    won at runtime: the admin scripts pass `--env-file-if-exists=.env`, so
+#    `docker compose exec app npm run db:migrate` read 127.0.0.1:3307 instead
+#    of the compose variables.
+# 3. `arquivos/` would have carried the client's uploaded files into every
+#    image built from this directory.
+
+# Installed inside the image by `npm ci`, for the right platform.
+node_modules
+
+# Built inside the image by `npm run build`.
+.next
+*.tsbuildinfo
+
+# Secrets. `.env.exemplo` is the template and carries none, so it stays.
+.env
+.env.*
+!.env.exemplo
+
+# The client's uploaded files. They live on a bind mount, never in an image.
+arquivos
+files
+
+# Not needed to build or run the server.
+test
+coverage
+.git
+.gitignore
+README.md
+AGENTS.md
+CLAUDE.md
+docker-compose.yml
+compose.dev.yml
+Dockerfile
+.dockerignore
