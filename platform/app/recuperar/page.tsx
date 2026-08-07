@@ -5,7 +5,8 @@ import { FormRecuperar } from '@/components/auth-forms'
 import { currentSession } from '@/lib/dal'
 import '../auth.css'
 
-export const metadata: Metadata = { title: 'Criar uma senha nova' }
+/* The tab title promised the one thing this screen deliberately does not do. */
+export const metadata: Metadata = { title: 'Pedir um link novo' }
 
 export default async function Recuperar () {
   /* Same reasoning as `/entrar`: the database decides, not the cookie. */

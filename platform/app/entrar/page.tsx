@@ -37,8 +37,14 @@ export default async function Entrar ({
 
       <FormEntrar {...(destino === undefined ? {} : { destino })} />
 
+      {/* Not "crie uma nova": `/recuperar` mints no token, on purpose — an
+          unauthenticated request that could would let anyone burn the pending
+          link of somebody mid-recovery. It records the attempt and the
+          consultant sends a link. The same wrong promise was already fixed on
+          the account screen; it survived here, on the one screen she reads
+          while locked out. */}
       <p className="auth-rodape">
-        Esqueceu a senha? <a href="/recuperar">Crie uma nova</a>.
+        Esqueceu a senha? <a href="/recuperar">Peça um link novo</a>.
       </p>
     </AuthShell>
   )
