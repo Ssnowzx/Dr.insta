@@ -253,9 +253,22 @@ Collection runs from cron on the host, not from a timer inside the server —
 which would die on every restart and keep no log anyone can read:
 
 ```cron
-# Every day at 05:10, collect the current month.
-10 5 * * * cd /srv/myfavorite && docker compose exec -T app npm run sync:instagram >> /var/log/myfavorite-sync.log 2>&1
+# /etc/cron.d/myfavorite-sync — every day at 05:10, collect the current month.
+10 5 * * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts >> /var/log/myfavorite-sync.log 2>&1
 ```
+
+Three details in that line were each wrong once, and none of them fails loudly:
+
+- **`root`, not the site's own user.** Reaching the Docker socket is equivalent
+  to root on the host, so the account that owns the site is deliberately kept
+  out of the `docker` group. Running the job as that user gets
+  `permission denied on the Docker socket` at 05:10 every day, into a log nobody
+  reads.
+- **`tsx` directly, not `npm run`.** The image carries `scripts/`, `lib/` and
+  the resolved dependency graph — not a `package.json` whose scripts can be
+  invoked.
+- **`--conditions=react-server` belongs to `tsx`, not to `node`.** Placed before
+  the binary, tsx respawns without it and `server-only` refuses the import.
 
 It exits non-zero on failure, and — more importantly — writes the failure to the
 connection row, which is what surfaces on `/novidades`. A routine that only
