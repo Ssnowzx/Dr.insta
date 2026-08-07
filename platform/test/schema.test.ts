@@ -91,3 +91,49 @@ describe('Drizzle schema against the database', () => {
     expect(undeclared).toEqual([])
   })
 })
+
+/**
+ * Two guarantees the Instagram connection leans on, asserted against MySQL
+ * rather than against the Drizzle declaration — the declaration is what this
+ * file exists to distrust.
+ */
+describe('instagram_connection constraints', () => {
+  it('should allow only one connection per client', async () => {
+    // ARRANGE
+    /* Explicit lowercase aliases: MySQL returns information_schema columns
+       upper-cased, and only aliases come back as written. */
+    const [rows] = await conn.query<RowDataPacket[]>(
+      `SELECT index_name AS name, non_unique AS notUnique,
+              GROUP_CONCAT(column_name ORDER BY seq_in_index) AS cols
+         FROM information_schema.statistics
+        WHERE table_schema = DATABASE() AND table_name = 'instagram_connection'
+        GROUP BY index_name, non_unique`
+    )
+
+    // ACT — a second row for the same client must be refused by the database,
+    // not by whoever remembers to check before inserting
+    const onClient = rows.find(r => r.cols === 'client_id')
+
+    // ASSERT
+    expect(onClient, 'no index on client_id alone').toBeDefined()
+    expect(Number(onClient?.notUnique)).toBe(0)
+  })
+
+  it('should accept api as a metric_value source', async () => {
+    // ARRANGE
+    const [rows] = await conn.query<RowDataPacket[]>(
+      `SELECT column_type AS type
+         FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'metric_value' AND column_name = 'source'`
+    )
+
+    // ACT
+    const type = String(rows[0]?.type ?? '')
+
+    // ASSERT — `insights` must survive alongside it: it is the fallback for the
+    // day the API changes, and the reason precedence exists at all
+    expect(type).toContain("'api'")
+    expect(type).toContain("'insights'")
+  })
+})

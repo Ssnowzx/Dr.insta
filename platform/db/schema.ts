@@ -302,7 +302,11 @@ export const metricValue = mysqlTable('metric_value', {
   granularity: mysqlEnum(['day', 'week', 'month']).notNull().default('month'),
   value: decimal({ precision: 16, scale: 6 }).notNull(),
   sampleSize: bigint('sample_size', { mode: 'number', unsigned: true }),
-  source: mysqlEnum(['insights', 'ga4', 'store', 'public', 'manual']).notNull(),
+  /* `api` is collected by machine from the official source; `insights` is a
+     person reading the app and typing. Both coexist for the same metric and
+     period — the unique key includes `source` — so the screen resolves them by
+     declared precedence. See `lib/precedencia.ts`. */
+  source: mysqlEnum(['api', 'insights', 'ga4', 'store', 'public', 'manual']).notNull(),
   note: varchar({ length: 255 }),
   createdAt: createdAt(),
   updatedAt: updatedAt()
@@ -409,6 +413,45 @@ export const post = mysqlTable('post', {
   uniqueIndex('uq_post').on(t.clientId, t.igCode),
   index('ix_post_date').on(t.clientId, t.publishedAt),
   index('ix_post_pillar').on(t.clientId, t.pillar, t.durationSec)
+])
+
+// --------------------------------------------------------- external accounts
+
+/**
+ * The client's Instagram account, authorised by her.
+ *
+ * `accessToken` holds ciphertext, never the token — see `lib/crypto-box.ts`.
+ * Anything that selects it must decrypt before use and must never put the
+ * result in a response, a screen, or a log.
+ *
+ * `state` separates `expired` from `failing` on purpose: a credential can be
+ * perfectly valid while collection keeps erroring, and telling her to reconnect
+ * would fix nothing.
+ */
+export const instagramConnection = mysqlTable('instagram_connection', {
+  id: id(),
+  publicCode: char('public_code', { length: 26 }).notNull(),
+  clientId: fk('client_id').notNull(),
+  igUserId: varchar('ig_user_id', { length: 32 }).notNull(),
+  username: varchar({ length: 80 }),
+  accessToken: text('access_token'),
+  tokenExpiresAt: datetime('token_expires_at'),
+  scopes: varchar({ length: 255 }),
+  connectedBy: fk('connected_by'),
+  connectedAt: datetime('connected_at'),
+  lastRefreshAt: datetime('last_refresh_at'),
+  lastSyncAt: datetime('last_sync_at'),
+  state: mysqlEnum(['active', 'expired', 'revoked', 'failing']).notNull().default('active'),
+  lastError: varchar('last_error', { length: 255 }),
+  lastErrorAt: datetime('last_error_at'),
+  createdAt: createdAt(),
+  updatedAt: updatedAt()
+}, t => [
+  uniqueIndex('uq_ig_connection_code').on(t.publicCode),
+  /* One account per client, enforced here and not by whoever writes the insert.
+     Two rows would mean two tokens and no rule about which one is current. */
+  uniqueIndex('uq_ig_connection_client').on(t.clientId),
+  index('ix_ig_connection_state').on(t.state, t.tokenExpiresAt)
 ])
 
 // --------------------------------------------------------------------- audit
