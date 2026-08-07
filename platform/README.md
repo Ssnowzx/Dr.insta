@@ -253,9 +253,16 @@ Collection runs from cron on the host, not from a timer inside the server —
 which would die on every restart and keep no log anyone can read:
 
 ```cron
-# /etc/cron.d/myfavorite-sync — every day at 05:10, collect the current month.
-10 5 * * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts >> /var/log/myfavorite-sync.log 2>&1
+# /etc/cron.d/myfavorite-sync — every day at 02:40, collect the current month.
+40 2 * * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts >> /var/log/myfavorite-sync.log 2>&1
 ```
+
+**02:40 and not 05:10, because the backup runs at 03:30.** Collecting after the
+dump gives you a backup that is missing the numbers of the day it is named
+after — recoverable, since past months can be re-collected with `--period`, but
+it is a file that does not contain what its name implies, and that only becomes
+visible on the day you restore it. Fifty minutes is generous for a handful of
+API calls against one account.
 
 Three details in that line were each wrong once, and none of them fails loudly:
 
