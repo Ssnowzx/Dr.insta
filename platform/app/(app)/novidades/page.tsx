@@ -1,31 +1,36 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MarkSeen } from '@/components/news'
-import { digestFor, newsSince } from '@/lib/digest'
+import { clientDigestFor, digestFor, newsSince } from '@/lib/digest'
 import type { DigestItem } from '@/lib/digest'
-import { clientScope, requireConsultant } from '@/lib/dal'
+import { clientScope, requireSession } from '@/lib/dal'
 import { shortDate } from '@/lib/format'
 
 export const metadata: Metadata = { title: 'Novidades' }
 export const dynamic = 'force-dynamic'
 
 /**
- * What the clients did since he last looked.
+ * What happened since this person last looked.
  *
- * This replaced a daily email. Everything happens inside the platform now, so
- * the summary is a screen — which also removes a mail server as a dependency
- * that fails quietly at the worst moment.
+ * One route, two screens, because the two sides have opposite questions. His is
+ * "what did she do" — blocked steps and someone who could not sign in come
+ * first, since those are what change his day. Hers is "what changed here that I
+ * did not do", and what needs HER comes first for the same reason.
  *
- * Blocked and "could not get in" come first, because they are the two that
- * change what he does today. Everything else is context.
+ * This replaced a daily email. Everything happens inside the platform, which
+ * also removes a mail server as a dependency that fails quietly at the worst
+ * moment.
  */
 export default async function Novidades () {
-  const identity = await requireConsultant()
+  const identity = await requireSession()
+  const consultor = identity.role === 'consultant'
   const since = await newsSince(identity.userId)
   const until = new Date()
+  const clientId = await clientScope()
 
-  const digest = await digestFor(await clientScope(), since, until)
-  const total = digest?.total ?? 0
+  const digest = consultor ? await digestFor(clientId, since, until) : null
+  const dela = consultor ? null : await clientDigestFor(clientId, since, until)
+  const total = digest?.total ?? dela?.total ?? 0
 
   return (
     <>
@@ -36,10 +41,42 @@ export default async function Novidades () {
         </h1>
         <p className="lead">
           {total === 0
-            ? 'Quando ela marcar, mandar arquivo ou escrever, aparece aqui.'
+            ? consultor
+              ? 'Quando ela marcar, mandar arquivo ou escrever, aparece aqui.'
+              : 'Quando eu publicar algo ou precisar de você, aparece aqui.'
             : 'O que precisa de você vem primeiro. O resto é contexto.'}
         </p>
       </header>
+
+      {dela !== null && total > 0 && (
+        <section className="secao">
+          <div className="secao-cab">
+            <h2 className="titulo-secao">Desde a sua última visita</h2>
+            <p className="secao-nota">
+              <span className="numero">{total}</span>{' '}
+              {total === 1 ? 'novidade' : 'novidades'}
+            </p>
+          </div>
+
+          {/* Each group points at the screen where its items are actually
+              resolved. One combined group with a single link would send her to
+              Conta for a request she answers in Pedidos. */}
+          <Grupo
+            titulo="Sua conexão"
+            itens={dela.connection}
+            tom="critico"
+            acao={{ href: '/conta', rotulo: 'reconectar em Conta' }}
+          />
+          <Grupo
+            titulo="Precisa de você"
+            itens={dela.requests}
+            tom="critico"
+            acao={{ href: '/pedidos', rotulo: 'ver os pedidos' }}
+          />
+          <Grupo titulo="Novo por aqui" itens={dela.published} tom="dado" />
+          <Grupo titulo="Te respondi" itens={dela.answered} tom="neutro" />
+        </section>
+      )}
 
       {digest !== null && total > 0 && (
         <section className="secao">

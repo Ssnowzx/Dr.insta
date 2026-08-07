@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, desc, eq, gte, lt } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, isNotNull, lt } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import {
   auditLog, client, delivery, file, instagramConnection, request, requestEvent,
@@ -186,6 +186,151 @@ export async function digestFor (
     askedForAccess,
     connection,
     total
+  }
+}
+
+/**
+ * What SHE has to catch up on.
+ *
+ * Deliberately not the same list as his, and not a filtered copy of it: his
+ * digest answers "what did she do", and a mirror of that would tell her what
+ * she already knows. Hers answers "what changed here that I did not do".
+ *
+ * The asymmetry that made this necessary: the platform notified him about her
+ * and never her about him. Publishing a delivery, opening a request or
+ * answering one all landed silently, and she found out by opening the screen —
+ * which is the same "depends on someone remembering" this product removed
+ * everywhere else. Adding the connection made it sharper, because a broken
+ * credential is a state only SHE can fix.
+ */
+export interface ClientDigest {
+  /**
+   * The connection, when it needs her. Its own group and not lumped with the
+   * requests: they are resolved on different screens, and a single group with
+   * one "resolve here" link would send her to the wrong one for most of its
+   * items.
+   */
+  connection: DigestItem[]
+  /** Requests he opened, waiting on her. */
+  requests: DigestItem[]
+  /** New deliveries she has not read. */
+  published: DigestItem[]
+  /** He answered something she was waiting on. */
+  answered: DigestItem[]
+  total: number
+}
+
+export async function clientDigestFor (
+  clientId: number,
+  since: Date,
+  until: Date
+): Promise<ClientDigest> {
+  const connection: DigestItem[] = []
+
+  // ----------------------------------------- connection that only she can fix
+  /* `failing` is absent on purpose. The credential is fine and there is nothing
+     for her to press — telling her would hand over worry without an action, and
+     a notice she cannot act on is the one that teaches her to ignore the bell.
+     That state stays on his screen, where it belongs. */
+  const conexao = await orm()
+    .select({ state: instagramConnection.state, lastSyncAt: instagramConnection.lastSyncAt })
+    .from(instagramConnection)
+    .where(and(
+      eq(instagramConnection.clientId, clientId),
+      inArray(instagramConnection.state, ['expired', 'revoked'])
+    ))
+    .limit(1)
+
+  const quebrada = conexao[0]
+  if (quebrada !== undefined) {
+    connection.push({
+      title: 'Seu Instagram desconectou',
+      detail: quebrada.state === 'revoked'
+        ? 'A conexão foi desligada. Enquanto isso, os números não atualizam.'
+        : 'A autorização venceu — acontece de tempos em tempos. São dois cliques em Conta.',
+      at: quebrada.lastSyncAt ?? until,
+      who: 'Instagram'
+    })
+  }
+
+  // ------------------------------------------------- requests waiting on her
+  const abertos = await orm()
+    .select({ title: request.title, at: request.createdAt, kind: request.kind })
+    .from(request)
+    .where(and(
+      eq(request.clientId, clientId),
+      /* Only what he asked of her. A request she raised herself is not news to
+         her, and `dropped` is not waiting on anyone. */
+      eq(request.raisedBySide, 'consultant'),
+      inArray(request.state, ['open', 'in_progress']),
+      gte(request.createdAt, since),
+      lt(request.createdAt, until)
+    ))
+    .orderBy(desc(request.createdAt))
+
+  const requests: DigestItem[] = abertos.map(r => ({
+    title: r.title,
+    detail: 'Novo pedido para você.',
+    at: r.at,
+    who: 'Rodrigo'
+  }))
+
+  // --------------------------------------------------------- new deliveries
+  const entregas = await orm()
+    .select({ title: delivery.title, subtitle: delivery.subtitle, at: delivery.publishedAt })
+    .from(delivery)
+    .where(and(
+      eq(delivery.clientId, clientId),
+      isNotNull(delivery.publishedAt),
+      gte(delivery.publishedAt, since),
+      lt(delivery.publishedAt, until)
+    ))
+    .orderBy(desc(delivery.publishedAt))
+
+  const published: DigestItem[] = entregas.map(d => ({
+    title: d.title,
+    detail: d.subtitle,
+    at: d.at ?? until,
+    who: 'Rodrigo'
+  }))
+
+  // ---------------------------------------------------- his answers to her
+  const respostas = await orm()
+    .select({
+      title: request.title,
+      body: requestEvent.body,
+      at: requestEvent.createdAt,
+      kind: requestEvent.kind,
+      toState: requestEvent.toState
+    })
+    .from(requestEvent)
+    .innerJoin(request, eq(request.id, requestEvent.requestId))
+    .innerJoin(user, eq(user.id, requestEvent.userId))
+    .where(and(
+      eq(request.clientId, clientId),
+      /* The mirror of his rule: what she did is not news to her. */
+      eq(user.role, 'consultant'),
+      inArray(requestEvent.kind, ['comment', 'state_change']),
+      gte(requestEvent.createdAt, since),
+      lt(requestEvent.createdAt, until)
+    ))
+    .orderBy(desc(requestEvent.createdAt))
+
+  const answered: DigestItem[] = []
+  for (const r of respostas) {
+    if (r.kind === 'comment') {
+      answered.push({ title: r.title, detail: r.body, at: r.at, who: 'Rodrigo' })
+    } else if (r.toState === 'delivered') {
+      answered.push({ title: r.title, detail: 'Fechado.', at: r.at, who: 'Rodrigo' })
+    }
+  }
+
+  return {
+    connection,
+    requests,
+    published,
+    answered,
+    total: connection.length + requests.length + published.length + answered.length
   }
 }
 

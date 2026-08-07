@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { NavInferior, NavLateral, SinoTopo } from '@/components/nav'
 import { BotaoTema } from '@/components/tema'
 import { clientProfile, openRequestCount } from '@/lib/dashboard'
-import { digestFor, newsSince } from '@/lib/digest'
+import { clientDigestFor, digestFor, newsSince } from '@/lib/digest'
 import { clientScope, requireSession } from '@/lib/dal'
 import './app.css'
 
@@ -47,11 +47,13 @@ export default async function AppLayout ({ children }: { children: ReactNode }) 
   const clientId = await clientScope()
   const profile = await clientProfile(clientId)
 
-  /* The unread count only exists for a consultant, so a client's page load
-     never pays for it. The open-request count is for both: it is the same fact
-     read from either side — what is still hers to answer. */
+  /* Both sides get a count now, from different digests. It used to be his
+     alone, which made the platform tell him about her and never her about him —
+     she found out he had published something by opening the screen. The
+     connection made that asymmetry untenable: a credential only she can renew
+     would have been announced to him and left for him to relay. */
   const [unread, pedidos] = await Promise.all([
-    consultant ? countUnread(identity.userId, clientId) : Promise.resolve(0),
+    countUnread(identity.userId, clientId, consultant),
     openRequestCount(clientId)
   ])
 
@@ -77,7 +79,7 @@ export default async function AppLayout ({ children }: { children: ReactNode }) 
                 phone, and a setting she cannot reach is a setting she does not
                 have. */}
             <BotaoTema />
-            {consultant && <SinoTopo novidades={unread} />}
+            <SinoTopo novidades={unread} />
           </span>
         </header>
 
@@ -90,13 +92,27 @@ export default async function AppLayout ({ children }: { children: ReactNode }) 
 }
 
 /**
- * How much has happened since he last read the news.
+ * How much has happened since this person last read the news.
  *
- * Runs on every page load for a consultant, so it is bounded: one client, one
- * digest, over an indexed time window.
+ * Two digests, because the two sides have opposite questions. His is "what did
+ * she do"; hers is "what changed here that I did not do". A shared list would
+ * tell each of them what they already know.
+ *
+ * Runs on every page load, so it stays bounded: one client, one digest, over an
+ * indexed time window.
  */
-async function countUnread (userId: number, clientId: number): Promise<number> {
+async function countUnread (
+  userId: number,
+  clientId: number,
+  consultant: boolean
+): Promise<number> {
   const since = await newsSince(userId)
-  const digest = await digestFor(clientId, since, new Date())
-  return digest?.total ?? 0
+  const now = new Date()
+
+  if (consultant) {
+    const digest = await digestFor(clientId, since, now)
+    return digest?.total ?? 0
+  }
+
+  return (await clientDigestFor(clientId, since, now)).total
 }

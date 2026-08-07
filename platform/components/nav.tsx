@@ -101,19 +101,20 @@ export function NavLateral ({
       </div>
 
       <ul className="rail-lista">
-        {consultor && (
-          <li>
-            <Link
-              href="/novidades"
-              className={ativo(pathname, '/novidades') ? 'rail-item rail-item-ativo' : 'rail-item'}
-              aria-current={ativo(pathname, '/novidades') ? 'page' : undefined}
-            >
-              <Sino />
-              <span>Novidades</span>
-              {novidades > 0 && <span className="numero contador">{novidades}</span>}
-            </Link>
-          </li>
-        )}
+        {/* Both sides have news now, from different digests — see
+            `lib/digest.ts`. It used to be his alone, which meant the platform
+            told him about her and never her about him. */}
+        <li>
+          <Link
+            href="/novidades"
+            className={ativo(pathname, '/novidades') ? 'rail-item rail-item-ativo' : 'rail-item'}
+            aria-current={ativo(pathname, '/novidades') ? 'page' : undefined}
+          >
+            <Sino />
+            <span>Novidades</span>
+            {novidades > 0 && <span className="numero contador">{novidades}</span>}
+          </Link>
+        </li>
 
         {DESTINOS.map(d => {
           const n = d.href === '/pedidos' ? pedidos : 0

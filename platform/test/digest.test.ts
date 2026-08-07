@@ -5,7 +5,7 @@ import { db } from '../db/connection.ts'
 import {
   auditLog, client, delivery, instagramConnection, step, stepStatus, user
 } from '../db/schema.ts'
-import { digestFor } from '../lib/digest.ts'
+import { clientDigestFor, digestFor } from '../lib/digest.ts'
 import { ulid } from '../lib/ulid.ts'
 
 /**
@@ -298,3 +298,82 @@ describe('digestFor and the Instagram connection', () => {
 /* `activeClientIds` is gone: the instance serves one client, resolved from
    `TENANT_SLUG` by `lib/tenant.ts`, so there is no list to walk. What replaced
    those two tests lives in `test/tenant.test.ts`. */
+
+/**
+ * Her side of the news.
+ *
+ * The rule that keeps this useful is the mirror of his: what SHE did is not
+ * news to her. A digest that reports her own actions back to her is a digest
+ * she learns to skip, and then the one that needed her is skipped too.
+ */
+describe('clientDigestFor', () => {
+  const janela = (): [Date, Date] => [at('2026-03-10T00:00:00Z'), at('2026-03-11T00:00:00Z')]
+
+  afterEach(async () => {
+    await orm().delete(instagramConnection).where(eq(instagramConnection.clientId, clientId))
+  })
+
+  async function conectar (state: 'active' | 'expired' | 'failing'): Promise<void> {
+    const now = at('2026-01-01T00:00:00Z')
+    await orm().insert(instagramConnection).values({
+      publicCode: ulid(), clientId, igUserId: '178414', state,
+      lastSyncAt: at('2026-03-01T00:00:00Z'), createdAt: now, updatedAt: now
+    }).onDuplicateKeyUpdate({ set: { state, updatedAt: now } })
+  }
+
+  it('should say nothing when nothing changed', async () => {
+    // ARRANGE / ACT
+    const dela = await clientDigestFor(clientId, at('2026-01-01T00:00:00Z'), at('2026-01-02T00:00:00Z'))
+
+    // ASSERT
+    expect(dela.total).toBe(0)
+  })
+
+  it('should tell her when the connection needs her', async () => {
+    // ARRANGE
+    await conectar('expired')
+
+    // ACT
+    const dela = await clientDigestFor(clientId, ...janela())
+
+    // ASSERT — she is the only one who can renew it
+    expect(dela.connection).toHaveLength(1)
+  })
+
+  it('should NOT tell her about a failure she cannot act on', async () => {
+    // ARRANGE — the credential is fine; the collection is erroring
+    await conectar('failing')
+
+    // ACT
+    const dela = await clientDigestFor(clientId, ...janela())
+
+    // ASSERT — handing over worry with no action is what teaches her to
+    // ignore the bell. That state belongs on his screen.
+    expect(dela.connection).toEqual([])
+    expect(dela.total).toBe(0)
+  })
+
+  it('should say nothing while the connection is healthy', async () => {
+    // ARRANGE
+    await conectar('active')
+
+    // ACT
+    const dela = await clientDigestFor(clientId, ...janela())
+
+    // ASSERT
+    expect(dela.connection).toEqual([])
+  })
+
+  it('should keep the two digests separate', async () => {
+    // ARRANGE — she marked a step; that is news to him, not to her
+    await markAt(clientUser, 'blocked', at('2026-03-10T14:00:00Z'), 'travou aqui')
+
+    // ACT
+    const dele = await digestFor(clientId, ...janela())
+    const dela = await clientDigestFor(clientId, ...janela())
+
+    // ASSERT
+    expect(dele?.blocked).toHaveLength(1)
+    expect(dela.total).toBe(0)
+  })
+})
