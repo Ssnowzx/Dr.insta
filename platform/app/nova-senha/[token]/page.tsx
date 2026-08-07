@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { AuthShell } from '@/components/auth-shell'
 import { FormNovaSenha } from '@/components/auth-forms'
 import { resolveToken } from '@/lib/tokens'
@@ -25,7 +26,7 @@ export default async function NovaSenha ({
           e ele chega em instantes.
         </p>
         <p className="auth-rodape">
-          <a href="/recuperar">Pedir um link novo</a>
+          <Link href="/recuperar">Pedir um link novo</Link>
         </p>
       </AuthShell>
     )

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AuthShell } from '@/components/auth-shell'
 import { FormEntrar } from '@/components/auth-forms'
@@ -44,7 +45,7 @@ export default async function Entrar ({
           the account screen; it survived here, on the one screen she reads
           while locked out. */}
       <p className="auth-rodape">
-        Esqueceu a senha? <a href="/recuperar">Peça um link novo</a>.
+        Esqueceu a senha? <Link href="/recuperar">Peça um link novo</Link>.
       </p>
     </AuthShell>
   )

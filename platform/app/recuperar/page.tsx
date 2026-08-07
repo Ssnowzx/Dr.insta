@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AuthShell } from '@/components/auth-shell'
 import { FormRecuperar } from '@/components/auth-forms'
@@ -25,7 +26,7 @@ export default async function Recuperar () {
       <FormRecuperar />
 
       <p className="auth-rodape">
-        Lembrou a senha? <a href="/entrar">Voltar para entrar</a>.
+        Lembrou a senha? <Link href="/entrar">Voltar para entrar</Link>.
       </p>
     </AuthShell>
   )

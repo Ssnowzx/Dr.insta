@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { AuthShell } from '@/components/auth-shell'
 import { FormConvite } from '@/components/auth-forms'
 import { resolveToken } from '@/lib/tokens'
@@ -34,7 +35,7 @@ export default async function Convite ({
           que eu mando outro na hora — não tem problema nenhum.
         </p>
         <p className="auth-rodape">
-          Já criou a sua senha antes? <a href="/entrar">Entre por aqui</a>.
+          Já criou a sua senha antes? <Link href="/entrar">Entre por aqui</Link>.
         </p>
       </AuthShell>
     )

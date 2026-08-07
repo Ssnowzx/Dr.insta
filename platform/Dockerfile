@@ -88,6 +88,10 @@ RUN mkdir -p /var/lib/myfavorite/files && chown -R app:app /var/lib/myfavorite
 USER app
 EXPOSE 3000
 
+# If `basePath` is ever set in next.config.ts, this path has to carry the same
+# prefix. Without it the probe gets a 404, the container is marked unhealthy
+# forever, and `depends_on: service_healthy` never releases — while the
+# application is in fact serving.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
