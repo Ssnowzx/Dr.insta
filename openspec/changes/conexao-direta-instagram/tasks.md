@@ -23,45 +23,45 @@
 
 ## 3. Fluxo de autorização
 
-- [ ] 3.1 `lib/instagram/oauth.ts`: montar a URL de autorização (`client_id`, `redirect_uri`, `response_type=code`, `scope`, `state`) e trocar `code` por token curto
-- [ ] 3.2 Trocar token curto por token longo e calcular `token_expires_at`
-- [ ] 3.3 Teste: a URL carrega exatamente os dois escopos de leitura e nenhum outro; `state` é obrigatório
-- [ ] 3.4 Rota de início: gera `state`, grava em cookie `httpOnly`/`Lax` de 10 minutos e redireciona
-- [ ] 3.5 Rota de callback: exige `state` casando com o cookie, consome o cookie, troca o código, cifra e grava a conexão, e **redireciona para URL limpa** sem o `code` na query
-- [ ] 3.6 Teste: `state` ausente, divergente ou reaproveitado é recusado sem criar conexão; retorno com `error=access_denied` não cria nada
-- [ ] 3.7 Teste: o `code` recebido não aparece em log nem na URL final
+- [x] 3.1 `lib/instagram/oauth.ts`: montar a URL de autorização (`client_id`, `redirect_uri`, `response_type=code`, `scope`, `state`) e trocar `code` por token curto
+- [x] 3.2 Trocar token curto por token longo e calcular `token_expires_at`
+- [x] 3.3 Teste: a URL carrega exatamente os dois escopos de leitura e nenhum outro; `state` é obrigatório
+- [x] 3.4 Rota de início: gera `state`, grava em cookie `httpOnly`/`Lax` de 10 minutos e redireciona
+- [x] 3.5 Rota de callback: exige `state` casando com o cookie, consome o cookie, troca o código, cifra e grava a conexão, e **redireciona para URL limpa** sem o `code` na query
+- [x] 3.6 Teste: `state` ausente, divergente ou reaproveitado é recusado sem criar conexão; retorno com `error=access_denied` não cria nada
+- [x] 3.7 Teste: o `code` recebido não aparece em log nem na URL final
 
 ## 4. Telas
 
-- [ ] 4.1 Cartão de conexão em `/conta`: estado (conectada desde / nunca conectada / precisa reconectar), última coleta, e o botão
-- [ ] 4.2 Texto antes de autorizar, em consequência e não em nome de escopo: o que será lido, e que a plataforma não publica, não comenta e não lê mensagens
-- [ ] 4.3 Desconectar pela própria interface, apagando a credencial e preservando as métricas já coletadas
-- [ ] 4.4 Teste: desconectar remove a credencial utilizável e não apaga `metric_value`
-- [ ] 4.5 Abrir renderizado nos dois temas e medir contraste dos estados novos
+- [x] 4.1 Cartão de conexão em `/conta`: estado (conectada desde / nunca conectada / precisa reconectar), última coleta, e o botão
+- [x] 4.2 Texto antes de autorizar, em consequência e não em nome de escopo: o que será lido, e que a plataforma não publica, não comenta e não lê mensagens
+- [x] 4.3 Desconectar pela própria interface, apagando a credencial e preservando as métricas já coletadas
+- [x] 4.4 Teste: desconectar remove a credencial utilizável e não apaga `metric_value`
+- [x] 4.5 Abrir renderizado nos dois temas e medir contraste dos estados novos
 
 ## 5. Cliente da API e coleta
 
-- [ ] 5.1 `lib/instagram/client.ts`: `fetch` com token, tratamento de erro tipado (autorização inválida ≠ falha de rede) e contador de chamadas por execução
-- [ ] 5.2 Teste: resposta de erro de autorização é distinguida de erro transitório
-- [ ] 5.3 Coleta de conta por range (`since`/`until` do mês), **sem somar dias** — `reach` é de contas únicas
-- [ ] 5.4 Teste: a coleta pede o range do período e nunca soma períodos; um teste nomeia essa armadilha porque o erro produz número plausível e maior
-- [ ] 5.5 Mapeamento para os `metric_def` existentes conforme a tabela do design, incluindo as taxas derivadas sobre alcance
-- [ ] 5.6 Teste: métrica ausente na resposta **não** vira zero; nenhuma linha é gravada para ela
-- [ ] 5.7 Gravação idempotente em `metric_value` com origem `api`
-- [ ] 5.8 Teste: rodar a coleta duas vezes para o mesmo período deixa um único valor por métrica e origem
+- [x] 5.1 `lib/instagram/client.ts`: `fetch` com token, tratamento de erro tipado (autorização inválida ≠ falha de rede) e contador de chamadas por execução
+- [x] 5.2 Teste: resposta de erro de autorização é distinguida de erro transitório
+- [x] 5.3 Coleta de conta por range (`since`/`until` do mês), **sem somar dias** — `reach` é de contas únicas
+- [x] 5.4 Teste: a coleta pede o range do período e nunca soma períodos; um teste nomeia essa armadilha porque o erro produz número plausível e maior
+- [x] 5.5 Mapeamento para os `metric_def` existentes conforme a tabela do design, incluindo as taxas derivadas sobre alcance
+- [x] 5.6 Teste: métrica ausente na resposta **não** vira zero; nenhuma linha é gravada para ela
+- [x] 5.7 Gravação idempotente em `metric_value` com origem `api`
+- [x] 5.8 Teste: rodar a coleta duas vezes para o mesmo período deixa um único valor por métrica e origem
 - [ ] 5.9 Coleta de insights por mídia na janela de 30 dias e das mídias sem insights, atualizando `post` sem jamais escrever `reach` a partir de `views`
 - [ ] 5.10 Teste: o invariante de `test/import.test.ts` continua valendo para a coleta pela API
 
 ## 6. Rotina e falha visível
 
-- [ ] 6.1 `scripts/sync-instagram.ts`: renova se faltar menos de 15 dias, coleta, grava `last_sync_at` ou `last_error` e o estado
-- [ ] 6.2 Registrar o comando em `package.json` e garantir que ele exista dentro da imagem (`scripts/` e `lib/` já são copiados)
+- [x] 6.1 `scripts/sync-instagram.ts`: renova se faltar menos de 15 dias, coleta, grava `last_sync_at` ou `last_error` e o estado
+- [x] 6.2 Registrar o comando em `package.json` e garantir que ele exista dentro da imagem (`scripts/` e `lib/` já são copiados)
 - [ ] 6.3 Teste: credencial perto do vencimento é renovada; falha isolada de renovação com credencial ainda válida mantém a conexão ativa
-- [ ] 6.4 Estado `expired`/`revoked`/`failing` vira aviso em `/novidades`, dizendo desde quando não há dado novo
-- [ ] 6.5 Teste: `lib/digest.ts` reporta conexão quebrada; conexão saudável não gera ruído
+- [x] 6.4 Estado `expired`/`revoked`/`failing` vira aviso em `/novidades`, dizendo desde quando não há dado novo
+- [x] 6.5 Teste: `lib/digest.ts` reporta conexão quebrada; conexão saudável não gera ruído
 - [ ] 6.6 Apresentar a idade da última coleta junto dos números, usando `lib/freshness.ts`
-- [ ] 6.7 Descrever a origem `api` em `lib/origem.ts` como colhida automaticamente da fonte oficial, e teste correspondente
-- [ ] 6.8 Documentar o cron do host no `README.md` da plataforma
+- [x] 6.7 Descrever a origem `api` em `lib/origem.ts` como colhida automaticamente da fonte oficial, e teste correspondente
+- [x] 6.8 Documentar o cron do host no `README.md` da plataforma
 
 ## 7. Validação de verdade
 

@@ -1,15 +1,22 @@
 import type { Metadata } from 'next'
 import { FormTrocarSenha } from '@/components/auth-forms'
+import { InstagramSection } from '@/components/instagram-section'
 import { AccessLink } from '@/components/news'
 import { signOut } from '@/lib/auth-actions'
 import { clientProfile, clientUsers } from '@/lib/dashboard'
 import { clientScope, requireSession } from '@/lib/dal'
 import { shortDate } from '@/lib/format'
+import { connectionFor } from '@/lib/instagram/connection'
+import { credentialsFromEnv } from '@/lib/instagram/oauth'
 
 export const metadata: Metadata = { title: 'Conta' }
 export const dynamic = 'force-dynamic'
 
-export default async function Conta () {
+export default async function Conta ({
+  searchParams
+}: {
+  searchParams: Promise<{ instagram?: string }>
+}) {
   const identity = await requireSession()
   const consultor = identity.role === 'consultant'
 
@@ -19,6 +26,11 @@ export default async function Conta () {
   /* This product sends no email, so a client who cannot get in has no
      self-service path. The consultant mints a link here and relays it. */
   const pessoas = consultor ? await clientUsers(clientId) : []
+
+  const conexao = await connectionFor(clientId)
+  /* `searchParams` is a Promise in Next 16 — reading it as a plain object
+     silently yields undefined. */
+  const { instagram } = await searchParams
 
   return (
     <>
@@ -80,6 +92,13 @@ export default async function Conta () {
           </ul>
         </section>
       )}
+
+      <InstagramSection
+        conexao={conexao}
+        configurado={credentialsFromEnv(process.env.APP_URL ?? '') !== null}
+        ehCliente={!consultor}
+        {...(instagram === undefined ? {} : { resultado: instagram })}
+      />
 
       <section className="secao">
         <div className="secao-cab">

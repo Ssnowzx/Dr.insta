@@ -2451,3 +2451,32 @@ a.secao-nota:hover { text-decoration: underline; }
   font-size: .875rem;
   color: var(--tinta2);
 }
+
+/* Disconnecting the Instagram account, second step.
+   The confirmation sits inline rather than in a modal: a modal would block the
+   page to ask a question the button can ask where it stands. */
+.ig-confirmar {
+  margin-top: .875rem;
+  padding: .875rem;
+  border-radius: var(--raio);
+  background: var(--papel2);
+  border: 1px solid var(--linha);
+}
+
+.ig-confirmar-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .625rem;
+}
+
+/* `a.btn-acesso` is a link, not a button: it navigates away to Instagram, and a
+   form post cannot leave the site. It has to be told to look like the buttons
+   next to it — inline by default, and carrying the anchor's underline and
+   colour, neither of which the button rule resets. */
+a.btn-acesso {
+  display: inline-block;
+  text-decoration: none;
+  color: var(--tinta);
+}
+
+a.btn-acesso:hover { border-color: var(--dado); text-decoration: none; }
