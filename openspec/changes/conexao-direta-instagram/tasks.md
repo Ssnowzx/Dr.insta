@@ -75,7 +75,7 @@
 
 ## 7. Validação de verdade
 
-- [ ] 7.1 Criar o app na Meta, produto Instagram, e cadastrar o `redirect_uri` do túnel
+- [x] 7.1 Criar o app na Meta, produto Instagram, e cadastrar o `redirect_uri` do túnel
 - [ ] 7.2 Percorrer o fluxo inteiro por túnel HTTPS com uma conta de teste: conectar, coletar, ver número na tela com origem `api`
 - [ ] 7.3 Provar o caminho de falha: revogar a autorização e confirmar que vira aviso em `/novidades` e estado na tela
 - [ ] 7.4 `cd platform && npm run lint && npm test` e `npm run validar:tudo` na raiz
@@ -83,7 +83,7 @@
 
 ## 8. Depois da VPS
 
-- [ ] 8.1 Cadastrar o `redirect_uri` de produção no app da Meta
+- [x] 8.1 Cadastrar o `redirect_uri` de produção no app da Meta
 - [ ] 8.2 Adicionar a Bianca como tester e confirmar que ela aceitou o convite
 - [ ] 8.3 Ela conecta a conta real
 - [ ] 8.4 Conferir `profile_links_taps` chegando com origem `api` em até 24h — o critério do experimento a1
