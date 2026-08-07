@@ -373,16 +373,32 @@ The `db` service **publishes no port**. It talks to the app over Compose's
 internal network; an exposed 3306 is the most common way to lose a database on a
 VPS.
 
-### Backup
+### Backup, and the restore that proves it
+
+Two scripts, because a backup nobody has restored is a backup nobody has.
 
 ```bash
-docker compose exec -T db mysqldump -uroot -p"$DB_ROOT_PASSWORD" \
-  --single-transaction --routines myfavorite | gzip > backup-$(date +%F).sql.gz
+./infra/backup.sh                                  # dump + rsync dos arquivos
+./infra/restore.sh backups/db-….sql.gz --para teste # restaura ao lado e confere
 ```
 
-Daily via cron, 14-day retention, plus an `rsync` of `FILES_HOST`.
-**Restore once into an empty database and check the per-table row counts**
-before the client is invited — an untested backup is one you have not lost yet.
+`backup.sh` grava em `./backups`, mantém 14 dias e **recusa um dump vazio**:
+the pipe swallows mysqldump's error and gzip happily writes a valid 20-byte
+file, so a backup that "exists" every day and works on none is the failure this
+guards against.
+
+`restore.sh --para <banco>` restaura num banco separado e compara tabela a
+tabela contra o que está no ar. Sem `--para`, sobrescreve o banco em uso e por
+isso pede o nome digitado como confirmação.
+
+**A conferência usa `COUNT(*)`, não `information_schema.table_rows`.** Medido em
+07/08/2026: `table_rows` é estimativa no InnoDB e mostrou `client 0`, `user 0`,
+`step 0` para uma restauração perfeita — números que fariam qualquer um
+concluir que o backup falhou. Um conferidor que erra é pior que nenhum, porque
+é acreditado.
+
+Ensaiado de ponta a ponta em 07/08/2026 contra o compose de produção: backup,
+restauração em banco separado, 21 tabelas conferidas, todas batendo.
 
 ---
 

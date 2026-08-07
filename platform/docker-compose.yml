@@ -49,6 +49,23 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
       APP_URL: ${APP_URL:?set APP_URL in .env}
       FILES_ROOT: /var/lib/myfavorite/files
+
+      # The one client this instance serves. `:?` and not a default: this app
+      # has no client picker and no fallback, so an unset value must stop the
+      # container here rather than let every request fail at `clientScope()`
+      # with the screens already answering. It was missing from this file
+      # entirely — the deploy would have come up and served nothing.
+      TENANT_SLUG: ${TENANT_SLUG:?set TENANT_SLUG in .env}
+
+      # Instagram. Blank is a legitimate state — the connect button simply is
+      # not offered and every other screen works — so no `:?` on the first two.
+      IG_APP_ID: ${IG_APP_ID:-}
+      IG_APP_SECRET: ${IG_APP_SECRET:-}
+      # This one IS required: without it the stored credential cannot be read
+      # back, and a connection that exists but cannot be decrypted fails on
+      # every collection with an error that points nowhere near the cause.
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY in .env}
+
       # No SMTP_* here. This product sends no email — access links are minted in
       # Conta > Acesso das clientes, or with `npm run link`, and relayed by hand.
       # The variables outlived the decision and were still being handed to a
