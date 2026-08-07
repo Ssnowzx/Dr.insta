@@ -51,6 +51,15 @@ export default async function Novidades () {
             </p>
           </div>
 
+          {/* First, above even "could not sign in": while this is broken the
+              numbers on every other screen are quietly standing still, and
+              nothing else on this page would tell you that. */}
+          <Grupo
+            titulo="Instagram desconectado"
+            itens={digest.connection}
+            tom="critico"
+            acao={{ href: '/conta', rotulo: 'ver a conexão' }}
+          />
           <Grupo
             titulo="Não conseguiu entrar"
             itens={digest.askedForAccess}

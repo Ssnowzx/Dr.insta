@@ -70,7 +70,8 @@ npm run dev
 | `npm run db:seed` | Initial data |
 | `npm run db:import-reels -- <csv>` | Imports the public Reels export |
 | `npm run invite -- --email … --name …` | Creates a user on `TENANT_SLUG` and prints an invite link (`--consultant` for an unscoped one) |
-| `npm run digest -- --seco` | Prints the daily summary without sending |
+| `npm run link -- --email …` | Prints a fresh access link for someone who already exists — invite or reset, chosen from the account |
+| `npm run sync:instagram` | Collects the current month from the Instagram API (`--period YYYY-MM-01` to backfill) |
 
 ---
 
@@ -211,15 +212,60 @@ escalates with the age. A warning that always looks urgent stops being read.
 
 ### What can be collected automatically, and what cannot
 
-| | |
-|---|---|
-| **Automatable** | views, likes, comments, caption, duration, date — per Reel |
-| **Not automatable** | reach, saves, DM shares, video retention, profile visits, link clicks |
+Three routes, and which one a number came in by is recorded on it as `source`.
 
-The second row is not an omission: those metrics do not exist in public data,
-and they are the ones the cycle is decided on. `saves/reach` is the cycle's
-decision metric and retention is an experiment's success criterion. They arrive
-by Insights export or not at all.
+| Route | What it gives |
+|---|---|
+| **Official API** (`api`) | reach, views, saves, shares, likes, comments, replies, follows, **bio link clicks** |
+| **Public export** (`public`) | views, likes, comments, caption, duration, date — per Reel |
+| **By hand** (`insights`) | profile visits, video retention curve, Stories older than a day |
+
+The middle row cannot give reach, saves or shares — they do not exist in public
+data. That was the whole constraint until the account was connected, and the
+reason `saves/reach`, the cycle's decision metric, used to arrive by export or
+not at all.
+
+The bottom row is what the API still does not answer. `profile_visits` exists
+per media but **not as an account metric**, so the funnel's second step is
+manual. Retention comes back as an average (`ig_reels_avg_watch_time`), never
+as the curve — the "how far they watched" screenshot request stands.
+
+One trap worth naming: the public field `media_repost_count` is a **repost**
+count, not a share count. Measured against July's screenshots it read 1,986
+where Insights showed 48,000 shares. It is stored in its own column and never
+treated as the strong signal.
+
+### The Instagram connection
+
+The client authorises her own account from **Conta**: Business Login for
+Instagram, read-only (`instagram_business_basic`,
+`instagram_business_manage_insights`). No Facebook Page, no password shared, and
+she can disconnect from the same screen.
+
+Set `IG_APP_ID`, `IG_APP_SECRET` and `ENCRYPTION_KEY` — see `.env.exemplo`. With
+the first two blank the button is simply not offered and everything else works.
+
+The token is stored encrypted (AES-256-GCM, key outside the database) and
+refreshed with fifteen days to spare. **Losing `ENCRYPTION_KEY` loses the
+connection**; she reconnects in two clicks.
+
+Collection runs from cron on the host, not from a timer inside the server —
+which would die on every restart and keep no log anyone can read:
+
+```cron
+# Every day at 05:10, collect the current month.
+10 5 * * * cd /srv/myfavorite && docker compose exec -T app npm run sync:instagram >> /var/log/myfavorite-sync.log 2>&1
+```
+
+It exits non-zero on failure, and — more importantly — writes the failure to the
+connection row, which is what surfaces on `/novidades`. A routine that only
+fails into a log is a routine that fails silently, and a connection that stops
+working looks exactly like a month where nothing happened.
+
+**`reach` counts unique accounts and is never summed across days.** Every figure
+is requested from the API with the range it will be stored under. Adding seven
+days of reach gives a plausible number that is simply too large, and nothing
+would break.
 
 One trap worth naming: the public field `media_repost_count` is a **repost**
 count, not a share count. Measured against July's screenshots it read 1,986

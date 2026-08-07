@@ -1,8 +1,10 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { orm } from '../db/client.ts'
 import { db } from '../db/connection.ts'
-import { auditLog, client, delivery, step, stepStatus, user } from '../db/schema.ts'
+import {
+  auditLog, client, delivery, instagramConnection, step, stepStatus, user
+} from '../db/schema.ts'
 import { digestFor } from '../lib/digest.ts'
 import { ulid } from '../lib/ulid.ts'
 
@@ -190,6 +192,106 @@ describe('digestFor', () => {
     // ARRANGE / ACT / ASSERT
     expect(await digestFor(999999, at('2026-03-10T00:00:00Z'), at('2026-03-11T00:00:00Z')))
       .toBeNull()
+  })
+})
+
+/**
+ * The broken Instagram connection.
+ *
+ * Its own describe because it breaks this file's central rule on purpose: every
+ * other item is bounded by the window, and this one is not. A connection that
+ * stopped working is a state, not an event — reporting it only on the day it
+ * broke would let the single notice scroll away while the numbers go on not
+ * arriving, which is indistinguishable from a quiet month.
+ */
+describe('digestFor and the Instagram connection', () => {
+  const janela = (): [Date, Date] => [at('2026-03-10T00:00:00Z'), at('2026-03-11T00:00:00Z')]
+
+  async function conectar (state: 'active' | 'expired' | 'failing' | 'revoked'): Promise<void> {
+    const now = at('2026-01-01T00:00:00Z')
+    await orm().insert(instagramConnection).values({
+      publicCode: ulid(),
+      clientId,
+      igUserId: '17841400000000000',
+      state,
+      lastSyncAt: at('2026-03-01T00:00:00Z'),
+      createdAt: now,
+      updatedAt: now
+    }).onDuplicateKeyUpdate({ set: { state, updatedAt: now } })
+  }
+
+  afterEach(async () => {
+    await orm().delete(instagramConnection).where(eq(instagramConnection.clientId, clientId))
+  })
+
+  it('should say nothing when the connection is healthy', async () => {
+    // ARRANGE
+    await conectar('active')
+
+    // ACT
+    const digest = await digestFor(clientId, ...janela())
+
+    // ASSERT — a warning that appears when nothing is wrong is a warning
+    // that gets ignored when something is
+    expect(digest?.connection).toEqual([])
+    expect(digest?.total).toBe(0)
+  })
+
+  it('should say nothing when no account was ever connected', async () => {
+    // ARRANGE — no row at all
+
+    // ACT
+    const digest = await digestFor(clientId, ...janela())
+
+    // ASSERT
+    expect(digest?.connection).toEqual([])
+  })
+
+  it('should report an expired credential as needing her', async () => {
+    // ARRANGE
+    await conectar('expired')
+
+    // ACT
+    const digest = await digestFor(clientId, ...janela())
+
+    // ASSERT
+    expect(digest?.connection).toHaveLength(1)
+    expect(digest?.connection[0]?.detail).toContain('reconectar')
+    expect(digest?.total).toBe(1)
+  })
+
+  it('should distinguish a failing collection from an expired credential', async () => {
+    // ARRANGE
+    await conectar('failing')
+
+    // ACT
+    const digest = await digestFor(clientId, ...janela())
+
+    // ASSERT — telling him to have her reconnect would fix nothing here
+    expect(digest?.connection[0]?.detail).not.toContain('reconectar')
+    expect(digest?.connection[0]?.detail).toContain('coleta')
+  })
+
+  it('should report a connection that broke long before the window', async () => {
+    // ARRANGE — broke in January, still broken in March
+    await conectar('revoked')
+
+    // ACT
+    const digest = await digestFor(clientId, at('2026-03-10T00:00:00Z'), at('2026-03-11T00:00:00Z'))
+
+    // ASSERT — the one thing here that outlives its own window
+    expect(digest?.connection).toHaveLength(1)
+  })
+
+  it('should say how stale the numbers are', async () => {
+    // ARRANGE
+    await conectar('expired')
+
+    // ACT
+    const digest = await digestFor(clientId, ...janela())
+
+    // ASSERT — the date decides what he does today, and it is not ISO on screen
+    expect(digest?.connection[0]?.detail).toMatch(/\d{1,2} \w{3}/)
   })
 })
 

@@ -20,7 +20,8 @@
     "db:seed": "tsx --env-file-if-exists=.env db/seed.ts",
     "db:import-reels": "tsx --conditions=react-server --env-file-if-exists=.env db/import-reels.ts",
     "invite": "tsx --conditions=react-server --env-file-if-exists=.env scripts/invite.ts",
-    "link": "tsx --conditions=react-server --env-file-if-exists=.env scripts/link.ts"
+    "link": "tsx --conditions=react-server --env-file-if-exists=.env scripts/link.ts",
+    "sync:instagram": "tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",

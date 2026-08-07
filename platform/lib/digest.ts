@@ -2,8 +2,10 @@ import 'server-only'
 import { and, desc, eq, gte, lt } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import {
-  auditLog, client, delivery, file, request, requestEvent, step, stepStatus, user
+  auditLog, client, delivery, file, instagramConnection, request, requestEvent,
+  step, stepStatus, user
 } from '@/db/schema'
+import { shortDate } from './format.ts'
 
 /**
  * What a client did in a window, for the daily summary.
@@ -35,6 +37,16 @@ export interface Digest {
   delivered: DigestItem[]
   /** Someone tried to sign in and could not. There is no reset email, so this is how he finds out. */
   askedForAccess: DigestItem[]
+  /**
+   * The Instagram connection stopped working.
+   *
+   * Not bounded by the window, unlike everything else here: a broken connection
+   * is a state, not an event. Reporting it only on the day it broke would mean
+   * the one notice scrolls away and the numbers go on not arriving — which is
+   * the failure this whole feature has to avoid, because it looks identical to
+   * a quiet month.
+   */
+  connection: DigestItem[]
   total: number
 }
 
@@ -155,8 +167,11 @@ export async function digestFor (
     who: r.who
   }))
 
+  // ------------------------------------------------------ connection
+  const connection = await connectionTrouble(clientId, until)
+
   const total = blocked.length + done.length + files.length +
-    comments.length + delivered.length + askedForAccess.length
+    comments.length + delivered.length + askedForAccess.length + connection.length
 
   return {
     clientId: c.id,
@@ -169,8 +184,51 @@ export async function digestFor (
     comments,
     delivered,
     askedForAccess,
+    connection,
     total
   }
+}
+
+/** What each broken state means for him, in one line. */
+const ESTADO: Record<string, string> = {
+  expired: 'A autorização venceu. Ela precisa reconectar em Conta.',
+  revoked: 'Ela desconectou a conta. Os números pararam de entrar.',
+  failing: 'A coleta está falhando. A autorização segue válida — é outra coisa.'
+}
+
+/**
+ * A connection that is not working, if there is one.
+ *
+ * Deliberately outside the time window. Everything else in this digest is
+ * something that happened; this is something that is still true, and it stays
+ * on the screen until it stops being true.
+ */
+async function connectionTrouble (clientId: number, until: Date): Promise<DigestItem[]> {
+  const rows = await orm()
+    .select({
+      state: instagramConnection.state,
+      lastSyncAt: instagramConnection.lastSyncAt,
+      lastErrorAt: instagramConnection.lastErrorAt
+    })
+    .from(instagramConnection)
+    .where(eq(instagramConnection.clientId, clientId))
+    .limit(1)
+
+  const row = rows[0]
+  if (row === undefined || row.state === 'active') return []
+
+  const detail = ESTADO[row.state] ?? 'A conexão com o Instagram não está funcionando.'
+
+  return [{
+    title: 'a conexão do Instagram parou',
+    /* How stale the numbers are is the part that decides what he does today.
+       Formatted, not ISO: this is read on a screen, in Brazil. */
+    detail: row.lastSyncAt === null
+      ? `${detail} Nenhum número chegou por ela ainda.`
+      : `${detail} O último número entrou em ${shortDate(row.lastSyncAt)}.`,
+    at: row.lastErrorAt ?? row.lastSyncAt ?? until,
+    who: 'Instagram'
+  }]
 }
 
 /**
