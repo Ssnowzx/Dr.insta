@@ -170,6 +170,26 @@ export function MetricBar ({ metric, destaque = false }: { metric: MetricCard; d
             {metric.note !== null && (
               <p className="metrica-origem-nota">{metric.note}</p>
             )}
+
+            {/* When two sources measured the same thing and got different
+                answers, the reader is entitled to know. Showing only the winner
+                turns a disagreement into a certainty the data does not support.
+                Only real disagreements reach here — two sources agreeing is a
+                confirmation, and rendering it as a divergence would read as
+                doubt. */}
+            {metric.divergences.map(d => {
+              const outra = descreverOrigem(d.source)
+              return (
+                <p className="metrica-origem-nota" key={d.source ?? 'sem-origem'}>
+                  {outra === null
+                    ? 'Outra medição do mesmo período'
+                    : `Pela leitura ${outra.medido ? 'do ' : 'de '}${outra.curto}`}
+                  {' este número é '}
+                  <strong>{format(d.value, metric.unit, metric.decimals)}</strong>.
+                  {' As duas medições não batem — vale saber antes de decidir em cima.'}
+                </p>
+              )
+            })}
           </div>
         )
       })()}

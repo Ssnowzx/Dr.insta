@@ -12,7 +12,7 @@
  */
 
 /** The sources a metric value can come from. Mirrors the `source` enum. */
-export type Origem = 'insights' | 'ga4' | 'store' | 'public' | 'manual'
+export type Origem = 'api' | 'insights' | 'ga4' | 'store' | 'public' | 'manual'
 
 interface Descricao {
   /** Short label, for the badge. */
@@ -24,6 +24,14 @@ interface Descricao {
 }
 
 const ORIGENS: Record<Origem, Descricao> = {
+  api: {
+    /* Distinta de `insights` de propósito: é o mesmo dado, mas ninguém digitou.
+       Um número que passou por transcrição pode ter erro de leitura, de linha
+       ou de dia — este não pode, e a diferença justifica a procedência melhor. */
+    curto: 'automático',
+    longo: 'Vem direto da sua conta do Instagram, sem ninguém digitar.',
+    medido: true
+  },
   insights: {
     curto: 'Instagram',
     longo: 'Lido nos Insights da sua conta.',

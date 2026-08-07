@@ -7,6 +7,7 @@ import {
   metricValue, file, pillar, post, request, requestEvent, step, stepStatus, user
 } from '@/db/schema'
 import { mediana } from './acervo.ts'
+import { ORIGENS_MEDIDAS, resolverPorChave } from './precedencia.ts'
 import type { Unit } from './format.ts'
 
 /**
@@ -45,7 +46,7 @@ const FUNNEL_LABELS: Record<string, string> = {
 
 export async function funnel (clientId: number, period: string): Promise<FunnelStage[]> {
   const rows = await orm()
-    .select({ key: metricDef.metricKey, value: metricValue.value })
+    .select({ key: metricDef.metricKey, value: metricValue.value, source: metricValue.source })
     .from(metricValue)
     .innerJoin(metricDef, eq(metricDef.id, metricValue.metricDefId))
     .where(and(
@@ -54,10 +55,19 @@ export async function funnel (clientId: number, period: string): Promise<FunnelS
       inArray(metricDef.metricKey, [...FUNNEL_KEYS]),
       /* Only measured sources. A funnel mixing a measured number with a value
          someone typed into a form would look identical and mean nothing. */
-      inArray(metricValue.source, ['insights', 'ga4', 'store'])
+      inArray(metricValue.source, [...ORIGENS_MEDIDAS])
     ))
 
-  const byKey = new Map(rows.map(r => [r.key, Number.parseFloat(r.value)]))
+  /* Resolved by precedence, not by whichever row arrived last. Building the map
+     straight from the rows would let a step of the funnel take the transcribed
+     figure or the collected one depending on the order MySQL happened to
+     return — an unstable funnel that looks stable. */
+  const byKey = new Map(
+    resolverPorChave(
+      rows.map(r => ({ ...r, value: Number.parseFloat(r.value) })),
+      r => r.key
+    ).map(({ escolhido }) => [escolhido.key, escolhido.value])
+  )
   const top = byKey.get('reach') ?? 0
 
   const stages: FunnelStage[] = []
@@ -102,6 +112,14 @@ export interface MetricCard {
   benchmark: number | null
   benchmarkSource: string | null
   benchmarkUpdatedOn: string | null
+  /**
+   * Measurements that lost to precedence AND disagree with the one shown.
+   *
+   * Empty when the sources agree, or when there is only one. Two figures that
+   * differ say something about how far to trust the number, and dropping the
+   * loser turns disagreement into false certainty.
+   */
+  divergences: Array<{ source: string | null; value: number }>
 }
 
 /**
@@ -111,6 +129,12 @@ export interface MetricCard {
  * looked up later, because the screen is required to show them. A baseline the
  * interface presents as clean when it is not produces a fictional target, and
  * that is the exact mistake the schema was shaped to prevent.
+ *
+ * Sources are NOT filtered in the join. They used to be, and that was safe only
+ * while no measured metric had two of them: a `leftJoin` matching twice returns
+ * two rows for one definition, and the panel renders the card twice. The
+ * Instagram collection makes that collision routine, so the choice is made
+ * after reading, by declared precedence — see `lib/precedencia.ts`.
  */
 export async function metrics (
   clientId: number,
@@ -145,9 +169,11 @@ export async function metrics (
       eq(metricValue.metricDefId, metricDef.id),
       eq(metricValue.clientId, clientId),
       eq(metricValue.period, period),
-      /* The store panel is what counts for revenue; the form answer is kept in
-         the table as the record of a disagreement, not shown as the number. */
-      inArray(metricValue.source, ['insights', 'ga4', 'store'])
+      /* Measured sources only. `manual` and `public` are kept in the table as
+         the record of what someone reported, and `public` counts looping views
+         — neither is a figure to decide on. Which of the measured ones wins is
+         settled below, not here. */
+      inArray(metricValue.source, [...ORIGENS_MEDIDAS])
     ))
     .leftJoin(metricTarget, and(
       eq(metricTarget.metricDefId, metricDef.id),
@@ -161,7 +187,12 @@ export async function metrics (
   const num = (v: string | null): number | null =>
     v === null ? null : Number.parseFloat(v)
 
-  return rows.map(r => ({
+  /* One card per definition. `resolverPorChave` keeps the order each key first
+     appeared in, so the query's ordering survives. */
+  return resolverPorChave(
+    rows.map(r => ({ ...r, value: num(r.value) })),
+    r => r.key
+  ).map(({ escolhido: r, divergentes }) => ({
     key: r.key,
     label: r.label,
     shortLabel: r.shortLabel,
@@ -170,7 +201,7 @@ export async function metrics (
     decimals: r.decimals,
     tier: r.tier,
     howToMeasure: r.howToMeasure,
-    value: num(r.value),
+    value: r.value,
     sampleSize: r.sampleSize,
     note: r.note,
     source: r.source,
@@ -180,7 +211,10 @@ export async function metrics (
     targetNote: r.targetNote,
     benchmark: num(r.benchmarkValue),
     benchmarkSource: r.benchmarkSource,
-    benchmarkUpdatedOn: r.benchmarkUpdatedOn
+    benchmarkUpdatedOn: r.benchmarkUpdatedOn,
+    divergences: divergentes
+      .filter((d): d is typeof d & { value: number } => d.value !== null)
+      .map(d => ({ source: d.source, value: d.value }))
   }))
 }
 
@@ -506,7 +540,7 @@ export async function latestPeriod (clientId: number): Promise<string | null> {
     .from(metricValue)
     .where(and(
       eq(metricValue.clientId, clientId),
-      inArray(metricValue.source, ['insights', 'ga4', 'store'])
+      inArray(metricValue.source, [...ORIGENS_MEDIDAS])
     ))
     .orderBy(desc(metricValue.period))
     .limit(1)
