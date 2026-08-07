@@ -347,7 +347,12 @@ const PILLARS = [
 
 const REQUESTS = [
   {
-    title: 'Uma planilha só, com os 203 Reels de uma vez',
+    /* No count in the title on purpose. It said "203", which was true of the
+       export taken on 5 Aug; two more Reels went up the next day and the
+       number was wrong the moment the acervo screen said 205. A figure kept
+       by hand in a seed is a figure that goes stale without anyone editing
+       it. */
+    title: 'Uma planilha só, com todos os Reels de uma vez',
     kind: 'data' as const, priority: 'high' as const,
     description: 'No Business Suite, exporte os dados dos Reels do ano inteiro. É um arquivo só, e resolve quase tudo.',
     whyItMatters: 'Sem alcance real eu só consigo ver visualização, e visualização conta looping. Com a planilha eu fecho a análise e a gente para de discutir formato por impressão.'
