@@ -11,13 +11,30 @@ import { longDate, monthLabel } from '@/lib/format'
  * The tone escalates with the age rather than shouting from day one — a warning
  * that always looks urgent stops being read.
  */
-export function DataAge ({ period }: { period: string }) {
+export function DataAge ({
+  period,
+  syncedAt
+}: {
+  period: string
+  /**
+   * When the automatic collection last succeeded, or null when there is none.
+   *
+   * This parameter exists because connecting the account made the old wording
+   * false. "Eles não entram sozinhos: eu atualizo quando você me manda o
+   * Insights" was true for as long as every number arrived by export — and the
+   * day she connects, a screen that still asks her to send the file is asking
+   * for work the platform already did.
+   */
+  syncedAt?: Date | null
+}) {
   const age = ageOf(endOfMonth(period))
+  const automatico = syncedAt !== undefined && syncedAt !== null
 
   if (age.level === 'fresh') {
     return (
       <p className="idade idade-fresca">
         Números de <strong>{monthLabel(period)}</strong>, {age.label}.
+        {automatico && <> Chegaram sozinhos, {ageOf(syncedAt).label}.</>}
       </p>
     )
   }
@@ -25,9 +42,14 @@ export function DataAge ({ period }: { period: string }) {
   return (
     <p className={`idade idade-${age.level}`}>
       <strong>Estes números são de {monthLabel(period)}</strong> — {age.label}.{' '}
-      {age.level === 'stale'
-        ? 'Já passou mais de um mês fechado desde então, então eles não descrevem o momento. Me mande o Insights do período novo e eu atualizo.'
-        : 'Eles não entram sozinhos: eu atualizo quando você me manda o Insights do mês.'}
+      {automatico
+        /* Connected but stale means the collection is not keeping up — which is
+           a different problem from her not having sent a file, and asking her
+           for one would send her chasing the wrong thing. */
+        ? `A última leitura automática foi ${ageOf(syncedAt).label}, então alguma coisa travou do meu lado. Já estou vendo isso.`
+        : age.level === 'stale'
+          ? 'Já passou mais de um mês fechado desde então, então eles não descrevem o momento. Me mande o Insights do período novo e eu atualizo.'
+          : 'Eles não entram sozinhos: eu atualizo quando você me manda o Insights do mês.'}
     </p>
   )
 }

@@ -9,6 +9,7 @@ import {
   monthlySeries, requests
 } from '@/lib/dashboard'
 import { clientScope } from '@/lib/dal'
+import { connectionFor } from '@/lib/instagram/connection'
 import { longDate, monthLabel } from '@/lib/format'
 
 export const metadata: Metadata = { title: 'Painel' }
@@ -30,10 +31,11 @@ export const dynamic = 'force-dynamic'
 export default async function Painel () {
   const clientId = await clientScope()
 
-  const [profile, cycle, period] = await Promise.all([
+  const [profile, cycle, period, conexao] = await Promise.all([
     clientProfile(clientId),
     activeCycle(clientId),
-    latestPeriod(clientId)
+    latestPeriod(clientId),
+    connectionFor(clientId)
   ])
 
   if (period === null || cycle === null) {
@@ -72,7 +74,7 @@ export default async function Painel () {
         </p>
         <h1 className="display">{cycle.title}</h1>
         {cycle.goal !== null && <p className="lead">{cycle.goal}</p>}
-        <DataAge period={period} />
+        <DataAge period={period} syncedAt={conexao?.state === 'active' ? conexao.lastSyncAt : null} />
       </header>
 
       <section className="placa">

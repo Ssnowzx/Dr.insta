@@ -73,7 +73,8 @@ async function main (): Promise<void> {
 
   if (result.ok) {
     console.log(
-      `${found.name}: ${result.stored} metric(s) stored for ${period}` +
+      `${found.name}: ${result.stored} metric(s) stored for ${period}, ` +
+      `${result.posts} post(s) updated` +
       `${result.refreshed ? ', credential refreshed' : ''}` +
       ` (${result.calls} API call${result.calls === 1 ? '' : 's'}).`
     )

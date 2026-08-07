@@ -49,19 +49,29 @@
 - [x] 5.6 Teste: métrica ausente na resposta **não** vira zero; nenhuma linha é gravada para ela
 - [x] 5.7 Gravação idempotente em `metric_value` com origem `api`
 - [x] 5.8 Teste: rodar a coleta duas vezes para o mesmo período deixa um único valor por métrica e origem
-- [ ] 5.9 Coleta de insights por mídia na janela de 30 dias e das mídias sem insights, atualizando `post` sem jamais escrever `reach` a partir de `views`
-- [ ] 5.10 Teste: o invariante de `test/import.test.ts` continua valendo para a coleta pela API
+- [x] 5.9 Coleta de insights por mídia na janela de 30 dias e das mídias sem insights, atualizando `post` sem jamais escrever `reach` a partir de `views`
+- [x] 5.10 Teste: o invariante de `test/import.test.ts` continua valendo para a coleta pela API
 
 ## 6. Rotina e falha visível
 
 - [x] 6.1 `scripts/sync-instagram.ts`: renova se faltar menos de 15 dias, coleta, grava `last_sync_at` ou `last_error` e o estado
 - [x] 6.2 Registrar o comando em `package.json` e garantir que ele exista dentro da imagem (`scripts/` e `lib/` já são copiados)
-- [ ] 6.3 Teste: credencial perto do vencimento é renovada; falha isolada de renovação com credencial ainda válida mantém a conexão ativa
+- [x] 6.3 Teste: credencial perto do vencimento é renovada; falha isolada de renovação com credencial ainda válida mantém a conexão ativa
 - [x] 6.4 Estado `expired`/`revoked`/`failing` vira aviso em `/novidades`, dizendo desde quando não há dado novo
 - [x] 6.5 Teste: `lib/digest.ts` reporta conexão quebrada; conexão saudável não gera ruído
-- [ ] 6.6 Apresentar a idade da última coleta junto dos números, usando `lib/freshness.ts`
+- [x] 6.6 Apresentar a idade da última coleta junto dos números, usando `lib/freshness.ts`
 - [x] 6.7 Descrever a origem `api` em `lib/origem.ts` como colhida automaticamente da fonte oficial, e teste correspondente
 - [x] 6.8 Documentar o cron do host no `README.md` da plataforma
+
+## 6b. O termo que ela aceita — pedido do usuário, 07/08/2026
+
+- [x] 6b.1 `lib/instagram/termos.ts`: as duas listas e a versão datada, em consequência e não em nome de escopo
+- [x] 6b.2 Tela `/conta/instagram` com o que é lido, o que é impossível, e a caixa de aceite — substitui o redirect direto para a Meta
+- [x] 6b.3 `POST /conta/instagram/autorizar`: recusa aceite ausente ou de versão antiga, grava em `audit_log` e só então redireciona
+- [x] 6b.4 Migração `006`: `terms_version` e `terms_accepted_at` na conexão — versão, não booleano, para que a aceitação pare de valer quando o texto mudar
+- [x] 6b.5 A versão aceita viaja em cookie próprio até o callback, para gravar o que ela leu e não o que estiver corrente
+- [x] 6b.6 Verificado renderizado nos dois temas: 34 elementos, zero reprovações
+- [x] 6b.7 **Não previsto:** `components/freshness.tsx` dizia "Eles não entram sozinhos: eu atualizo quando você me manda o Insights" — frase que a conexão tornaria falsa. Agora depende do estado da conexão
 
 ## 7. Validação de verdade
 

@@ -1,10 +1,12 @@
 import 'server-only'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { orm } from '@/db/client'
-import { metricDef, metricValue } from '@/db/schema'
+import { metricDef, metricValue, post } from '@/db/schema'
 import { createClient, IgAuthError } from './client.ts'
+import type { IgClient } from './client.ts'
 import { collectAccountMonth } from './collect.ts'
 import type { Collected } from './collect.ts'
+import { listRecentMedia, mediaInsights, retentionPct, WINDOW_DAYS } from './media.ts'
 import {
   markFailure, markSynced, tokenFor, updateToken
 } from './connection.ts'
@@ -24,12 +26,14 @@ import { refreshLongLived } from './oauth.ts'
  */
 
 /** Refresh when the credential has less than this left. */
-const REFRESH_WHEN_UNDER_MS = 15 * 24 * 60 * 60 * 1000
+export const REFRESH_WHEN_UNDER_MS = 15 * 24 * 60 * 60 * 1000
 
 export interface SyncResult {
   ok: boolean
   /** Rows written. Zero is legitimate: the API may have nothing for the period. */
   stored: number
+  /** Posts whose measured numbers were updated. */
+  posts: number
   refreshed: boolean
   calls: number
   /** Present only on failure. */
@@ -48,7 +52,7 @@ export async function syncClient (
   period: string,
   now: Date = new Date()
 ): Promise<SyncResult> {
-  const stored0 = { ok: false, stored: 0, refreshed: false, calls: 0 }
+  const stored0 = { ok: false, stored: 0, posts: 0, refreshed: false, calls: 0 }
 
   const credential = await tokenFor(clientId)
   if (credential === null) {
@@ -83,9 +87,10 @@ export async function syncClient (
   try {
     const collected = await collectAccountMonth(client, credential.igUserId, period)
     const stored = await storeCollected(clientId, period, collected, now)
+    const posts = await collectMedia(client, clientId, credential.igUserId, now)
 
     await markSynced(clientId, now)
-    return { ok: true, stored, refreshed, calls: client.calls }
+    return { ok: true, stored, posts, refreshed, calls: client.calls }
   } catch (error) {
     const reason = message(error)
     const isAuth = error instanceof IgAuthError
@@ -102,7 +107,13 @@ export async function syncClient (
   }
 }
 
-function needsRefresh (expiresAt: Date | null, now: Date): boolean {
+/**
+ * Whether the credential should be renewed on this run.
+ *
+ * Exported for its test: it is the one decision here that is pure, and getting
+ * it wrong is invisible until the day a token lapses and she has to reconnect.
+ */
+export function needsRefresh (expiresAt: Date | null, now: Date): boolean {
   /* No recorded expiry means we do not know how long it has. Refreshing is the
      safe guess: at worst it is a wasted request. */
   if (expiresAt === null) return true
@@ -160,6 +171,76 @@ async function storeCollected (
   }
 
   return written
+}
+
+/**
+ * Per-post insights for the recent window, written onto `post`.
+ *
+ * Only posts already in the archive are updated. Creating rows from here would
+ * mean a post existing with measured numbers and no caption or duration, and
+ * the archive screen reads all four — the public import is what creates them.
+ *
+ * `reach` comes from its own field and is never derived from `views`; see
+ * `lib/instagram/media.ts`. Provenance moves to `mixed` because the row now
+ * holds both public counts and measured insights.
+ */
+async function collectMedia (
+  client: IgClient,
+  clientId: number,
+  igUserId: string,
+  now: Date
+): Promise<number> {
+  const since = new Date(now.getTime() - WINDOW_DAYS * 24 * 60 * 60 * 1000)
+  const recentes = await listRecentMedia(client, igUserId, since)
+  if (recentes.length === 0) return 0
+
+  const existentes = await orm()
+    .select({ igCode: post.igCode, durationSec: post.durationSec })
+    .from(post)
+    .where(and(
+      eq(post.clientId, clientId),
+      inArray(post.igCode, recentes.map(m => m.igCode))
+    ))
+
+  const duracao = new Map(existentes.map(p => [p.igCode, p.durationSec]))
+  let atualizados = 0
+
+  for (const media of recentes) {
+    if (!duracao.has(media.igCode)) continue
+
+    const insights = await mediaInsights(client, media)
+
+    await orm()
+      .update(post)
+      .set({
+        /* Each column from its own source field. Only written when the API
+           answered — a null here means "not measured", which is the truth, and
+           overwriting a previous measurement with it would lose data. */
+        ...(insights.reach === null ? {} : { reach: insights.reach }),
+        ...(insights.saves === null ? {} : { saves: insights.saves }),
+        ...(insights.sends === null ? {} : { sends: insights.sends }),
+        ...(insights.views === null ? {} : { views: insights.views }),
+        ...(retencao(insights.avgWatchMs, duracao.get(media.igCode) ?? null)),
+        provenance: 'mixed',
+        updatedAt: now
+      })
+      .where(and(eq(post.clientId, clientId), eq(post.igCode, media.igCode)))
+
+    atualizados += 1
+  }
+
+  return atualizados
+}
+
+/** Retention as a stored decimal, or nothing at all. */
+function retencao (avgWatchMs: number | null, durationSec: number | null): { retentionPct?: string; avgWatchSec?: string } {
+  if (avgWatchMs === null) return {}
+
+  const pct = retentionPct(avgWatchMs, durationSec)
+  return {
+    avgWatchSec: (avgWatchMs / 1000).toFixed(2),
+    ...(pct === null ? {} : { retentionPct: pct.toFixed(3) })
+  }
 }
 
 /** The current month, as the period key the table uses. */
