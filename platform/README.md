@@ -253,16 +253,31 @@ Collection runs from cron on the host, not from a timer inside the server —
 which would die on every restart and keep no log anyone can read:
 
 ```cron
-# /etc/cron.d/myfavorite-sync — every day at 02:40, collect the current month.
-40 2 * * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts >> /var/log/myfavorite-sync.log 2>&1
+# /etc/cron.d/myfavorite-sync — host clock is UTC; the comments give São Paulo.
+# 06:00 UTC = 03:00 in Brazil — the current month, every day.
+0 6 * * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts >> /var/log/myfavorite-sync.log 2>&1
+
+# 06:20 UTC on the 1st — close the month that just ended, in full.
+20 6 1 * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts --period $(date -u -d 'last month' +\%Y-\%m-01) >> /var/log/myfavorite-sync.log 2>&1
 ```
 
-**02:40 and not 05:10, because the backup runs at 03:30.** Collecting after the
-dump gives you a backup that is missing the numbers of the day it is named
-after — recoverable, since past months can be re-collected with `--period`, but
-it is a file that does not contain what its name implies, and that only becomes
-visible on the day you restore it. Fifty minutes is generous for a handful of
-API calls against one account.
+Three decisions in those two lines.
+
+**The order against the backup.** The dump runs at 07:00 UTC, after both. A
+backup taken before the day's collection is a file that does not contain what
+its name implies, and that only becomes visible while restoring it.
+
+**The daily job never closes a month.** August's last daily run happens on 31
+August at 06:00 UTC, so the stored August figure is short by the rest of that
+day — every month, silently, and the number looks perfectly plausible. The
+monthly line re-collects the closed month with `--period`, which is idempotent:
+it rewrites the same row rather than adding one.
+
+**The clock the month is measured in is UTC**, not the host's locale —
+`currentPeriod()` reads `getUTCMonth()`. That is why the daily job does not run
+late at night in Brazil: at 23:40 São Paulo time the UTC date has already
+turned, so on the last night of a month the job would collect the *next* month
+while Brazil is still finishing the current one.
 
 Three details in that line were each wrong once, and none of them fails loudly:
 

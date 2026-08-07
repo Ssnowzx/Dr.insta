@@ -10,8 +10,14 @@
 #   ./infra/backup.sh                    # grava em ./backups
 #   ./infra/backup.sh /destino           # grava onde você mandar
 #
-# No cron do host, diário:
-#   30 3 * * * cd /srv/myfavorite && ./infra/backup.sh >> /var/log/myfavorite-backup.log 2>&1
+# No cron do host, diário, em /etc/cron.d/myfavorite-backup. Roda como root:
+# alcançar o socket do Docker equivale a root na máquina, então o usuário do
+# site fica fora do grupo `docker` de propósito.
+#
+#   0 7 * * * root cd /home/drinsta/myfavorite/platform && ./infra/backup.sh >> /var/log/myfavorite-backup.log 2>&1
+#
+# 07:00 UTC = 04:00 no Brasil, e DEPOIS da coleta das 06:00 — um dump anterior
+# à coleta do dia é um arquivo que não contém o que o nome dele promete.
 #
 # Restaurar: ./infra/restore.sh <arquivo.sql.gz>
 set -euo pipefail
