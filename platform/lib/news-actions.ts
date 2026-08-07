@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
 import { orm } from '@/db/client'
-import { credentialToken, user } from '@/db/schema'
+import { user } from '@/db/schema'
 import { requireConsultant, requireSession } from './dal.ts'
 import { issueToken } from './tokens.ts'
 
@@ -76,19 +76,4 @@ export async function generateAccessLink (userId: number): Promise<LinkResult> {
     url: issued.url,
     expiresAt: issued.expiresAt.toISOString()
   }
-}
-
-/** Pending links for a user, so the screen can say whether one is already out. */
-export async function pendingLinkFor (userId: number): Promise<{ purpose: string; expiresAt: Date } | null> {
-  await requireConsultant()
-
-  const rows = await orm()
-    .select({ purpose: credentialToken.purpose, expiresAt: credentialToken.expiresAt })
-    .from(credentialToken)
-    .where(eq(credentialToken.userId, userId))
-    .limit(1)
-
-  const row = rows[0]
-  if (row === undefined || row.expiresAt.getTime() <= Date.now()) return null
-  return row
 }
