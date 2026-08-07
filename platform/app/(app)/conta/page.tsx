@@ -77,14 +77,15 @@ export default async function Conta ({
           </div>
           {pessoas.length === 0
             ? (
-              <p className="rodape-nota" style={{ marginTop: 0 }}>
-                Ninguém desta conta tem acesso ainda. O primeiro é criado no
-                terminal, com{' '}
-                <span className="comando">
+              <>
+                <p className="rodape-nota" style={{ marginTop: 0, marginBottom: '.75rem' }}>
+                  Ninguém desta conta tem acesso ainda. O primeiro é criado no
+                  terminal; a partir dele, os links seguintes saem daqui.
+                </p>
+                <p className="comando">
                   npm run invite -- --email &lt;e-mail&gt; --name &quot;&lt;nome&gt;&quot;
-                </span>
-                . A partir daí os links seguintes saem daqui.
-              </p>
+                </p>
+              </>
               )
             : (
               <>

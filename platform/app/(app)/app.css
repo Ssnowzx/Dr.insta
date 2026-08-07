@@ -2080,13 +2080,7 @@ a.secao-nota:hover { text-decoration: underline; }
 
 .metrica-origem-txt { flex: 1 1 14rem; min-width: 0; }
 
-/* `.comando` is a shell command the consultant is meant to copy, and it wants
-   exactly the treatment `.metrica-onde` already has. Sharing the selector
-   rather than the class keeps the name honest at the call site: a command is
-   not a metric's provenance, even though both are literal strings quoted from
-   somewhere else. */
-.metrica-onde,
-.comando {
+.metrica-onde {
   display: inline-block;
   font-family: var(--mono);
   font-size: .75rem;
@@ -2094,6 +2088,28 @@ a.secao-nota:hover { text-decoration: underline; }
   background: var(--papel2);
   padding: 0 .3125rem;
   border-radius: var(--raio-menor);
+}
+
+/* A command the consultant is meant to select and copy. It takes its own line
+   instead of sitting inside the sentence, for two reasons measured on the
+   rendered page: inline, the chip's right padding pushed the sentence's final
+   period away from the closing quote and it read as a stray dot; and a command
+   broken across lines mid-flag is a command that gets copied wrong.
+
+   Same colour pair as `.metrica-onde`, which the contrast test already
+   covers — no new token combination enters here. */
+.comando {
+  display: block;
+  margin: 0 0 .25rem;
+  padding: .5rem .625rem;
+  font-family: var(--mono);
+  font-size: .75rem;
+  color: var(--tinta2);
+  background: var(--papel2);
+  border-radius: var(--raio-menor);
+  /* Narrow screens scroll the command instead of wrapping it. */
+  white-space: nowrap;
+  overflow-x: auto;
 }
 
 /* ----------------------------------------------------------------- pillars
