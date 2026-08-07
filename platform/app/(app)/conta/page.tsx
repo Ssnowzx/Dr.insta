@@ -62,34 +62,56 @@ export default async function Conta ({
         )}
       </dl>
 
-      {consultor && pessoas.length > 0 && (
+      {/* Rendered whenever a consultant is reading, including when nobody has
+          access yet. Hiding the section on an empty list made the first invite
+          — the only one that decides whether the client ever gets in —
+          impossible to even find: `.env.exemplo` points here for access links,
+          and the screen answered with nothing at all. An empty section that
+          says where the first one comes from beats a section that is not
+          there. */}
+      {consultor && (
         <section className="secao">
           <div className="secao-cab">
             <h2 className="titulo-secao">Acesso dela</h2>
             <p className="secao-nota">nenhum e-mail sai daqui</p>
           </div>
-          <p className="rodape-nota" style={{ marginTop: 0, marginBottom: '1rem' }}>
-            A plataforma não manda e-mail. Se alguém não conseguir entrar, gere um
-            link aqui e mande por onde vocês conversam. Gerar um novo invalida o
-            anterior.
-          </p>
-          <ul className="pessoas">
-            {pessoas.map(u => (
-              <li className="pessoa" key={u.id}>
-                <div className="pessoa-cab">
-                  <span className="pessoa-nome">{u.name}</span>
-                  <span className={u.hasPassword ? 'selo selo-ok' : 'selo selo-atencao'}>
-                    {u.hasPassword ? 'já entrou' : 'ainda não entrou'}
-                  </span>
-                </div>
-                <p className="pessoa-meta">
-                  {u.email}
-                  {u.lastSeenAt !== null && <> · último acesso em {shortDate(u.lastSeenAt)}</>}
+          {pessoas.length === 0
+            ? (
+              <p className="rodape-nota" style={{ marginTop: 0 }}>
+                Ninguém desta conta tem acesso ainda. O primeiro é criado no
+                terminal, com{' '}
+                <span className="comando">
+                  npm run invite -- --email &lt;e-mail&gt; --name &quot;&lt;nome&gt;&quot;
+                </span>
+                . A partir daí os links seguintes saem daqui.
+              </p>
+              )
+            : (
+              <>
+                <p className="rodape-nota" style={{ marginTop: 0, marginBottom: '1rem' }}>
+                  A plataforma não manda e-mail. Se alguém não conseguir entrar, gere um
+                  link aqui e mande por onde vocês conversam. Gerar um novo invalida o
+                  anterior.
                 </p>
-                <AccessLink userId={u.id} userName={u.name} />
-              </li>
-            ))}
-          </ul>
+                <ul className="pessoas">
+                  {pessoas.map(u => (
+                    <li className="pessoa" key={u.id}>
+                      <div className="pessoa-cab">
+                        <span className="pessoa-nome">{u.name}</span>
+                        <span className={u.hasPassword ? 'selo selo-ok' : 'selo selo-atencao'}>
+                          {u.hasPassword ? 'já entrou' : 'ainda não entrou'}
+                        </span>
+                      </div>
+                      <p className="pessoa-meta">
+                        {u.email}
+                        {u.lastSeenAt !== null && <> · último acesso em {shortDate(u.lastSeenAt)}</>}
+                      </p>
+                      <AccessLink userId={u.id} userName={u.name} />
+                    </li>
+                  ))}
+                </ul>
+              </>
+              )}
         </section>
       )}
 

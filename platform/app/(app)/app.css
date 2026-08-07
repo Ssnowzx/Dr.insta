@@ -2080,7 +2080,13 @@ a.secao-nota:hover { text-decoration: underline; }
 
 .metrica-origem-txt { flex: 1 1 14rem; min-width: 0; }
 
-.metrica-onde {
+/* `.comando` is a shell command the consultant is meant to copy, and it wants
+   exactly the treatment `.metrica-onde` already has. Sharing the selector
+   rather than the class keeps the name honest at the call site: a command is
+   not a metric's provenance, even though both are literal strings quoted from
+   somewhere else. */
+.metrica-onde,
+.comando {
   display: inline-block;
   font-family: var(--mono);
   font-size: .75rem;
