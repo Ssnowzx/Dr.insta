@@ -49,11 +49,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
       APP_URL: ${APP_URL:?set APP_URL in .env}
       FILES_ROOT: /var/lib/myfavorite/files
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM: ${SMTP_FROM:-}
+      # No SMTP_* here. This product sends no email — access links are minted in
+      # Conta > Acesso das clientes, or with `npm run link`, and relayed by hand.
+      # The variables outlived the decision and were still being handed to a
+      # container that reads none of them, which reads as "mail is configured".
     volumes:
       # Bind mount rather than a named volume: the rsync backup has to see these
       # files from the host without entering the container.

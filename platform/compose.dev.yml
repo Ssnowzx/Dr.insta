@@ -14,13 +14,7 @@ services:
       # database your terminal can reach and one the internet can reach.
       - "127.0.0.1:3307:3306"
 
-  # A local SMTP sink, so the credential emails can be seen instead of assumed.
-  # Web interface on http://localhost:8025; SMTP on 1025 with no auth and no TLS.
-  # Development only — the production compose has no mail service at all.
-  mail:
-    image: axllent/mailpit:latest
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:1025:1025"
-      - "127.0.0.1:8025:8025"
-    networks: [internal]
+# There is no `mail` service here any more. It was a local sink for credential
+# emails, and it outlived the feature: this product sends none, by decision.
+# A running mail container is worse than none — it is a place to go looking for
+# a message that was never sent.
