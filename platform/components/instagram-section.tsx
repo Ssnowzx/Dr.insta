@@ -37,6 +37,12 @@ const RESULTADOS: Record<string, { texto: string; erro: boolean }> = {
   indisponivel: {
     texto: 'A conexão com o Instagram ainda não está configurada aqui. Isso é comigo.',
     erro: true
+  },
+  'termo-mudou': {
+    /* The tab was left open across a change to the terms. Saying so plainly
+       beats "erro ao processar", which would read as a bug she caused. */
+    texto: 'O que eu explico antes de conectar mudou desde que você abriu essa tela. Comece de novo para ler a versão nova.',
+    erro: true
   }
 }
 

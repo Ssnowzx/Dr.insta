@@ -8,6 +8,14 @@
 
 export const STATE_COOKIE = 'ig_oauth_state'
 
+/**
+ * The version of the agreement she accepted, carried across the round trip.
+ *
+ * Separate from the state so the callback records what she actually read,
+ * rather than whatever the current text happens to be when she comes back.
+ */
+export const TERMS_COOKIE = 'ig_terms'
+
 /** Long enough to read an authorisation screen, short enough to be worthless later. */
 export const STATE_TTL_MS = 10 * 60 * 1000
 

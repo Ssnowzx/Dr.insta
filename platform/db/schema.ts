@@ -437,6 +437,10 @@ export const instagramConnection = mysqlTable('instagram_connection', {
   accessToken: text('access_token'),
   tokenExpiresAt: datetime('token_expires_at'),
   scopes: varchar({ length: 255 }),
+  /* The version of the agreement she accepted, not a boolean: a flag would go
+     on reading "agreed" after the text was rewritten. */
+  termsVersion: varchar('terms_version', { length: 20 }),
+  termsAcceptedAt: datetime('terms_accepted_at'),
   connectedBy: fk('connected_by'),
   connectedAt: datetime('connected_at'),
   lastRefreshAt: datetime('last_refresh_at'),

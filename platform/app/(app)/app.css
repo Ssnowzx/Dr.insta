@@ -2480,3 +2480,77 @@ a.btn-acesso {
 }
 
 a.btn-acesso:hover { border-color: var(--dado); text-decoration: none; }
+
+/* =============================================================================
+   THE AGREEMENT, before anything leaves for Instagram
+   ============================================================================= */
+
+.termo-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .625rem;
+}
+
+.termo-lista li {
+  position: relative;
+  padding-left: 1.75rem;
+  font-size: .9375rem;
+  line-height: 1.55;
+  color: var(--tinta2);
+}
+
+/* The mark carries the meaning, so it is not decoration: one list is what the
+   platform does, the other is what it cannot. Drawn in CSS rather than as text
+   so a screen reader reads the sentence and not a stray character. */
+.termo-lista li::before {
+  position: absolute;
+  left: 0;
+  top: .1em;
+  font-weight: 700;
+}
+
+.termo-le li::before { content: '+'; color: var(--ok); }
+.termo-nao li::before { content: '×'; color: var(--tijolo); }
+
+.termo-garantia {
+  margin: 1.25rem 0 0;
+  padding: .875rem 1rem;
+  border-left: 2px solid var(--dado);
+  background: var(--papel2);
+  border-radius: 0 var(--raio) var(--raio) 0;
+  font-size: .9375rem;
+  line-height: 1.6;
+  color: var(--tinta2);
+}
+
+.termo-aceite {
+  margin-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+  align-items: flex-start;
+}
+
+.termo-check {
+  display: flex;
+  gap: .75rem;
+  align-items: flex-start;
+  font-size: .9375rem;
+  line-height: 1.5;
+  color: var(--tinta);
+  cursor: pointer;
+}
+
+/* 1.15rem and a matching accent: the default checkbox is small enough to miss
+   on a phone, and this is the one control on the screen that records consent. */
+.termo-check input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  flex: none;
+  accent-color: var(--dado);
+  cursor: pointer;
+}

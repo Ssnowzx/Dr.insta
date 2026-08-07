@@ -8,7 +8,7 @@ import { saveConnection } from '@/lib/instagram/connection'
 import {
   credentialsFromEnv, exchangeCode, exchangeForLongLived, OAuthError
 } from '@/lib/instagram/oauth'
-import { STATE_COOKIE, verificarRetorno } from '@/lib/instagram/state'
+import { STATE_COOKIE, TERMS_COOKIE, verificarRetorno } from '@/lib/instagram/state'
 
 /**
  * Where Instagram sends her back.
@@ -30,7 +30,9 @@ export async function GET (req: NextRequest): Promise<NextResponse> {
      callback from being replayed out of someone's history. */
   const jar = await cookies()
   const cookieState = jar.get(STATE_COOKIE)?.value
+  const termsVersion = jar.get(TERMS_COOKIE)?.value
   jar.delete({ name: STATE_COOKIE, path: '/conta/instagram' })
+  jar.delete({ name: TERMS_COOKIE, path: '/conta/instagram' })
 
   const back = (resultado: string): NextResponse =>
     NextResponse.redirect(new URL(`/conta?instagram=${resultado}`, appUrl))
@@ -56,7 +58,9 @@ export async function GET (req: NextRequest): Promise<NextResponse> {
       username: null,
       token: longo.token,
       tokenExpiresAt: longo.expiresAt,
-      connectedBy: identity.userId
+      connectedBy: identity.userId,
+      /* The version she read, not the current one — see `TERMS_COOKIE`. */
+      ...(termsVersion === undefined ? {} : { termsVersion })
     })
 
     await record('connected_instagram', identity.userId, clientId, null)

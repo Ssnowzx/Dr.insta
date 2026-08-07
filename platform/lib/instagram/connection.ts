@@ -93,6 +93,8 @@ export interface NewConnection {
   token: string
   tokenExpiresAt: Date
   connectedBy: number
+  /** The version of the agreement she accepted, when there is one. */
+  termsVersion?: string
 }
 
 /**
@@ -119,6 +121,8 @@ export async function saveConnection (input: NewConnection): Promise<void> {
       accessToken: encrypted,
       tokenExpiresAt: input.tokenExpiresAt,
       scopes: SCOPES.join(','),
+      termsVersion: input.termsVersion ?? null,
+      termsAcceptedAt: input.termsVersion === undefined ? null : now,
       connectedBy: input.connectedBy,
       connectedAt: now,
       state: 'active',
@@ -134,6 +138,8 @@ export async function saveConnection (input: NewConnection): Promise<void> {
         accessToken: encrypted,
         tokenExpiresAt: input.tokenExpiresAt,
         scopes: SCOPES.join(','),
+        termsVersion: input.termsVersion ?? null,
+        termsAcceptedAt: input.termsVersion === undefined ? null : now,
         connectedBy: input.connectedBy,
         connectedAt: now,
         state: 'active',
