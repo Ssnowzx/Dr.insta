@@ -455,7 +455,7 @@ const NEW_PILLARS: PillarSeed[] = [
     control: false,
     thesis: 'O mesmo cotidiano do Espelho, mas com opinião ou pergunta embutida — o post não termina na piada, termina em espaço para a pessoa responder.',
     role: 'Converte reconhecimento em comentário. É o pilar da métrica que manda no ciclo.',
-    evidence: 'O Reel do DOJI (05/08) alcançou um terço do seu normal e fez 3,0 comentários por mil views — quase o triplo dos vizinhos. Conversa não precisa viralizar para funcionar.',
+    evidence: 'Medido em 12/08: o Reel do DOJI fez 2,5 comentários por mil views e o do cometa Harley (09/08) fez 2,3 — contra 0,94 da sua mediana histórica. Os dois alcançaram menos que a média e conversaram mais que o dobro: conversa não precisa viralizar para funcionar.',
     metricKey: 'comments_reach',
     success: 'Comentários por alcance sair de 0,21% para 0,35% em 14 dias; 0,50% no ciclo.'
   },
@@ -561,7 +561,7 @@ const NEW_EXPERIMENTS: ExperimentSeed[] = [
   },
   {
     name: 'Colab mensal',
-    hypothesis: 'Colab no formato validado amplia alcance sem derrubar a conversa — a do desfile fez 3,45M.',
+    hypothesis: 'Colab no formato validado amplia alcance sem derrubar a conversa — a do desfile fez 3,45M, e a colab com a K Pro (09/08) fez 1,4× a sua mediana com a conversa na média.',
     isolated: 'distribuição',
     key: 'reach',
     successLabel: 'colab ≥ 2× a sua mediana de views, com comentários/alcance segurando',
