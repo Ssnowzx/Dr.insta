@@ -642,7 +642,7 @@ const RETAINED_REQUESTS: RequestSeed[] = [
     kind: 'data', priority: 'high', position: 11,
     description:
       'Como fazer, no computador:\n' +
-      '1. Entre em business.facebook.com com a mesma conta do seu Instagram.\n' +
+      '1. Entre em https://business.facebook.com com a mesma conta do seu Instagram.\n' +
       '2. No menu da esquerda, abra Insights e depois Conteúdo.\n' +
       '3. Filtre por Reels e escolha o maior período que ele deixar.\n' +
       '4. Toque em Exportar dados e baixe o arquivo.\n' +
@@ -654,18 +654,23 @@ const RETAINED_REQUESTS: RequestSeed[] = [
     title: 'O gráfico de "até onde assistiram" de nove vídeos',
     kind: 'data', priority: 'medium', position: 12,
     description:
-      'São estes nove — abra cada link no celular:\n' +
-      'instagram.com/reel/DZPyUvzBgtN\n' +
-      'instagram.com/reel/DZTOQy7hp3M\n' +
-      'instagram.com/reel/DZYrlYMMOTQ\n' +
-      'instagram.com/reel/DZ6GhB2BJoc\n' +
-      'instagram.com/reel/DbW2ZzfBNU8\n' +
-      'instagram.com/reel/DZvzFECBWjG\n' +
-      'instagram.com/reel/DVg-YGzAQvd\n' +
-      'instagram.com/reel/DY3KqCzMeNQ\n' +
-      'instagram.com/reel/DaMRWJeshlz\n\n' +
-      'Em cada um: toque em Ver insights e desça até o gráfico de linha — é o que mostra até onde assistiram. Tire um print de cada tela.\n\n' +
-      'Como mandar: os nove prints pelo botão Anexar arquivo. Os quatro primeiros são a série "por dentro da sua peça favorita"; os três últimos são seus campeões, que servem de régua.',
+      'Em cada vídeo da lista abaixo, o caminho é o mesmo:\n' +
+      '1. Toque no link — no seu celular ele abre direto no app do Instagram.\n' +
+      '2. No Reel, toque em Ver insights.\n' +
+      '3. Desça até o gráfico de linha que vai caindo — é ele que mostra até onde as pessoas assistiram.\n' +
+      '4. Tire um print (captura de tela) com o gráfico inteiro aparecendo.\n\n' +
+      'Os nove, com o nome de cada um para você conferir se abriu o certo:\n' +
+      '1. https://instagram.com/reel/DZPyUvzBgtN — "por dentro da sua peça favorita" ep. 1 (06/06)\n' +
+      '2. https://instagram.com/reel/DZTOQy7hp3M — "por dentro da sua peça favorita" ep. 2 (07/06)\n' +
+      '3. https://instagram.com/reel/DZYrlYMMOTQ — "por dentro da sua peça favorita" ep. 3 (10/06)\n' +
+      '4. https://instagram.com/reel/DZ6GhB2BJoc — "por dentro da sua peça favorita" ep. 4 (23/06)\n' +
+      '5. https://instagram.com/reel/DbW2ZzfBNU8 — lançamento da Primavera 27 (29/07)\n' +
+      '6. https://instagram.com/reel/DZvzFECBWjG — o da coleção com a Disney (19/06)\n' +
+      '7. https://instagram.com/reel/DVg-YGzAQvd — "ELA TEM MÃE!!!" (05/03)\n' +
+      '8. https://instagram.com/reel/DY3KqCzMeNQ — "oq eu perdi?" (28/05)\n' +
+      '9. https://instagram.com/reel/DaMRWJeshlz — "haaland fobia" (05/07)\n\n' +
+      'Por que estes nove: do 1 ao 4 é a série, o 5 e o 6 são os de coleção, e do 7 ao 9 são seus campeões — eles servem de régua para comparar com os outros.\n\n' +
+      'Como mandar: os nove prints pelo botão Anexar arquivo, aqui embaixo. Pode mandar todos de uma vez, e não precisa ser no mesmo dia.',
     whyItMatters: 'É o que mostra em que segundo as pessoas saem. Sem isso, "o vídeo não performou" não tem causa.'
   },
   {

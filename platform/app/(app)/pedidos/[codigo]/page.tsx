@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { FileSize, RequestActions } from '@/components/request-detail'
+import { RequestText } from '@/components/request-text'
 import { requestDetail } from '@/lib/dashboard'
 import { requireSession } from '@/lib/dal'
 import { canReach } from '@/lib/scope'
@@ -75,7 +76,9 @@ export default async function Pedido ({
       </div>
 
       {pedido.description !== null && (
-        <p className="pedido-desc pedido-desc-solta">{pedido.description}</p>
+        <p className="pedido-desc pedido-desc-solta">
+          <RequestText text={pedido.description} />
+        </p>
       )}
 
       {pedido.whyItMatters !== null && (

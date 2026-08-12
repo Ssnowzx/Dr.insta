@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { RequestText } from '@/components/request-text'
 import { requests } from '@/lib/dashboard'
 import { clientScope } from '@/lib/dal'
 import { shortDate } from '@/lib/format'
@@ -61,7 +62,9 @@ export default async function Pedidos () {
               <h2 className="pedido-titulo">
                 <Link href={`/pedidos/${p.publicCode}`}>{p.title}</Link>
               </h2>
-              {p.description !== null && <p className="pedido-desc">{p.description}</p>}
+              {p.description !== null && (
+                <p className="pedido-desc"><RequestText text={p.description} /></p>
+              )}
 
               {p.whyItMatters !== null && (
                 <p className="pedido-porque">

@@ -893,6 +893,17 @@ a.secao-nota:hover { text-decoration: underline; }
   white-space: pre-line;
 }
 
+/* Links inside a request's instructions. Same pair the contrast test already
+   validates as "link no cartão"; broken anywhere on a long URL so a narrow
+   phone never scrolls sideways. */
+.pedido-desc .desc-link {
+  color: var(--caramelo);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
 .pedido-porque {
   margin: .875rem 0 0;
   padding: .875rem;
