@@ -589,31 +589,42 @@ const QUESTION_REQUESTS: RequestSeed[] = [
   {
     title: 'Quando você fala em engajamento, o que você quer ver mais?',
     kind: 'question', priority: 'high', position: 1,
-    description: 'Me diz a ordem, do mais importante para o menos: mais comentários e conversa? mais alcance e views? mais seguidores? Pode responder aqui embaixo, do seu jeito.',
+    description:
+      'Me diz a ordem, do mais importante para o menos: mais comentários e conversa? mais alcance e views? mais seguidores?\n\n' +
+      'Como responder: escreva na caixa "Quer escrever alguma coisa junto?" aqui embaixo, do seu jeito, e toque em Enviar recado. Não tem certo ou errado.',
     whyItMatters: 'O ciclo persegue uma métrica só. Eu desenhei para conversa — comentários — porque é onde os números mostram espaço. Se para você engajamento é outra coisa, eu troco o desenho agora, não na terceira semana.'
   },
   {
     title: 'Quanto tempo por semana você tem, de verdade, para conteúdo?',
     kind: 'question', priority: 'high', position: 2,
-    description: 'Contando gravar, editar e escrever legenda — tudo que já é seu. Um número honesto, em horas.',
+    description:
+      'Contando gravar, editar e escrever legenda — tudo que já é seu.\n\n' +
+      'Como responder: escreva aqui embaixo e toque em Enviar recado. Pode ser "umas 6 horas" — não precisa de precisão, precisa de verdade.',
     whyItMatters: 'Você publicou uns 8 Reels por semana no último mês, tudo sozinha. O plano precisa caber na sua semana real — plano que não cabe é descartado na segunda semana, e a culpa é do plano.'
   },
   {
     title: 'O que você NÃO quer no seu perfil?',
     kind: 'question', priority: 'high', position: 3,
-    description: 'Assunto, formato ou papel que você não quer aí — inclusive quanto de marca você quer mostrar, agora que o time da My Favorite cuida do resto.',
+    description:
+      'Assunto, formato ou papel que você não quer aí — inclusive quanto de marca você quer mostrar, agora que o time da My Favorite cuida do resto.\n\n' +
+      'Como responder: uma lista curta aqui embaixo já resolve. Toque em Enviar recado quando terminar.',
     whyItMatters: 'O perfil é seu. Saber a fronteira evita eu recomendar o que você não vai fazer — foi exatamente o que aconteceu com o plano anterior.'
   },
   {
     title: 'Além de "qual o link?", o que mais chega no seu direct?',
     kind: 'question', priority: 'high', position: 4,
-    description: 'As duas ou três perguntas ou assuntos que mais se repetem — do jeito que as pessoas escrevem.',
+    description:
+      'As duas ou três perguntas ou assuntos que mais se repetem — do jeito que as pessoas escrevem.\n\n' +
+      'Como responder: escreva aqui embaixo, um por linha, e toque em Enviar recado. Se preferir, tire prints do direct e mande pelo botão Anexar arquivo.',
     whyItMatters: 'A pauta de conversa nasce do que a sua audiência já quer falar com você. O que chega no direct é essa lista, pronta.'
   },
   {
     title: 'Quais personagens você toparia transformar em quadro fixo?',
     kind: 'question', priority: 'high', position: 5,
-    description: 'José, Pipo, Velma, renata dramática... quem topa virar série com nome, no mesmo dia da semana? E a assessora que já responde o direct com você: ela pode responder comentário em público também?',
+    description:
+      'José, Pipo, Velma, renata dramática... quem topa virar série com nome, no mesmo dia da semana?\n\n' +
+      'E uma segunda coisa, na mesma resposta: a assessora que já responde o direct com você pode responder comentário em público também?\n\n' +
+      'Como responder: escreva aqui embaixo os nomes e o que você achar dos comentários, e toque em Enviar recado.',
     whyItMatters: 'Quadro fixo cria gente que volta — e resposta na primeira hora puxa a segunda rodada de conversa. As duas coisas dependem só de vocês duas.'
   }
 ]
@@ -629,25 +640,48 @@ const RETAINED_REQUESTS: RequestSeed[] = [
        request seeding used to run only into an empty table. */
     legacyTitles: ['Uma planilha só, com os 203 Reels de uma vez'],
     kind: 'data', priority: 'high', position: 11,
-    description: 'No Business Suite, exporte os dados dos Reels do ano inteiro. É um arquivo só, e resolve quase tudo.',
+    description:
+      'Como fazer, no computador:\n' +
+      '1. Entre em business.facebook.com com a mesma conta do seu Instagram.\n' +
+      '2. No menu da esquerda, abra Insights e depois Conteúdo.\n' +
+      '3. Filtre por Reels e escolha o maior período que ele deixar.\n' +
+      '4. Toque em Exportar dados e baixe o arquivo.\n' +
+      '5. Se ele só deixar 90 dias por vez, repita a exportação mudando o período até cobrir o ano — dois ou três arquivos.\n\n' +
+      'Como mandar: pelo botão Anexar arquivo, aqui embaixo. Pode mandar todos de uma vez.',
     whyItMatters: 'Sem alcance real eu só consigo ver visualização, e visualização conta looping. Com a planilha eu leio comentário e salvamento por alcance — os dois números deste ciclo.'
   },
   {
     title: 'O gráfico de "até onde assistiram" de nove vídeos',
     kind: 'data', priority: 'medium', position: 12,
-    description: 'Print do gráfico de retenção de nove Reels que eu listo.',
+    description:
+      'São estes nove — abra cada link no celular:\n' +
+      'instagram.com/reel/DZPyUvzBgtN\n' +
+      'instagram.com/reel/DZTOQy7hp3M\n' +
+      'instagram.com/reel/DZYrlYMMOTQ\n' +
+      'instagram.com/reel/DZ6GhB2BJoc\n' +
+      'instagram.com/reel/DbW2ZzfBNU8\n' +
+      'instagram.com/reel/DZvzFECBWjG\n' +
+      'instagram.com/reel/DVg-YGzAQvd\n' +
+      'instagram.com/reel/DY3KqCzMeNQ\n' +
+      'instagram.com/reel/DaMRWJeshlz\n\n' +
+      'Em cada um: toque em Ver insights e desça até o gráfico de linha — é o que mostra até onde assistiram. Tire um print de cada tela.\n\n' +
+      'Como mandar: os nove prints pelo botão Anexar arquivo. Os quatro primeiros são a série "por dentro da sua peça favorita"; os três últimos são seus campeões, que servem de régua.',
     whyItMatters: 'É o que mostra em que segundo as pessoas saem. Sem isso, "o vídeo não performou" não tem causa.'
   },
   {
     title: 'Algum desses vídeos foi impulsionado?',
     kind: 'question', priority: 'medium', position: 13,
-    description: 'Só preciso saber quais, se houve.',
+    description:
+      'Só preciso saber quais, se houve.\n\n' +
+      'Como responder: escreva aqui embaixo os nomes ou as datas dos vídeos que tiveram impulsionamento — ou só "nenhum" — e toque em Enviar recado.',
     whyItMatters: 'Se teve dinheiro por trás, o alcance não é comparável com o dos outros — e eu estaria elogiando o formato quando a diferença era o impulsionamento.'
   },
   {
     title: 'As datas dos lançamentos e das publis grandes',
     kind: 'data', priority: 'low', position: 14,
-    description: 'Uma lista simples de datas.',
+    description:
+      'Desde janeiro: lançamentos de coleção e publis grandes.\n\n' +
+      'Como responder: escreva aqui embaixo, uma por linha — a data (o mês já ajuda) e o que foi. Toque em Enviar recado no fim.',
     whyItMatters: 'Picos de alcance nesses dias têm causa conhecida. Sem as datas eu leio pico de campanha como se fosse mérito do formato.'
   }
 ]
