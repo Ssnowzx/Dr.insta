@@ -38,3 +38,21 @@ Nenhuma. `openspec/specs/` está vazio — não há spec principal publicada at�
 - **Mudança de voz nos posts de marca e pilares Padrão/Bastidor na etapa 1.** Entram na etapa 2, porque soam como correção ao trabalho da cliente e pedem conversa, não documento
 - **Alvo numérico de sessões e receita.** Os baselines de julho estão contaminados (foram gerados sem link na bio); alvo só depois de 30 dias com UTM ativa
 - **Alteração do motor em `src/`.** Nenhuma mudança de código é necessária neste ciclo
+
+## Desfecho — 12/08/2026
+
+**Superada por decisão da cliente antes da leitura dos experimentos.** Em 12/08/2026 a
+Bianca redirecionou o foco: o perfil pessoal é dela; a relação com a loja e o e-commerce
+ficam com a equipe da My Favorite. O ciclo fechou sem nenhum experimento lido:
+
+- **UTM na bio:** ela colou um link com etiqueta genérica (`ig`/`bio`) que não identifica
+  o canal dela — o passo, como especificado, nunca foi executado.
+- **Mix de pilares, voz única, unboxing:** não iniciados.
+- Dos 5 ajustes da etapa 1, **nenhum dos 2 verificáveis de fora foi feito** (medido
+  direto no perfil em 06/08/2026).
+
+A não-execução tem leitura estratégica: o plano pedia que o perfil pessoal virasse canal
+de venda da marca, e a cliente não quer o perfil nesse papel. O diagnóstico que sustentava
+a proposta continua válido (saves/reach 0,23%, conversão 0,29%, caminho até a compra
+inexistente) — **mudou de dono, não de veracidade**; vira material de handoff para o time
+da marca. Substituída por `ativar-ciclo-engajamento-agosto`.

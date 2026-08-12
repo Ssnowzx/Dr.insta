@@ -38,19 +38,19 @@ Escreva em **português do Brasil**, direto, sem jargão vazio ("engajar a audi�
 |---|---|
 | Tipo | Conta única (não é agência) |
 | Nicho | **Moda / Lifestyle** — sempre rode o motor com `--nicho lifestyle` |
-| Objetivo — próximos 90 dias | **Caminho até a compra** — converter alcance em receita rastreável |
-| Métrica-norte | Sessões rastreadas/mês vindas das origens dela no GA4 |
-| Fonte de dados | Input manual / CSV exportado do Insights (sem Graph API) + painel de receita por origem |
+| Objetivo — próximos 90 dias | **Engajamento do perfil dela** — conversa pública e recorrente no @bianca.olivo |
+| Métrica-norte | Comentários por alcance (0,21% → ≥ 0,50%) |
+| Fonte de dados | Input manual / CSV do Insights + API oficial quando ela conectar a conta na plataforma |
 
 O detalhamento vivo (bio, ICP, pilares, voz, metas) está em **`perfil/`**. Leia antes de qualquer recomendação de conteúdo. Se `perfil/perfil.md` ainda tem marcadores `[PREENCHER]`, colete o que falta antes de produzir plano editorial — mas não bloqueie análise de métricas por isso.
 
-**Consequência prática do objetivo escolhido:** priorize `saves/reach`, cliques em link (bio e Stories) e sessões rastreadas no GA4. Nesta ordem.
+**Consequência prática do objetivo escolhido:** priorize `comentários/reach`, `saves/reach` e retorno da mesma pessoa. Nesta ordem. Alcance e views são guard-rail — não podem cair, mas não são alvo.
 
-Atenção ao que **não** é o gargalo: alcance, sends/reach e resposta em Stories já estão em nível alto — em julho/2026 foram 5,4M de contas alcançadas, 284 mil compartilhamentos em Reels, 22 mil respostas em Stories e +20.824 seguidores. Reporte esses números, **não otimize**. Recomendar "mais engajamento" para esta conta é resolver um problema que ela não tem.
+Atenção ao que **não** é o gargalo: alcance, sends/reach e resposta em Stories já estão em nível alto — em julho/2026 foram 5,4M de contas alcançadas, 284 mil compartilhamentos em Reels, 22 mil respostas em Stories e +20.824 seguidores. Reporte esses números, **não otimize**. O engajamento que falta é específico: comentário público (0,21% contra 0,50% do nicho) e salvamento (0,23% contra 1,40%). A audiência já conversa com ela — em privado; o ciclo leva essa conversa para o público.
 
-O buraco está depois da atenção: `saves/reach` de 0,23% contra 1,40% de referência do nicho, e um caminho até a compra que até 30/07/2026 não existia (zero links na bio). Crescimento de seguidores segue como métrica de vaidade.
+**O que saiu do escopo:** a relação perfil→loja (link, UTM, receita, conversão, voz de marca) é da **equipe da My Favorite** desde 12/08/2026, por decisão da cliente. O diagnóstico de conversão continua válido e vira handoff — não recomende mais nada que trate o perfil dela como canal de venda. Crescimento de seguidores segue como métrica de vaidade.
 
-> Este objetivo substituiu "Engajamento e comunidade" em 04/08/2026, depois que os Insights de julho mostraram engajamento na média ou acima do nicho e conversão de 0,29%. A leitura completa está em `dados/bianca-olivo-2026-07/INDICE.md`.
+> Este objetivo substituiu "Caminho até a compra" em **12/08/2026, por decisão da cliente**: o perfil pessoal é dela; a marca tem equipe própria. O ciclo anterior (04/08–12/08) fechou sem leitura — os experimentos não chegaram a rodar. Histórico completo em `openspec/` e `dados/bianca-olivo-2026-07/INDICE.md`.
 
 ---
 

@@ -46,3 +46,14 @@ Métrica de guarda: `sends/reach` do pilar Espelho **não pode cair** — é o c
 - **Afirmar causalidade entre duração e alcance.** A correlação é monotônica em 5 faixas de duração, mas `views` infla com loop em vídeo curto. O que se afirma é a célula vazia, que é fato de composição da amostra e não de inferência
 - **Publi paga.** Os 6 Reels com `#publi` fazem mediana de 74.985 views, o pior recorte do conjunto, mas n=6 não sustenta decisão sobre contrato comercial de terceiro
 - **Crescimento e captação.** Segue adiado para o ciclo seguinte, como já definido em `ativar-ciclo-conversao-agosto`
+
+## Desfecho — 12/08/2026
+
+**Superada por decisão da cliente antes do teste.** O achado da célula vazia continua
+válido e medido — 23 posts de marca, todos acima de 20s, contra 117 posts curtos sem
+marca; produto em formato curto nunca foi testado — mas conteúdo de produto saiu do
+escopo do perfil pessoal em 12/08/2026, junto com o ciclo de conversão. A restrição de
+formato (produto nasce em ≤20s, na voz dela) vai no handoff para a equipe da My Favorite.
+O dataset dos 203 Reels permanece como baseline público de formato do perfil e serve ao
+novo ciclo de engajamento (`ativar-ciclo-engajamento-agosto`). Tarefas de leitura
+restantes canceladas sem execução.
