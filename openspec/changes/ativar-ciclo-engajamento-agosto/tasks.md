@@ -27,9 +27,9 @@
 
 ## 5. Produção
 
-- [ ] 5.1 Commit + push; pull na VPS
-- [ ] 5.2 Backup manual; re-seed em produção; conferir no ar (painel, plano, pedidos, ciclo fechado)
+- [x] 5.1 Commit + push; pull na VPS
+- [x] 5.2 Backup manual; re-seed em produção; conferir no ar (painel, plano, pedidos, ciclo fechado)
 
 ## 6. Memória
 
-- [ ] 6.1 Atualizar a memória persistente: novo ciclo, ciclo antigo como histórico, handoff pendente
+- [x] 6.1 Atualizar a memória persistente: novo ciclo, ciclo antigo como histórico, handoff pendente
