@@ -147,7 +147,15 @@ export function InstagramSection ({
               What she gets is the consequence and where the fault is; the
               provider's own message goes to the consultant only, the same rule
               `lastError` follows. Blaming the tool is not politeness here, it
-              is accuracy: it broke inside Instagram, after she left this app. */}
+              is accuracy: it broke inside Instagram, after she left this app.
+
+              It states the fact and stops. The first version added "estou
+              resolvendo com eles; assim que destravar eu te aviso" — which told
+              her to stand by, on a day the consultant had just asked her for
+              two things by message. A screen that tells the client to wait is
+              making a decision about the relationship, and that decision is not
+              the product's to make. What comes next is said by the person, in
+              the channel where they talk. */}
           {falhas.count > 0 && (
             <div className="grupo grupo-critico" style={{ marginTop: 0 }}>
               <p className="grupo-titulo">
@@ -156,7 +164,7 @@ export function InstagramSection ({
               </p>
               <p className="grupo-item">
                 {ehCliente
-                  ? 'Quebrou do lado do Instagram, depois de você sair daqui — não é você fazendo errado. Estou resolvendo com eles; assim que destravar eu te aviso e a gente tenta de novo.'
+                  ? 'Quebrou do lado do Instagram, depois de você sair daqui — não é você fazendo errado. Pode tentar de novo quando quiser; se aparecer alguma tela antes do erro, me manda o print dela, que é o que mostra onde travou.'
                   : 'Falhou dentro do Instagram, sem criar conexão. Enquanto isso os números entram pelos prints que ela manda.'}
               </p>
               {falhas.lastAt !== null && (
