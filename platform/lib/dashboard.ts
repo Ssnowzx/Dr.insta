@@ -794,15 +794,41 @@ export async function staleRequests (
 }
 
 /**
- * The latest period the panel can actually show.
+ * The latest period the panel can actually show: the most recent CLOSED month.
  *
- * Restricted to measured sources, and that restriction is the whole point. The
- * Reels importer writes monthly `views` under `source: 'public'`, so a plain
- * "latest period" jumps to the current month the moment anything is imported —
- * and the panel then announces August while the funnel, which reads only
- * measured sources, renders empty. Caught by looking at the screen.
+ * Restricted to measured sources, and that restriction was the first half of
+ * this. The Reels importer writes monthly `views` under `source: 'public'`, so a
+ * plain "latest period" jumped to the current month the moment anything was
+ * imported, and the panel announced August while the funnel rendered empty.
+ *
+ * The second half arrived on 14/08/2026, when she connected her account and the
+ * sync began writing `source: 'api'` — measured, and therefore past the first
+ * guard. The panel jumped to August on its fourteenth day and read it as a whole
+ * month: "contas alcançadas 2.668.572, longe do alvo" against a target of
+ * 5.413.754, which is July's full month. Half a month can never reach a monthly
+ * target, so the screen told her the reach had collapsed on the day the
+ * connection started working. The two cycle cards vanished at the same time,
+ * because `profile_visits` has no API counterpart and the partial month has no
+ * row for it.
+ *
+ * So the rule is not "measured" but "measured AND finished". A month still being
+ * lived is not comparable to a target set for a whole one, and every judgement
+ * on this screen — no alvo, longe do alvo, the progress bars — is exactly that
+ * comparison. The running month is not lost: `series()` already returns it
+ * flagged `partial`, which is where an incomplete number belongs.
+ *
+ * Falls back to the current month only when there is nothing else, because an
+ * imperfect panel beats a blank one for someone who just connected.
+ *
+ * `hoje` is a parameter so the boundary is testable without waiting for a month
+ * to end.
  */
-export async function latestPeriod (clientId: number): Promise<string | null> {
+export async function latestPeriod (
+  clientId: number,
+  hoje: Date = new Date()
+): Promise<string | null> {
+  const corrente = periodOf(hoje)
+
   const rows = await orm()
     .select({ period: metricValue.period })
     .from(metricValue)
@@ -811,9 +837,31 @@ export async function latestPeriod (clientId: number): Promise<string | null> {
       inArray(metricValue.source, [...ORIGENS_MEDIDAS])
     ))
     .orderBy(desc(metricValue.period))
-    .limit(1)
+    .limit(2)
 
-  return rows[0]?.period ?? null
+  return escolherPeriodo(rows.map(r => r.period), corrente)
+}
+
+/**
+ * Which of the known periods the panel should show, newest first.
+ *
+ * Separate from the query so the rule has a test: the rule is the part that was
+ * wrong, and it is one line that reads as obviously correct in both versions.
+ */
+export function escolherPeriodo (periodos: string[], corrente: string): string | null {
+  return periodos.find(p => p !== corrente) ?? periodos[0] ?? null
+}
+
+/**
+ * The month a date falls in, as `YYYY-MM-01`.
+ *
+ * UTC, matching how the collector stamps its periods — reading this in local
+ * time would put the last hours of a Brazilian month into the next one.
+ */
+export function periodOf (date: Date): string {
+  const ano = date.getUTCFullYear()
+  const mes = String(date.getUTCMonth() + 1).padStart(2, '0')
+  return `${ano}-${mes}-01`
 }
 
 export interface StepAnswer {
