@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 #
 # Os nove desfechos do que a Bianca respondeu em 13/08/2026.
 #
@@ -6,11 +6,19 @@
 # resposta escrita — que é exatamente o silêncio que a corrente nova existe para
 # remover. Isto fecha os nove, cada um dizendo o que aquele material produziu.
 #
-# Rodar de dentro de platform/, na VPS:
-#   bash scripts/desfechos-13-08.sh
+# Rodar de dentro de platform/:
+#   sh scripts/desfechos-13-08.sh
 #
-# Para em qualquer erro: se um título não casar, nada depois roda às cegas.
-set -euo pipefail
+# `sh` e não `bash`: a imagem é node:22-alpine e não tem bash — só /bin/sh, que
+# ali é o ash do BusyBox. Escrito com bash primeiro e pego antes de rodar em
+# produção, porque no macOS onde foi testado bash existe. Nada aqui precisa de
+# bash: `set -eu` é POSIX puro. O `pipefail` que estava aqui foi removido em vez
+# de mantido — o ash do BusyBox o suporta, mas não há um único pipe no arquivo,
+# então era dependência decorativa numa extensão de shell.
+#
+# Para em qualquer erro: se um título não casar, nada depois roda às cegas —
+# foi o que aconteceu no primeiro ensaio, com um pedido já concluído.
+set -eu
 
 concluir () {
   npm run --silent pedido -- --buscar "$1" --desfecho "$2"
