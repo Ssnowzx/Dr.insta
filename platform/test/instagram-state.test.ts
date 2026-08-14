@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { STATE_TTL_MS, verificarRetorno } from '../lib/instagram/state.ts'
+import {
+  ACAO_RECUSA, MOTIVOS_CALLBACK, MOTIVOS_RECUSA, STATE_TTL_MS, verificarRetorno
+} from '../lib/instagram/state.ts'
 
 /**
  * The gate between a redirect and a stored credential.
@@ -93,5 +97,59 @@ describe('STATE_TTL_MS', () => {
     // ARRANGE / ACT / ASSERT
     expect(STATE_TTL_MS).toBeGreaterThanOrEqual(5 * 60 * 1000)
     expect(STATE_TTL_MS).toBeLessThanOrEqual(15 * 60 * 1000)
+  })
+})
+
+/**
+ * The audit trail of a connection that did not happen.
+ *
+ * The route redirected on five of these and wrote nothing, so a failed attempt
+ * was indistinguishable from never having tried. These are the two rules that
+ * make the trail worth having: it has to reach every motive, and it must not
+ * pollute the counter the screen reads.
+ */
+describe('motivos de recusa', () => {
+  it('should carry every callback verdict into the logged list', () => {
+    // ARRANGE — the verdicts `verificarRetorno` can actually return
+    const vereditos = [
+      verificarRetorno(params('error=access_denied'), 'xyz'),
+      verificarRetorno(params('code=abc&state=outro'), 'xyz'),
+      verificarRetorno(params('state=xyz'), 'xyz')
+    ]
+
+    // ACT
+    const motivos = vereditos.map(v => (v.ok ? null : v.motivo))
+
+    // ASSERT — as a set: the list is what the route logs by, and the order it
+    // is written in is not a rule anybody should have to preserve
+    expect([...motivos].sort()).toEqual([...MOTIVOS_CALLBACK].sort())
+    for (const motivo of motivos) {
+      expect(MOTIVOS_RECUSA).toContain(motivo)
+    }
+  })
+
+  it('should not file a refusal as an Instagram failure', () => {
+    // ARRANGE / ACT / ASSERT — `failedAttempts` counts the other action and the
+    // screen narrates it as "broke inside Instagram", which a refusal is not
+    expect(ACAO_RECUSA).not.toBe('instagram_auth_failed')
+  })
+
+  it('should give every refusal reason a message on screen', () => {
+    // ARRANGE — read as text: the component pulls in React and Next, and the
+    // rule under test is that the map has a key, not how it renders
+    const tela = readFileSync(
+      join(import.meta.dirname, '..', 'components', 'instagram-section.tsx'),
+      'utf8'
+    )
+    const mapa = tela.slice(tela.indexOf('const RESULTADOS'), tela.indexOf('export function'))
+
+    // ACT
+    const semTexto = MOTIVOS_RECUSA.filter(
+      motivo => !mapa.includes(`${motivo}:`) && !mapa.includes(`'${motivo}':`)
+    )
+
+    // ASSERT — a motive with no entry renders no warning at all: she comes back
+    // from Instagram, something went wrong, and the screen says nothing
+    expect(semTexto).toEqual([])
   })
 })

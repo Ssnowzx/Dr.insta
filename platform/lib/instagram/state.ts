@@ -19,9 +19,38 @@ export const TERMS_COOKIE = 'ig_terms'
 /** Long enough to read an authorisation screen, short enough to be worthless later. */
 export const STATE_TTL_MS = 10 * 60 * 1000
 
+/**
+ * Every way the callback route can end without a connection.
+ *
+ * Two lists rather than one because they fail at different moments: the first
+ * three are verdicts on what came back from Instagram, the last two are this
+ * side refusing to proceed at all. `MOTIVOS_RECUSA` is derived from both, so a
+ * verdict added below has to be named here or it does not typecheck — which is
+ * the shape the original bug had. The route redirected on three of these and
+ * wrote nothing, so diagnosing 13/08/2026 needed a screenshot from her to rule
+ * out what our own log should have said.
+ */
+export const MOTIVOS_CALLBACK = ['recusado', 'sem-codigo', 'estado-invalido'] as const
+export const MOTIVOS_CONFIG = ['indisponivel', 'so-cliente'] as const
+export const MOTIVOS_RECUSA = [...MOTIVOS_CALLBACK, ...MOTIVOS_CONFIG] as const
+
+export type MotivoCallback = (typeof MOTIVOS_CALLBACK)[number]
+export type MotivoRecusa = (typeof MOTIVOS_RECUSA)[number]
+
+/**
+ * The audit action for a callback we turned away.
+ *
+ * Deliberately NOT `instagram_auth_failed`. That one means the code exchange
+ * broke inside Instagram after she left this app, and it is what `failedAttempts`
+ * counts and what the screen narrates to her in exactly those words. A callback
+ * we refused is a different event with a different cause, and filing the two
+ * together would make the screen tell her something false about where it broke.
+ */
+export const ACAO_RECUSA = 'instagram_auth_rejected'
+
 export type CallbackVerdict =
   | { ok: true; code: string }
-  | { ok: false; motivo: 'recusado' | 'sem-codigo' | 'estado-invalido' }
+  | { ok: false; motivo: MotivoCallback }
 
 /**
  * Decides whether a callback may become a connection.

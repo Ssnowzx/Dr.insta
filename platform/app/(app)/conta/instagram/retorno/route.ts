@@ -8,7 +8,10 @@ import { saveConnection } from '@/lib/instagram/connection'
 import {
   credentialsFromEnv, exchangeCode, exchangeForLongLived, OAuthError
 } from '@/lib/instagram/oauth'
-import { STATE_COOKIE, TERMS_COOKIE, verificarRetorno } from '@/lib/instagram/state'
+import {
+  ACAO_RECUSA, STATE_COOKIE, TERMS_COOKIE, verificarRetorno
+} from '@/lib/instagram/state'
+import type { MotivoRecusa } from '@/lib/instagram/state'
 
 /**
  * Where Instagram sends her back.
@@ -37,14 +40,33 @@ export async function GET (req: NextRequest): Promise<NextResponse> {
   const back = (resultado: string): NextResponse =>
     NextResponse.redirect(new URL(`/conta?instagram=${resultado}`, appUrl))
 
+  const clientId = await clientScope()
+
+  /**
+   * Every exit through this route writes a row now.
+   *
+   * It used to write only when the code exchange threw, so the three verdicts
+   * that reject a callback before that — and the two configuration refusals —
+   * redirected in silence. On 13/08/2026 she tried three times and what ruled
+   * the hypotheses out was a screenshot she sent, not our own log, because
+   * these five motives left no trace at all.
+   *
+   * It does not close the whole hole, and it should not be read as if it did:
+   * the three attempts that day broke INSIDE Instagram and never came back
+   * here, so nothing in this file would have seen them. What this covers is
+   * the case where she does come back and something is wrong on arrival.
+   */
+  const recusar = async (motivo: MotivoRecusa): Promise<NextResponse> => {
+    await record(ACAO_RECUSA, identity.userId, clientId, motivo)
+    return back(motivo)
+  }
+
   const veredito = verificarRetorno(req.nextUrl.searchParams, cookieState)
-  if (!veredito.ok) return back(veredito.motivo)
+  if (!veredito.ok) return await recusar(veredito.motivo)
 
   const creds = credentialsFromEnv(appUrl)
-  if (creds === null) return back('indisponivel')
-  if (identity.role !== 'client') return back('so-cliente')
-
-  const clientId = await clientScope()
+  if (creds === null) return await recusar('indisponivel')
+  if (identity.role !== 'client') return await recusar('so-cliente')
 
   try {
     const curto = await exchangeCode(creds, veredito.code)
