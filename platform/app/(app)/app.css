@@ -32,13 +32,34 @@
   color: var(--tinta);
 }
 
+ /* A name in a corner does not read as a control. It became the way into Conta
+   when Conta left the bottom bar, and as plain text nobody would ever press it
+   — so it takes the shape of its neighbour, the theme toggle: an icon, a
+   border, and a target a thumb hits without aiming. */
 .topo-conta {
+  display: inline-flex;
+  align-items: center;
+  gap: .4375rem;
+  /* Measured, not guessed: at .625rem the target came out 43px, one short of
+     the 44px this file uses everywhere else as the size a thumb hits without
+     aiming. */
+  padding: .75rem .8125rem;
+  margin: -.75rem 0;
+  border: 1px solid var(--linha);
+  border-radius: 999px;
   font-size: .8125rem;
-  color: var(--suave);
+  color: var(--tinta2);
+  text-decoration: none;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* The name is what gives way on a narrow phone; the icon never shrinks. */
+  max-width: 11rem;
 }
+
+.topo-conta svg { flex-shrink: 0; }
+.topo-conta span { overflow: hidden; text-overflow: ellipsis; }
+.topo-conta:hover { color: var(--tinta); border-color: var(--linha2); }
 
 .conteudo {
   padding: 1.5rem 1.25rem;

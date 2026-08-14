@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { NavInferior, NavLateral, SinoTopo } from '@/components/nav'
+import Link from 'next/link'
+import { NavInferior, NavLateral } from '@/components/nav'
 import { BotaoTema } from '@/components/tema'
 import { clientProfile, openRequestCount } from '@/lib/dashboard'
 import { clientDigestFor, digestFor, newsSince } from '@/lib/digest'
@@ -77,19 +78,29 @@ export default async function AppLayout ({ children }: { children: ReactNode }) 
         <header className="topo">
           <span className="topo-marca">{brand}</span>
           <span className="topo-direita">
-            <span className="topo-conta">{account}</span>
-            {/* The rail carries this on desktop; the rail does not exist on a
-                phone, and a setting she cannot reach is a setting she does not
-                have. */}
+            {/* The account name IS the way into Conta on a phone. Conta left the
+                bottom bar so Novidades could take the thumb, and this is where
+                every other app puts it. The rail carries both on desktop, where
+                this header is hidden. */}
+            <Link className="topo-conta" href="/conta" aria-label={`Conta de ${account}`}>
+              <svg
+                width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="1.7"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+              >
+                <circle cx="12" cy="8" r="3.6" />
+                <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+              </svg>
+              <span>{account}</span>
+            </Link>
             <BotaoTema />
-            <SinoTopo novidades={unread} />
           </span>
         </header>
 
         <main className="conteudo">{children}</main>
       </div>
 
-      <NavInferior pedidos={pedidos} />
+      <NavInferior pedidos={pedidos} novidades={unread} />
     </div>
   )
 }

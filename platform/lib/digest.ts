@@ -31,6 +31,23 @@ export interface DigestItem {
 }
 
 /**
+ * The opening of a long text, cut at a word.
+ *
+ * A digest that reprints nine full outcomes is not a digest — it is the other
+ * screen, twice. The whole text lives in `/pedidos`, under "o que voltou pra
+ * você", and that is where it should be read; here it only has to be
+ * recognisable enough to decide whether to go and read it.
+ */
+function abertura (texto: string, limite = 130): string {
+  const limpo = texto.replace(/\s+/g, ' ').trim()
+  if (limpo.length <= limite) return limpo
+
+  const corte = limpo.slice(0, limite)
+  const ultimoEspaco = corte.lastIndexOf(' ')
+  return `${(ultimoEspaco > limite * 0.6 ? corte.slice(0, ultimoEspaco) : corte).trimEnd()}…`
+}
+
+/**
  * Collapses repetition, because a summary that lists every event is a log.
  *
  * On 13/08/2026 she uploaded sixteen files across three requests and the
@@ -442,7 +459,7 @@ export async function clientDigestFor (
          part she asked for. */
       answered.push({
         title: r.title,
-        detail: hasOutcome(r.outcome) ? r.outcome : 'Fechado.',
+        detail: hasOutcome(r.outcome) ? abertura(r.outcome ?? '') : 'Fechado.',
         at: r.at,
         who: 'Rodrigo'
       })

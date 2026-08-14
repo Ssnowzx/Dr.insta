@@ -74,7 +74,14 @@ export default async function Novidades () {
             acao={{ href: '/pedidos', rotulo: 'ver os pedidos' }}
           />
           <Grupo titulo="Novo por aqui" itens={dela.published} tom="dado" />
-          <Grupo titulo="Te respondi" itens={dela.answered} tom="neutro" />
+          {/* With a way through: the detail here is only the opening of the
+              outcome, and the whole text lives on the request itself. */}
+          <Grupo
+            titulo="Te respondi"
+            itens={dela.answered}
+            tom="neutro"
+            acao={{ href: '/pedidos', rotulo: 'ler as respostas inteiras' }}
+          />
         </section>
       )}
 

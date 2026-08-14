@@ -11,9 +11,19 @@ import { BotaoTema } from './tema'
  * Bottom bar and not a hamburger: she opens this on a phone, one-handed, and a
  * menu hidden behind a tap is a menu nobody uses.
  *
- * "Novidades" is consultant-only and never enters the bottom bar. Six items
- * across 360px leaves 60px each, and the longest label already needs 53 —
- * so on a phone it becomes a bell in the top bar, where a count fits.
+ * "Novidades" IS in the bottom bar, and Conta is what left to make room.
+ *
+ * It used to be the other way round, on two premises that both expired.
+ * Novidades was consultant-only — it is not: `countUnread` branches for both
+ * roles and she has her own digest. And the arithmetic was for five
+ * destinations; Análise made six, so keeping Novidades out AND adding it back
+ * would have been seven at ~51px per item on a 360px phone.
+ *
+ * A bell in the top-right corner is the worst place on a phone for the thing
+ * that carries the news: it is the furthest point from a thumb. Conta is a
+ * settings screen visited rarely, and the account name already sits in the top
+ * bar — making that the way in is where every other app puts it. So the news
+ * moved to the thumb and the settings moved to the corner.
  *
  * "Pedidos" carries a count for BOTH roles, and that is the one signal she has.
  * Nothing is emailed by decision, and `/novidades` is his screen — so before
@@ -26,10 +36,11 @@ import { BotaoTema } from './tema'
 interface Destino {
   href: string
   label: string
-  icon: 'painel' | 'plano' | 'analise' | 'pedidos' | 'conteudo' | 'conta'
+  icon: 'sino' | 'painel' | 'plano' | 'analise' | 'pedidos' | 'conteudo' | 'conta'
 }
 
 const DESTINOS: Destino[] = [
+  { href: '/novidades', label: 'Novidades', icon: 'sino' },
   { href: '/', label: 'Painel', icon: 'painel' },
   { href: '/plano', label: 'Plano', icon: 'plano' },
   /* Between the plan and the requests: it answers "what did you find out",
@@ -50,6 +61,8 @@ const COMUM = {
 
 function Icone ({ nome }: { nome: Destino['icon'] }) {
   switch (nome) {
+    case 'sino':
+      return <Sino />
     case 'painel':
       /* Three descending bars — the funnel, which is what the panel is about. */
       return <svg {...COMUM}><path d="M4 6h16M4 12h9M4 18h4" /></svg>
@@ -168,13 +181,26 @@ export function SinoTopo ({ novidades }: { novidades: number }) {
   )
 }
 
-export function NavInferior ({ pedidos }: { pedidos: number }) {
+/* Six of the seven. Conta is reached from the account name in the top bar,
+   which only exists on a phone — the rail carries all seven on desktop, where
+   vertical space is not the constraint. */
+const NA_BARRA = DESTINOS.filter(d => d.href !== '/conta')
+
+export function NavInferior ({
+  pedidos,
+  novidades
+}: {
+  pedidos: number
+  novidades: number
+}) {
   const pathname = usePathname()
 
   return (
     <nav className="barra" aria-label="Seções">
-      {DESTINOS.map(d => {
-        const n = d.href === '/pedidos' ? pedidos : 0
+      {NA_BARRA.map(d => {
+        const n = d.href === '/pedidos'
+          ? pedidos
+          : d.href === '/novidades' ? novidades : 0
         return (
           <Link
             key={d.href}
