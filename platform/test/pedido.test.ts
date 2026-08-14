@@ -5,7 +5,7 @@ import { db } from '../db/connection.ts'
 import { client, request, requestEvent, user } from '../db/schema.ts'
 import { clientDigestFor, digestFor } from '../lib/digest.ts'
 import { findRequest, moveRequest, promoteOnDelivery } from '../lib/pedido-store.ts'
-import { canMove, hasOutcome, turnOf } from '../lib/pedido.ts'
+import { canMove, diasParados, hasOutcome, turnOf } from '../lib/pedido.ts'
 import { ulid } from '../lib/ulid.ts'
 
 /**
@@ -201,6 +201,38 @@ describe('de quem é a vez', () => {
     // ACT / ASSERT
     expect(turnOf('concluded', 'consultant')).toBeNull()
     expect(turnOf('dropped', 'client')).toBeNull()
+  })
+})
+
+/**
+ * How long something has been sitting.
+ *
+ * Found on 14/08/2026 by opening a request in production and reading the list
+ * it landed in: it said "-1d". `created_at` has no fractional second and MySQL
+ * rounds on insert, so a row can come back up to half a second in the future,
+ * and flooring a small negative gives -1 rather than 0.
+ */
+describe('dias parados', () => {
+  it('should report zero for something stored a moment in the future', () => {
+    // ARRANGE — the rounded timestamp, 400ms ahead of the render
+    const agora = new Date('2026-08-14T06:20:30.600Z')
+    const gravado = new Date('2026-08-14T06:20:31.000Z')
+
+    // ACT
+    const dias = diasParados(gravado, agora)
+
+    // ASSERT
+    expect(dias).toBe(0)
+  })
+
+  it('should count only whole days', () => {
+    // ARRANGE
+    const agora = new Date('2026-08-14T06:00:00.000Z')
+
+    // ACT / ASSERT
+    expect(diasParados(new Date('2026-08-13T07:00:00.000Z'), agora)).toBe(0)
+    expect(diasParados(new Date('2026-08-13T05:00:00.000Z'), agora)).toBe(1)
+    expect(diasParados(new Date('2026-08-11T05:00:00.000Z'), agora)).toBe(3)
   })
 })
 

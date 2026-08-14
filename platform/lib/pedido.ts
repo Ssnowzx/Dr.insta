@@ -23,6 +23,24 @@ export const STATES: readonly RequestState[] =
 export const DIAS_ATE_COBRAR = 3
 
 /**
+ * How long something has been sitting, in whole days, never below zero.
+ *
+ * The clamp is not defensive noise. `created_at` is a DATETIME with no
+ * fractional part, and MySQL ROUNDS on insert rather than truncating — so a row
+ * written at 06:20:30.700 comes back as 06:20:31, up to half a second in the
+ * future. The screen that renders immediately after opening a request therefore
+ * computed a small negative number, and `Math.floor(-0.000004)` is -1, not 0.
+ * A request opened seconds ago listed itself as "-1d", which corrected itself
+ * on the next load — visible exactly once, at the moment the person is looking.
+ *
+ * `agora` is a parameter because this is domain logic and reading the clock
+ * inside it would make the function untestable, which is how the bug got in.
+ */
+export function diasParados (desde: Date, agora: Date): number {
+  return Math.max(0, Math.floor((agora.getTime() - desde.getTime()) / 86_400_000))
+}
+
+/**
  * Whose turn it is, derived rather than stored.
  *
  * Storing it would create a second thing to keep in sync with `state`, and the

@@ -6,7 +6,7 @@ import { requests, workQueue } from '@/lib/dashboard'
 import type { RequestRow } from '@/lib/dashboard'
 import { clientScope, requireSession } from '@/lib/dal'
 import { shortDate } from '@/lib/format'
-import { DIAS_ATE_COBRAR, LABEL, turnOf } from '@/lib/pedido'
+import { diasParados, DIAS_ATE_COBRAR, LABEL, turnOf } from '@/lib/pedido'
 
 export const metadata: Metadata = { title: 'Pedidos' }
 export const dynamic = 'force-dynamic'
@@ -18,9 +18,9 @@ const TIPO: Record<string, string> = {
   material: 'um material'
 }
 
-/** How long a request has been sitting, in whole days. */
+/** How long a request has been sitting, in whole days. See `diasParados`. */
 function diasParado (row: RequestRow): number {
-  return Math.floor((Date.now() - row.updatedAt.getTime()) / 86_400_000)
+  return diasParados(row.updatedAt, new Date())
 }
 
 /**
