@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createClient } from '../lib/instagram/client.ts'
-import { listRecentMedia, mediaInsights, retentionPct } from '../lib/instagram/media.ts'
+import {
+  listRecentMedia, mediaInsights, retentionPct, shortcodeOf
+} from '../lib/instagram/media.ts'
 
 /**
  * Per-post collection.
@@ -26,6 +28,7 @@ function fake (respostas: unknown[]): { client: ReturnType<typeof createClient>;
 
 const media = (over: Partial<{ igCode: string; publishedAt: Date; isReel: boolean }> = {}) => ({
   igCode: over.igCode ?? '1',
+  shortcode: null,
   publishedAt: over.publishedAt ?? new Date('2026-08-01T12:00:00Z'),
   isReel: over.isReel ?? true,
   permalink: null,
@@ -206,5 +209,68 @@ describe('retentionPct', () => {
   it('should be null without watch time', () => {
     // ARRANGE / ACT / ASSERT
     expect(retentionPct(null, 30)).toBeNull()
+  })
+})
+
+/**
+ * The identifier that connects a measured post to the archive.
+ *
+ * The API answers with its own numeric media id; `post.ig_code` holds the
+ * shortcode out of the permalink, because the archive was built from the public
+ * export, which never sees that id. The sync matched one against the other and
+ * therefore updated nothing — "0 post(s) updated" on the first run after she
+ * connected, indistinguishable from the API having no recent posts.
+ */
+describe('shortcodeOf', () => {
+  it('should read the shortcode out of a reel permalink', () => {
+    // ARRANGE / ACT
+    const code = shortcodeOf('https://www.instagram.com/reel/Db0cDD4BO1D/')
+
+    // ASSERT — the exact form stored in post.ig_code
+    expect(code).toBe('Db0cDD4BO1D')
+  })
+
+  it('should read the other permalink shapes Instagram uses', () => {
+    // ARRANGE / ACT / ASSERT
+    expect(shortcodeOf('https://www.instagram.com/p/C1a2b3D4e5F/')).toBe('C1a2b3D4e5F')
+    expect(shortcodeOf('https://www.instagram.com/tv/BxYz_-123ab/')).toBe('BxYz_-123ab')
+  })
+
+  it('should return null when there is no permalink to read', () => {
+    // ARRANGE — such a post cannot be matched to the archive, and the sync
+    // skips it rather than guessing
+    // ACT / ASSERT
+    expect(shortcodeOf(null)).toBeNull()
+    expect(shortcodeOf('https://www.instagram.com/bianca.olivo/')).toBeNull()
+  })
+
+  it('should not be confused with the numeric media id', () => {
+    // ARRANGE — the bug in one line: these two identify the same post
+    // ACT
+    const code = shortcodeOf('https://www.instagram.com/reel/Db0cDD4BO1D/')
+
+    // ASSERT
+    expect(code).not.toBe('17912345678901234')
+  })
+})
+
+describe('listRecentMedia — o código que casa com o acervo', () => {
+  it('should expose both identifiers for each post', async () => {
+    // ARRANGE — the API answers with a numeric id and a permalink
+    const { client } = fake([{
+      data: [{
+        id: '17912345678901234',
+        timestamp: '2026-08-09T12:00:00+0000',
+        media_product_type: 'REELS',
+        permalink: 'https://www.instagram.com/reel/Db0cDD4BO1D/'
+      }]
+    }])
+
+    // ACT
+    const lista = await listRecentMedia(client, '1', new Date('2026-07-15T00:00:00Z'))
+
+    // ASSERT — the id addresses /insights, the shortcode addresses the archive
+    expect(lista[0]?.igCode).toBe('17912345678901234')
+    expect(lista[0]?.shortcode).toBe('Db0cDD4BO1D')
   })
 })

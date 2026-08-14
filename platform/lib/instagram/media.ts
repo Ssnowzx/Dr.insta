@@ -39,13 +39,38 @@ const MEDIA_METRICS = ['reach', 'views', 'saved', 'shares', 'likes', 'comments']
 const REEL_METRICS = [...MEDIA_METRICS.split(','), 'ig_reels_avg_watch_time'].join(',')
 
 export interface MediaSummary {
+  /** The API's own media id. What `/{id}/insights` needs, and nothing else. */
   igCode: string
+  /**
+   * The shortcode out of the permalink — `Db0cDD4BO1D` in
+   * `instagram.com/reel/Db0cDD4BO1D/`. This is what `post.ig_code` holds,
+   * because the archive was built from the public export, which has no access
+   * to the API's numeric id. The two identify the same post and never look
+   * alike, so matching one against the other silently finds nothing.
+   *
+   * Null when the API gives no permalink — such a post cannot be matched to the
+   * archive at all, and is skipped rather than guessed at.
+   */
+  shortcode: string | null
   publishedAt: Date
   isReel: boolean
   permalink: string | null
   caption: string | null
   likes: number | null
   comments: number | null
+}
+
+/**
+ * The shortcode inside a permalink, or null.
+ *
+ * Handles `/reel/`, `/p/` and `/tv/` — the three forms Instagram has used for
+ * something that ends up in this archive.
+ */
+export function shortcodeOf (permalink: string | null): string | null {
+  if (permalink === null) return null
+
+  const match = /\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/.exec(permalink)
+  return match?.[1] ?? null
 }
 
 export interface MediaInsights {
@@ -163,11 +188,14 @@ function readMediaPage (payload: unknown): { items: MediaSummary[]; next: string
       const publishedAt = new Date(timestamp)
       if (Number.isNaN(publishedAt.getTime())) continue
 
+      const permalink = typeof raw.permalink === 'string' ? raw.permalink : null
+
       items.push({
         igCode: id,
+        shortcode: shortcodeOf(permalink),
         publishedAt,
         isReel: raw.media_product_type === 'REELS',
-        permalink: typeof raw.permalink === 'string' ? raw.permalink : null,
+        permalink,
         caption: typeof raw.caption === 'string' ? raw.caption : null,
         likes: typeof raw.like_count === 'number' ? raw.like_count : null,
         comments: typeof raw.comments_count === 'number' ? raw.comments_count : null

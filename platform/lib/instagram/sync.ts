@@ -194,20 +194,40 @@ async function collectMedia (
   const recentes = await listRecentMedia(client, igUserId, since)
   if (recentes.length === 0) return 0
 
+  /* Matched on the shortcode, NOT on `igCode`.
+
+     `post.ig_code` holds the shortcode from the permalink — the archive came
+     from the public export, which never sees the API's numeric media id. This
+     matched `post.ig_code` against that numeric id, so it compared
+     `Db0cDD4BO1D` with `179123…` and found nothing, every single run. The first
+     sync after she connected on 14/08/2026 reported "0 post(s) updated" and
+     looked like the API simply had nothing to say.
+
+     Silent because both sides were populated and neither threw: an empty
+     intersection is indistinguishable from "no recent posts" unless you know
+     the two columns hold different things. */
+  const codigos = recentes
+    .map(m => m.shortcode)
+    .filter((c): c is string => c !== null)
+  if (codigos.length === 0) return 0
+
   const existentes = await orm()
     .select({ igCode: post.igCode, durationSec: post.durationSec })
     .from(post)
     .where(and(
       eq(post.clientId, clientId),
-      inArray(post.igCode, recentes.map(m => m.igCode))
+      inArray(post.igCode, codigos)
     ))
 
   const duracao = new Map(existentes.map(p => [p.igCode, p.durationSec]))
   let atualizados = 0
 
   for (const media of recentes) {
-    if (!duracao.has(media.igCode)) continue
+    const codigo = media.shortcode
+    if (codigo === null || !duracao.has(codigo)) continue
 
+    /* Insights are still fetched by the API id — that is the only identifier
+       `/{media}/insights` accepts. Only the archive is addressed by shortcode. */
     const insights = await mediaInsights(client, media)
 
     await orm()
@@ -220,11 +240,11 @@ async function collectMedia (
         ...(insights.saves === null ? {} : { saves: insights.saves }),
         ...(insights.sends === null ? {} : { sends: insights.sends }),
         ...(insights.views === null ? {} : { views: insights.views }),
-        ...(retencao(insights.avgWatchMs, duracao.get(media.igCode) ?? null)),
+        ...(retencao(insights.avgWatchMs, duracao.get(codigo) ?? null)),
         provenance: 'mixed',
         updatedAt: now
       })
-      .where(and(eq(post.clientId, clientId), eq(post.igCode, media.igCode)))
+      .where(and(eq(post.clientId, clientId), eq(post.igCode, codigo)))
 
     atualizados += 1
   }
