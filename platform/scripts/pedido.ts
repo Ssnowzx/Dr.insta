@@ -30,6 +30,7 @@ import type { RequestState } from '../lib/pedido.ts'
  *   npm run pedido -- --abrir --titulo "..." [--descricao "..."]
  *   npm run pedido -- --analisar <codigo>
  *   npm run pedido -- --concluir <codigo> --desfecho "..."
+ *   npm run pedido -- --buscar "parte do titulo" --desfecho "..."   # conclui
  *   npm run pedido -- --dispensar <codigo> [--desfecho "..."]
  *
  * The e-mail of the acting consultant comes from --como or CONSULTANT_EMAIL.
@@ -136,6 +137,32 @@ async function main (): Promise<void> {
 
     console.log(`\nAberto: ${r.publicCode}\n${titulo}\n`)
     return
+  }
+
+  /* Matching by title, because the code is a ULID and nobody types one. The
+     match must be unique: two hits stop rather than guess, since concluding the
+     wrong request writes an answer under a question it does not answer. */
+  const porTitulo = arg('--buscar')
+  if (porTitulo !== undefined) {
+    const rows = await orm()
+      .select({ publicCode: request.publicCode, title: request.title })
+      .from(request)
+      .where(eq(request.clientId, eu.clientId))
+
+    const achados = rows.filter(r =>
+      r.title.toLowerCase().includes(porTitulo.toLowerCase())
+    )
+
+    if (achados.length === 0) fail(`Nenhum pedido com "${porTitulo}" no título.`)
+    if (achados.length > 1) {
+      fail(
+        `"${porTitulo}" casa com ${achados.length} pedidos:\n` +
+        achados.map(a => `  ${a.publicCode}  ${a.title}`).join('\n')
+      )
+    }
+
+    const alvo = achados[0]
+    if (alvo !== undefined) process.argv.push('--concluir', alvo.publicCode)
   }
 
   const alvos: Array<[string, RequestState]> = [
