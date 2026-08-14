@@ -829,8 +829,13 @@ export async function latestPeriod (
 ): Promise<string | null> {
   const corrente = periodOf(hoje)
 
+  /* DISTINCT, and that is not a tidiness detail. `metric_value` holds one row
+     per metric per period — August alone has nine — so a plain `limit(2)`
+     returns August twice and the search for an older month finds nothing. The
+     first version of this fix did exactly that and changed the screen not at
+     all. */
   const rows = await orm()
-    .select({ period: metricValue.period })
+    .selectDistinct({ period: metricValue.period })
     .from(metricValue)
     .where(and(
       eq(metricValue.clientId, clientId),
@@ -847,9 +852,16 @@ export async function latestPeriod (
  *
  * Separate from the query so the rule has a test: the rule is the part that was
  * wrong, and it is one line that reads as obviously correct in both versions.
+ *
+ * Tolerates repeats in the input. The caller asks for DISTINCT periods, but
+ * `metric_value` has one row per metric per period, and the first version of
+ * this fix received `['2026-08-01', '2026-08-01']` and concluded there was no
+ * closed month to fall back to. Deduplicating here means the rule holds however
+ * the caller happens to query.
  */
 export function escolherPeriodo (periodos: string[], corrente: string): string | null {
-  return periodos.find(p => p !== corrente) ?? periodos[0] ?? null
+  const unicos = [...new Set(periodos)]
+  return unicos.find(p => p !== corrente) ?? unicos[0] ?? null
 }
 
 /**

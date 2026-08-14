@@ -34,6 +34,19 @@ describe('escolherPeriodo', () => {
     expect(escolhido).toBe('2026-08-01')
   })
 
+  it('should look past repeats of the running month', () => {
+    // ARRANGE — the exact input that made the first fix a no-op: `metric_value`
+    // holds one row per metric per period, so a LIMIT over rows returns the
+    // same month twice and the closed month never enters the list
+    const periodos = ['2026-08-01', '2026-08-01', '2026-07-01']
+
+    // ACT
+    const escolhido = escolherPeriodo(periodos, '2026-08-01')
+
+    // ASSERT
+    expect(escolhido).toBe('2026-07-01')
+  })
+
   it('should take the newest when none of them is the running month', () => {
     // ARRANGE — collection stopped two months ago
     const periodos = ['2026-06-01', '2026-05-01']
