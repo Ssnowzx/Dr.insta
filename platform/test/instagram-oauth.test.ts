@@ -47,8 +47,20 @@ describe('authorizeUrl', () => {
 
     // ASSERT — this flow needs no Facebook Page and no Facebook account
     expect(url.origin).toBe('https://www.instagram.com')
-    expect(url.pathname).toBe('/oauth/authorize')
+    expect(url.pathname).toBe('/oauth/authorize/')
     expect(url.searchParams.get('enable_fb_login')).toBe('0')
+  })
+
+  it('should keep the trailing slash that stops iOS opening the app', () => {
+    // ARRANGE — the Instagram app claims www.instagram.com links; the flow is
+    // excluded as `/oauth/authorize/*`, and a path without the slash does not
+    // match that exclusion. Without it, tapping "Continuar" on an iPhone leaves
+    // Safari for the app, which has no consent screen and shows an error.
+    // ACT
+    const url = new URL(authorizeUrl(CREDS, 'estado'))
+
+    // ASSERT
+    expect(url.pathname.endsWith('/')).toBe(true)
   })
 
   it('should carry the required parameters', () => {
