@@ -85,3 +85,29 @@ seria destruir a distribuição sem consertar a conversão.
 ---
 
 **Última atualização:** 04/08/2026
+
+
+## O que a audiência pede, nas palavras dela (13/08/2026)
+
+Coletado dos prints de direct e de respostas de Stories que ela enviou.
+
+**O que mais chega no direct**, segundo ela: "perguntas de produtos de make, de moda, o que
+usar pra certa ocasião de uso, elogios, pautas onde trago minhas opiniões como perfumes
+makes tendências de moda".
+
+**Respostas de Stories com substância** — no meio de dezenas de "maravilhosa ❤️", estas três
+apareceram na sequência da rotina de maquiagem:
+
+- "Amooooo seus videos **longosss**"
+- "Amo quando posta conteúdo assim"
+- "Deixa salvo nos destaques, divaaa"
+
+E duas trocas de produto: "Essa base é perfeitaaaa" e "Tenho um gelzinho da ruby rose
+topíssimo".
+
+**A leitura:** a audiência pede exatamente o formato que os números mostram converter — vídeo
+longo em que ela dá opinião sobre coisa que a pessoa também usa. As três fontes concordam:
+o que ela acha que funciona, o que a audiência pede, e o que os 376 posts medem.
+
+**Alcance dos Stories:** pico de 34,6 mil visualizações no primeiro card contra 713 mil
+seguidores — cerca de 4,9%. E queda para 7,2 mil ao fim da sequência, 79% de perda.

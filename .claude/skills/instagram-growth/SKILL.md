@@ -1,6 +1,6 @@
 ---
 name: instagram-growth
-description: "Amplia alcance qualificado no Instagram: distribuicao para nao-seguidores, colaboracoes, SEO interno da plataforma, texto alternativo e uso realista de hashtags. Use quando o usuario falar em crescer, crescimento, ganhar seguidores, alcance, 'chegar em mais gente', 'sair da bolha', nao-seguidores, Explorar, viralizar, colab, collab, parceria, hashtag, hashtags, SEO do Instagram, busca, trend, ou 'meu conteudo so chega em quem ja me segue'. Atencao: no ciclo atual o objetivo e comunidade, entao crescimento e secundario — sinalize esse trade-off. Para engajamento da base existente use instagram-community."
+description: "Amplia alcance qualificado no Instagram: distribuicao para nao-seguidores, colaboracoes, SEO interno da plataforma, texto alternativo e uso realista de hashtags. Use quando o usuario falar em crescer, crescimento, ganhar seguidores, alcance, 'chegar em mais gente', 'sair da bolha', nao-seguidores, Explorar, viralizar, colab, collab, parceria, hashtag, hashtags, SEO do Instagram, busca, trend, ou 'meu conteudo so chega em quem ja me segue'. Esta e a skill prioritaria do ciclo atual: o objetivo e fazer quem ainda nao a segue virar seguidor. Para engajamento da base existente use instagram-community."
 metadata:
   versao: "1.0.0"
   projeto: myfavorite

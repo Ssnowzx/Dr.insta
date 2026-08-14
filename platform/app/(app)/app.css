@@ -56,7 +56,14 @@
   inset: auto 0 0 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  /* One column per destination, whatever the count. It was `repeat(5, ...)`,
+     hardcoded to the number of items that existed when it was written — adding
+     Análise made a sixth, the grid wrapped to a second row, and the floating
+     account button landed on top of the item that fell down there. A count in
+     the CSS that has to agree with a list in the TSX is a count that will
+     disagree. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   background: color-mix(in srgb, var(--papel) 92%, transparent);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--linha);
@@ -102,7 +109,7 @@
 @media (min-width: 64rem) {
   .casca {
     display: grid;
-    grid-template-columns: 16rem 1fr;
+    grid-template-columns: 16rem minmax(0, 1fr);
   }
 
   .topo, .barra { display: none; }
@@ -290,12 +297,25 @@
 
 /* --------------------------------------------------- the collapse, stated */
 
+/* Stacked first, side by side only when there is room.
+
+   It used to be `flex-wrap: wrap` with a `nowrap` label in the middle, and that
+   combination has a band where it breaks rather than a point: between 430px and
+   445px the three items still fit on one row, so nothing wraps, and the middle
+   label is squeezed below the width its own `nowrap` demands. It then spills
+   past the plate. Measured on 13/08/2026 — 430px is the iPhone Pro Max and
+   428px the Plus, which is to say the break landed exactly on the phone she
+   reads this on, and nowhere else.
+
+   Wrapping was never the right answer anyway: two numbers at 3.5rem with a
+   caption between them do not belong on one line of a phone. Stacked, the
+   collapse reads top to bottom, which is the same statement. */
 .colapso {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.25rem;
   margin: 1.75rem 0 2.25rem;
-  flex-wrap: wrap;
 }
 
 .colapso-lado {
@@ -304,8 +324,6 @@
   gap: .25rem;
   min-width: 0;
 }
-
-.colapso-lado-fim { text-align: right; }
 
 .colapso-n {
   font-size: clamp(2rem, 6vw, 3.5rem);
@@ -322,12 +340,10 @@
    suggests a flow that succeeds, and what happens between these two numbers is
    a loss of 99,9996% of it. */
 .colapso-meio {
-  flex: 1 1 6rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: .4375rem;
-  min-width: 5rem;
 }
 
 .colapso-regua {
@@ -344,7 +360,26 @@
 .colapso-taxa {
   font-size: .875rem;
   color: var(--dado-bloco);
-  white-space: nowrap;
+  text-align: center;
+}
+
+@media (min-width: 48rem) {
+  .colapso {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .colapso-lado-fim { text-align: right; }
+
+  .colapso-meio {
+    flex: 1 1 6rem;
+    min-width: 5rem;
+  }
+
+  /* Safe here and only here: above this width the row has room for the label at
+     its natural size, which is what made it overflow below it. */
+  .colapso-taxa { white-space: nowrap; }
 }
 
 .funil { margin: 0; }
@@ -451,7 +486,13 @@
 .grade-metricas {
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: 1fr;
+  /* `minmax(0, 1fr)` and not `1fr`: a grid item defaults to `min-width: auto`,
+     which means a long unbreakable label can push its own track wider than the
+     container instead of wrapping. At 320px the two longest cards —
+     "Compartilhamentos por alcance" and "Salvamentos por alcance" — spilled
+     15px past the page. `1fr` alone is the most common way to build a grid that
+     is responsive everywhere except the narrowest phone. */
+  grid-template-columns: minmax(0, 1fr);
   /* Without this the grid stretches every card to the tallest in its row, so a
      two-line card next to a card carrying two caveats gets a block of empty
      white as tall as the caveats. Cards end where their content ends. */
@@ -459,7 +500,7 @@
 }
 
 @media (min-width: 48rem) {
-  .grade-metricas { grid-template-columns: repeat(2, 1fr); }
+  .grade-metricas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .metrica {
@@ -667,7 +708,7 @@
 
 .grade-stats {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
   background: var(--linha);
   border: 1px solid var(--linha);
@@ -676,7 +717,7 @@
 }
 
 @media (min-width: 40rem) {
-  .grade-stats { grid-template-columns: repeat(3, 1fr); }
+  .grade-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 .stat {
@@ -1030,7 +1071,7 @@ a.secao-nota:hover { text-decoration: underline; }
 
 .segmentos {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2px;
   padding: 3px;
   background: var(--papel2);
@@ -1276,7 +1317,7 @@ a.secao-nota:hover { text-decoration: underline; }
 
 .envio-item {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: .25rem .75rem;
   align-items: center;
 }
@@ -1422,11 +1463,11 @@ a.secao-nota:hover { text-decoration: underline; }
 .series {
   display: grid;
   gap: 1rem;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 64rem) {
-  .series { grid-template-columns: repeat(2, 1fr); }
+  .series { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .serie-cartao {
@@ -1685,15 +1726,15 @@ a.secao-nota:hover { text-decoration: underline; }
   padding: 0;
   display: grid;
   gap: 1rem;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 48rem) {
-  .acervo { grid-template-columns: repeat(2, 1fr); }
+  .acervo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (min-width: 80rem) {
-  .acervo { grid-template-columns: repeat(3, 1fr); }
+  .acervo { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 .peca {
@@ -1745,7 +1786,7 @@ a.secao-nota:hover { text-decoration: underline; }
 
 .peca-numeros {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: .5rem .75rem;
   margin: 0 0 .875rem;
   padding-top: .875rem;
@@ -2195,7 +2236,7 @@ a.secao-nota:hover { text-decoration: underline; }
 }
 
 @media (min-width: 48rem) {
-  .pilares { grid-template-columns: repeat(2, 1fr); }
+  .pilares { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .pilar {
@@ -2407,7 +2448,7 @@ a.secao-nota:hover { text-decoration: underline; }
 }
 
 @media (min-width: 48rem) {
-  .ensaios { grid-template-columns: repeat(2, 1fr); align-items: start; }
+  .ensaios { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }
 
 .ensaio {
@@ -2590,3 +2631,71 @@ a.btn-acesso:hover { border-color: var(--dado); text-decoration: none; }
   accent-color: var(--dado);
   cursor: pointer;
 }
+
+
+/* ------------------------------------------------------- the analysis screen */
+
+/* Reading, not a dashboard.
+
+   The first version reused `.secao` and `.titulo-secao`, and both were the
+   wrong instrument. `.titulo-secao` is a 13px tracked uppercase LABEL for a
+   list section; over a 36px figure it disappears, and the number reads as
+   floating between two paragraphs with nothing owning it. `.secao-cab` draws a
+   rule under the heading, which is dashboard furniture on a page of prose.
+
+   Measured before the change: 27px between a title and its number, 16px from
+   the number block to the body, 52px between blocks. A ratio under 2× — far too
+   flat for the eye to group anything. Proximity is the only grouping signal
+   here, so the gaps below are deliberately 3.5× apart. */
+
+.analise-bloco {
+  margin-top: 4.5rem;
+  max-width: 62ch;
+}
+
+/* The display face, one step down from the page title. Every other screen
+   labels its sections with `.titulo-secao`; this one is an essay, and a heading
+   in the same voice as the title says so before a word is read. */
+.analise-titulo {
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(1.375rem, 1.1rem + 1vw, 1.75rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--tinta);
+  margin: 0 0 .875rem;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+/* The number and its label are one object: 4px apart, against 20px to the body
+   and 72px to the next block. */
+.achado-numero {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  margin: 0;
+}
+
+.achado-numero .numero {
+  font-size: clamp(2.5rem, 9vw, 3.5rem);
+  color: var(--tinta);
+}
+
+.achado-rot {
+  font-size: .9375rem;
+  line-height: 1.4;
+  color: var(--suave);
+  max-width: 42ch;
+}
+
+.analise-corpo {
+  color: var(--tinta2);
+  line-height: 1.7;
+  margin: 1.25rem 0 0;
+}
+
+/* The paragraph right after a figure gets the same 20px, so the number belongs
+   to the text that explains it rather than to the heading above. */
+.achado-numero + .analise-corpo { margin-top: 1.25rem; }

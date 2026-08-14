@@ -24,6 +24,22 @@ validar com a Bianca. `[FALTA]` = não perguntado ainda.
 > acesso a áudios em alta e dublagens; essa restrição não se aplica a contas de Criador, que é
 > o que ela já usa. Confirmar antes de tratar como decisão informada.
 
+## O que ela declarou querer (13/08/2026)
+
+Respondido por ela mesma, dentro da plataforma. Vale mais que qualquer inferência nossa:
+
+- **Prioridade, na ordem dela:** "primeiro seguidores — segundo comentários e likes —
+  terceiro views. Gostaria de chegar a 1M de seguidores até dezembro"
+- **Posicionamento comercial:** "não quero criar conteúdos com baixa qualidade. Porque
+  quero me posicionar em um nicho mais premium pra fechar publicidades com marcas
+  relevantes, porque isso também consequentemente me traz prestígio e prestígio pra minha
+  marca my favorite" — o objetivo de receita do perfil é **publi**, não a loja
+- **Capacidade:** "tenho bastante tempo e uma equipe pra me ajudar nisso" — a restrição de
+  tempo que limitava os ciclos anteriores **não existe**
+- **O que ela sabe que funciona:** "pautas onde trago minhas opiniões como perfumes makes
+  tendências de moda tbm sempre performam bem e geram uma conversa". Os 376 posts
+  concordam: o vídeo de perfumes converteu 41× a série institucional
+
 ## Posicionamento
 
 **Frase de posicionamento** (uma frase, específica, testável):

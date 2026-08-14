@@ -26,12 +26,16 @@ import { BotaoTema } from './tema'
 interface Destino {
   href: string
   label: string
-  icon: 'painel' | 'plano' | 'pedidos' | 'conteudo' | 'conta'
+  icon: 'painel' | 'plano' | 'analise' | 'pedidos' | 'conteudo' | 'conta'
 }
 
 const DESTINOS: Destino[] = [
   { href: '/', label: 'Painel', icon: 'painel' },
   { href: '/plano', label: 'Plano', icon: 'plano' },
+  /* Between the plan and the requests: it answers "what did you find out",
+     which sits naturally after "what do I do" and before "what do you need
+     from me". */
+  { href: '/analise', label: 'Análise', icon: 'analise' },
   { href: '/pedidos', label: 'Pedidos', icon: 'pedidos' },
   { href: '/conteudo', label: 'Conteúdo', icon: 'conteudo' },
   { href: '/conta', label: 'Conta', icon: 'conta' }
@@ -51,6 +55,10 @@ function Icone ({ nome }: { nome: Destino['icon'] }) {
       return <svg {...COMUM}><path d="M4 6h16M4 12h9M4 18h4" /></svg>
     case 'plano':
       return <svg {...COMUM}><path d="M4 6.5 6 8.5 9.5 5M4 12.5l2 2L9.5 11M4 18.5l2 2 3.5-3.5M13 7h7M13 13h7M13 19h7" /></svg>
+    case 'analise':
+      /* A rising line over a baseline: the progression, which is the part of
+         this screen she cannot get anywhere else. */
+      return <svg {...COMUM}><path d="M4 19h16M6.5 15.5l4-4.5 3 3 4.5-6" /></svg>
     case 'pedidos':
       return <svg {...COMUM}><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
     case 'conteudo':

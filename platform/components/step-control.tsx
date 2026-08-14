@@ -103,7 +103,7 @@ export function StepControl ({
             rows={3}
             maxLength={2000}
             placeholder={otimista === 'blocked'
-              ? 'Ex.: não achei onde troca o link'
+              ? 'Ex.: não achei essa aba no Insights'
               : 'Ex.: fiz e o alcance caiu'}
             onChange={() => { setSalvo(false) }}
           />

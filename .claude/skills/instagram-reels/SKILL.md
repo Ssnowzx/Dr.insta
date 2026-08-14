@@ -1,6 +1,6 @@
 ---
 name: instagram-reels
-description: "Cria e otimiza Reels: roteiro, gancho dos 3 segundos, curva de retencao, ritmo, legendas na tela e loop. Use quando o usuario mencionar Reels, reel, video, video curto, roteiro, gravar, 'meu video nao performa', retencao, watch time, 'as pessoas nao assistem ate o fim', 'como comeco o video', gancho de video, edicao, corte, trilha, audio, 'quantos segundos', duracao de video, ou colar um roteiro pedindo revisao. Tambem use quando o diagnostico apontar retencao baixa. Para o texto de legenda do post use instagram-copywriting."
+description: "Cria e otimiza Reels: roteiro, gancho dos 3 segundos, curva de retencao, ritmo, legendas na tela e loop. Use quando o usuario mencionar Reels, reel, video, video curto, roteiro, gravar, 'meu video nao performa', retencao, watch time, 'as pessoas nao assistem ate o fim', 'como comeco o video', gancho de video, edicao, corte, trilha, audio, 'quantos segundos', duracao de video, ou colar um roteiro pedindo revisao. Tambem use quando o diagnostico apontar retencao baixa. Atencao medida neste perfil: retencao alta em video curto nao implica descoberta — o curto alcanca estranho e nao converte, o longo converte e nao alcanca estranho. Para o texto de legenda do post use instagram-copywriting."
 metadata:
   versao: "1.0.0"
   projeto: myfavorite

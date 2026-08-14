@@ -2,8 +2,8 @@ import { and, eq, sql } from 'drizzle-orm'
 import { orm } from './client.ts'
 import { db, waitForDatabase } from './connection.ts'
 import {
-  benchmark, client, cycle, delivery, experiment, metricDef, metricTarget,
-  metricValue, pillar, request, requestEvent, step, user
+  benchmark, client, cycle, delivery, deliverySection, experiment, metricDef,
+  metricTarget, metricValue, pillar, request, requestEvent, step, user
 } from './schema.ts'
 import { ulid } from '../lib/ulid.ts'
 
@@ -36,10 +36,17 @@ const now = new Date()
 const JULY = '2026-07-01'
 const CYCLE_START = '2026-08-04'
 const CYCLE2_START = '2026-08-12'
+const CYCLE3_START = '2026-08-13'
 const BASELINE_ON = '2026-08-04'
 
+/* Three cycles, and the third one closes the second after a single day.
+   That is not a bug in the data: the client redirected the work on 12/08 and
+   again on 13/08, and both times the previous cycle ended before its first
+   reading. The rows keep that visible — a fourth one closing the same way is
+   the signal that the problem stopped being the strategy. */
 const OLD_CYCLE_TITLE = 'Caminho até a compra'
 const NEW_CYCLE_TITLE = 'O perfil que conversa'
+const THIRD_CYCLE_TITLE = 'Quem te vê, te segue'
 
 /* Niche reference, copied from src/dominio/benchmarks.ts (LIFESTYLE.naMedia).
    Stored as ratios, never as pre-formatted percentages. */
@@ -138,9 +145,37 @@ const DEFS: DefSeed[] = [
   },
   {
     key: 'followers_net', label: 'Seguidores novos', unit: 'count',
-    tier: 'monitor', decimals: 0,
-    description: 'Crescimento líquido no período. Neste ciclo é contexto, não meta.',
+    tier: 'north_star', decimals: 0,
+    description: 'Quantas pessoas passaram a te seguir no mês, já descontando quem deixou. É o número que decide este ciclo.',
     howToMeasure: 'Insights > Público'
+  },
+  {
+    key: 'follows_reach', label: 'Seguidores por alcance', short: 'Viram e seguiram',
+    unit: 'ratio', tier: 'decision', decimals: 3,
+    description: 'De cada mil pessoas que veem um post seu, quantas passam a te seguir. É a conversão que este ciclo trabalha.',
+    howToMeasure: 'Insights por post: Seguimentos ÷ Alcance'
+  },
+  {
+    key: 'profile_visits_reach', label: 'Abriram seu perfil, por alcance',
+    short: 'Foram ao perfil', unit: 'ratio', tier: 'decision', decimals: 2,
+    description: 'De cada cem pessoas alcançadas, quantas abrem o seu perfil. É o passo entre te ver e decidir te seguir.',
+    howToMeasure: 'Insights > Visão geral: visitas ao perfil ÷ contas alcançadas'
+  },
+  /* Deliberately without a target until the Público tab is collected. The
+     split between followers and strangers was INFERRED from traffic sources on
+     eight Reels — an indication, not a measurement, and a target on top of an
+     indication is fiction. */
+  {
+    key: 'nonfollower_reach_share', label: 'Quanto do seu alcance é gente nova',
+    short: 'Alcance novo', unit: 'ratio', tier: 'decision', decimals: 1,
+    description: 'Quem já te segue não pode te seguir de novo. Esta é a fatia do seu alcance que ainda pode virar seguidor.',
+    howToMeasure: 'Insights por Reel > aba Público'
+  },
+  {
+    key: 'follows_per_nonfollower_reach', label: 'Seguidores por alcance de gente nova',
+    short: 'Conversão real', unit: 'ratio', tier: 'decision', decimals: 2,
+    description: 'A taxa que realmente decide: entre as pessoas novas que te viram, quantas seguiram.',
+    howToMeasure: 'Seguimentos ÷ alcance de não-seguidores'
   },
   {
     key: 'reel_shares', label: 'Compartilhamentos em Reels', unit: 'count',
@@ -216,14 +251,30 @@ const VALUES: ValueSeed[] = [
   { key: 'sends_reach', value: '0.013200', source: 'insights', sample: 6 },
   { key: 'likes_reach', value: '0.077300', source: 'insights', sample: 6 },
   { key: 'comments_reach', value: '0.002100', source: 'insights', sample: 6, note: 'Amostra de 6 Reels em 13 dias — abaixo do mínimo de 7 posts. A primeira leitura com a conta conectada substitui.' },
-  { key: 'product_reel_retention', value: '0.080000', source: 'insights', sample: 1, note: 'Um único Reel: o lançamento da coleção, 1min37.' }
+  { key: 'product_reel_retention', value: '0.080000', source: 'insights', sample: 1, note: 'Um único Reel: o lançamento da coleção, 1min37.' },
+
+  /* Derived from the two figures above, not collected separately: 347.482 ÷
+     5.413.754 and 6.987 ÷ 11.730.218. The note says so, because a reader has no
+     way to tell a derived ratio from a measured one, and the sample behind the
+     second is post-level reach, which double-counts a person seen twice. */
+  {
+    key: 'profile_visits_reach', value: '0.064200', source: 'insights',
+    note: 'Derivado: 347.482 visitas ÷ 5.413.754 contas alcançadas em julho.'
+  },
+  {
+    key: 'follows_reach', value: '0.000600', source: 'insights', sample: 58,
+    note: 'Derivado dos 58 posts de julho: 6.987 seguimentos ÷ 11.730.218 de alcance somado por post. O alcance somado conta duas vezes quem viu dois posts.'
+  }
 ]
 
 interface TargetSeed {
   key: string
-  baseline: string
+  /** Absent when there is no measurement yet. Meta sem baseline é ficção. */
+  baseline?: string
   target?: string
   contaminated?: boolean
+  /** Exactly one per cycle — enforced by a unique index, not by care here. */
+  northStar?: boolean
   note?: string
 }
 
@@ -231,7 +282,7 @@ interface TargetSeed {
    exactly as it read on the day it closed — these literals are that reading. */
 const OLD_TARGETS: TargetSeed[] = [
   {
-    key: 'tracked_sessions', baseline: '7976', contaminated: true,
+    key: 'tracked_sessions', baseline: '7976', contaminated: true, northStar: true,
     note: 'Gerado sem link na bio. Corrigir a etiqueta do link, rodar 30 dias e só então fixar alvo.'
   },
   {
@@ -256,9 +307,53 @@ const OLD_TARGETS: TargetSeed[] = [
   }
 ]
 
+/* The cycle in force. Followers decide; the two conversion rates are how the
+   work is steered; conversation and distribution are floors, not targets. */
+const THIRD_TARGETS: TargetSeed[] = [
+  {
+    key: 'followers_net', baseline: '20824', target: '62200', northStar: true,
+    note: 'Faltam 286.162 para 1M. Em 140 dias isso é 62.200 por mês — três vezes o ritmo de hoje. No ritmo atual, 1M chega por volta de outubro de 2027.'
+  },
+  {
+    key: 'follows_reach', baseline: '0.000600', target: '0.002000',
+    note: 'De 0,060% para 0,20%. Os posts explicam só um terço do crescimento; o resto vem de busca, sugestão e perfil.'
+  },
+  {
+    key: 'profile_visits_reach', baseline: '0.064200', target: '0.090000',
+    note: 'De 6,42% para 9%. Vale para os dois terços do crescimento que não vêm de post.'
+  },
+  /* No baseline and no target, on purpose. The follower/stranger split was
+     inferred from traffic sources on eight Reels — collecting the Público tab
+     is the first step of this cycle, and a target before it would be fiction. */
+  {
+    key: 'nonfollower_reach_share',
+    note: 'Sem medição ainda. Indício de 8 Reels: cerca de 1% nos vídeos longos e 80% nos curtos. A aba Público dá o número exato — é o primeiro pedido do ciclo.'
+  },
+  {
+    key: 'follows_per_nonfollower_reach',
+    note: 'Só existe depois do número acima. É a taxa que realmente decide, e ela ainda não foi medida.'
+  },
+  {
+    key: 'comments_reach', baseline: '0.002100', target: '0.002100', contaminated: true,
+    note: 'Guard-rail, não alvo. O diagnóstico de 12/08 continua verdadeiro — comentários por alcance está em 0,21% contra 0,50% do nicho — mas mudou de prioridade por decisão da cliente. O piso é o próprio ponto de partida: se cair, o ciclo está comprando audiência que não conversa.'
+  },
+  {
+    key: 'saves_reach', baseline: '0.002300', target: '0.002300', contaminated: true,
+    note: 'Guard-rail. Piso no que já existe.'
+  },
+  {
+    key: 'sends_reach', baseline: '0.013200', target: '0.013200',
+    note: 'Guard-rail de distribuição. É o que sustenta o alcance, e o alcance é o topo de tudo neste ciclo.'
+  },
+  {
+    key: 'reach', baseline: '5413754', target: '5413754',
+    note: 'Guard-rail. Queda acima de 25% por três semanas abre revisão do mix antes de qualquer decisão de pauta.'
+  }
+]
+
 const NEW_TARGETS: TargetSeed[] = [
   {
-    key: 'comments_reach', baseline: '0.002100', target: '0.005000',
+    key: 'comments_reach', baseline: '0.002100', target: '0.005000', northStar: true,
     note: 'Referência do nicho é 0,50%. A fase 1 quer 0,35% em 14 dias com no mínimo 7 posts. O ponto de partida vem de 6 Reels — a primeira leitura com a conta conectada substitui.'
   },
   {
@@ -439,6 +534,47 @@ const OLD_PILLARS: PillarSeed[] = [
   }
 ]
 
+/* The mix in force. Same volume as before — she publishes about 8 Reels a week
+   and this asks for none more. What moves is which of them carry her opinion. */
+const THIRD_PILLARS: PillarSeed[] = [
+  {
+    key: 'espelho', name: 'Espelho', share: 45, perWeek: '3 a 4 por semana',
+    control: true,
+    thesis: 'Cotidiano, casal, família e humor em que a pessoa se reconhece. Curto, do jeito que você já faz.',
+    role: 'É o que alcança quem ainda não te segue: 80% das visualizações dos seus curtos vêm de gente que não te acompanha. Este pilar não se mexe — ele é o topo de tudo.',
+    evidence: 'De fevereiro a agosto, os vídeos de até 10 segundos somaram 33 milhões de alcance: 39% de tudo que você alcançou.',
+    metricKey: 'sends_reach',
+    success: 'Não piorar. Se compartilhamento por alcance cair, a realocação foi longe demais.'
+  },
+  {
+    key: 'opiniao', name: 'Opinião', share: 30, perWeek: '2 a 3 por semana',
+    control: false,
+    thesis: 'Você falando o que acha — perfume, make, tendência, o que usar em cada ocasião. Longo, sem pressa, do jeito que você já faz nos Stories.',
+    role: 'É o único formato que faz estranho decidir te seguir. É o centro deste ciclo.',
+    evidence: '"Meus top 5 perfumes favoritos" (21/05, 99s): 305 mil alcançados e 3.131 seguidores novos — 41× a série sobre a coleção, que tem quase a mesma duração. E foi você quem escreveu que essas pautas sempre performam bem.',
+    metricKey: 'follows_reach',
+    success: 'Seguidores por alcance sair de 0,060% para 0,30% neste pilar, com no mínimo 7 posts.'
+  },
+  {
+    key: 'guardar', name: 'Vale guardar', share: 15, perWeek: '1 por semana',
+    control: false,
+    thesis: 'Depois de ver, a pessoa tem algo para usar depois — e salva. Qualquer marca, qualquer assunto do seu universo.',
+    role: 'Salvamento é o outro sinal abaixo do nicho, e quem salva costuma voltar. Aqui é guard-rail, não alvo.',
+    evidence: 'Você já começou sozinha: "produtos baratos que valem a pena" (05/08) é exatamente isso.',
+    metricKey: 'saves_reach',
+    success: 'Salvamentos por alcance não cair de 0,23%.'
+  },
+  {
+    key: 'personagens', name: 'Personagens', share: 10, perWeek: '1 por semana',
+    control: false,
+    thesis: 'Mozão, o time da My, sucessão familiar — em quadro nomeado, mesmo dia da semana.',
+    role: 'Dá motivo para voltar, e quem volta segue. A terceira geração da empresa é a pauta que você mesma disse que rendeu conversa.',
+    evidence: 'Suas palavras em 13/08: "sucessão familiar é um tópico que sempre traz bastante conversa, e o vídeo que fiz falando disso deu bastante engajamento".',
+    metricKey: 'follows_reach',
+    success: 'Quadro saindo toda semana, com as respostas de Stories seguras.'
+  }
+]
+
 /* The active mix. Percentages, roles and criteria come from perfil/pilares.md. */
 const NEW_PILLARS: PillarSeed[] = [
   {
@@ -534,6 +670,51 @@ const OLD_EXPERIMENTS: ExperimentSeed[] = [
   }
 ]
 
+/* In order, from the biggest waste to the smallest. The order matters more
+   than usual here: the stage below multiplies the one above, so widening
+   distribution before fixing the decision to follow spends reach at 0,06%. */
+const THIRD_EXPERIMENTS: ExperimentSeed[] = [
+  {
+    name: 'Longo de opinião, feito para ser descoberto',
+    hypothesis: 'Vídeo de 90s+ com a sua opinião sobre make, moda, perfume ou "o que usar em tal ocasião" converte estranho em seguidor — quando chega em estranho.',
+    isolated: 'pauta e duração',
+    key: 'follows_reach', successValue: '0.003000',
+    successLabel: 'seguidores/alcance ≥ 0,30% e ao menos 15% das views vindas de Explorar e Aba Reels',
+    minSample: 7, minDays: 21, position: 1, state: 'not_started'
+  },
+  {
+    name: 'Perfil como página de decisão',
+    hypothesis: 'Bio, foto, destaques e os primeiros nove do grid decidem quem abriu o perfil e ainda não seguiu.',
+    isolated: 'o perfil, nada do conteúdo',
+    key: 'profile_visits_reach', successValue: '0.090000',
+    successLabel: 'de cada 100 que abrem o perfil, 9 seguem',
+    minSample: 7, minDays: 14, position: 2, state: 'not_started'
+  },
+  {
+    name: 'Motivo de seguir no curto',
+    hypothesis: 'O vídeo de até 10 segundos já alcança milhões de estranhos e não diz quem você é. Dizer dobra a conversão dele.',
+    isolated: 'o que o curto diz sobre você',
+    key: 'follows_reach', successValue: '0.001200',
+    successLabel: 'na faixa de 1 a 10s, seguidores/alcance ≥ 0,12%',
+    minSample: 7, minDays: 14, position: 3, state: 'not_started'
+  },
+  {
+    name: 'Colab de escala mensal',
+    hypothesis: 'Um evento de distribuição por mês, do porte do que março fez, é o que fecha a distância que a conversão sozinha não fecha.',
+    isolated: 'distribuição',
+    key: 'followers_net', successValue: '15000',
+    successLabel: '≥ 15.000 seguidores no mês do colab',
+    minSample: 1, minDays: 30, position: 4, state: 'not_started'
+  }
+]
+
+/* Closed on 13/08 with the cycle, one day after opening. Written on the row
+   rather than left at `not_started` forever: an experiment that never ran and
+   never says so reads, a month from now, as one somebody forgot. */
+const NEW_OUTCOME =
+  'Não chegou a rodar. O ciclo foi encerrado em 13/08/2026, um dia depois de abrir, ' +
+  'por decisão da cliente — o alvo passou a ser seguidor. Nenhuma leitura foi feita.'
+
 const NEW_EXPERIMENTS: ExperimentSeed[] = [
   {
     name: 'Pauta de conversa',
@@ -541,7 +722,7 @@ const NEW_EXPERIMENTS: ExperimentSeed[] = [
     isolated: 'pauta e legenda',
     key: 'comments_reach', successValue: '0.003500',
     successLabel: 'comentários/alcance ≥ 0,35%',
-    minSample: 7, minDays: 14, position: 1, state: 'not_started'
+    minSample: 7, minDays: 14, position: 1, state: 'abandoned', outcome: NEW_OUTCOME
   },
   {
     name: 'Resposta na primeira hora',
@@ -549,7 +730,7 @@ const NEW_EXPERIMENTS: ExperimentSeed[] = [
     isolated: 'rotina de resposta (você + assessora)',
     key: 'comments_reach',
     successLabel: 'posts com resposta ativa fazem ≥ 1,5× os sem',
-    minSample: 7, minDays: 14, position: 2, state: 'not_started'
+    minSample: 7, minDays: 14, position: 2, state: 'abandoned', outcome: NEW_OUTCOME
   },
   {
     name: 'Utilidade na sua voz',
@@ -557,7 +738,7 @@ const NEW_EXPERIMENTS: ExperimentSeed[] = [
     isolated: 'pauta do pilar Vale guardar',
     key: 'saves_reach', successValue: '0.008000',
     successLabel: 'salvamentos/alcance ≥ 0,8%',
-    minSample: 7, minDays: 14, position: 3, state: 'not_started'
+    minSample: 7, minDays: 14, position: 3, state: 'abandoned', outcome: NEW_OUTCOME
   },
   {
     name: 'Colab mensal',
@@ -565,7 +746,7 @@ const NEW_EXPERIMENTS: ExperimentSeed[] = [
     isolated: 'distribuição',
     key: 'reach',
     successLabel: 'colab ≥ 2× a sua mediana de views, com comentários/alcance segurando',
-    position: 4, state: 'not_started'
+    position: 4, state: 'abandoned', outcome: NEW_OUTCOME
   }
 ]
 
@@ -585,18 +766,42 @@ interface RequestSeed {
  * purpose: her answers can change the cycle's target, and the sooner they
  * arrive the less gets built on a guess.
  */
+/* The two that unlock measurement for the cycle in force. First in position
+   because the first experiment cannot be read without them: without the Público
+   tab, its success criterion is a proxy measured against another proxy — which
+   is how the two previous cycles died. */
+const MEASURE_REQUESTS: RequestSeed[] = [
+  {
+    title: 'A aba Público de cinco Reels',
+    kind: 'data', priority: 'high', position: 1,
+    description:
+      'Em cada Reel: toque em Ver insights e depois na aba Público, no alto. Tem um número dizendo quantas das pessoas que viram já te seguiam. Um print por vídeo.\n\n' +
+      'Escolha estes cinco: dois curtos (até 10s), dois longos (mais de 90s) e o "meus top 5 perfumes".\n\n' +
+      'Como mandar: pelo botão Anexar arquivo, aqui embaixo. Pode mandar os cinco de uma vez.',
+    whyItMatters: 'Eu deduzi essa divisão de onde vieram as visualizações, em oito vídeos — é indício, não medida. Este número existe pronto no Instagram e é o que decide todo o ciclo: quem já te segue não pode te seguir de novo, então é a fatia de gente nova que diz se um vídeo funcionou.'
+  },
+  {
+    title: 'Um print do mês, de Insights > Visão geral',
+    kind: 'data', priority: 'high', position: 2,
+    description:
+      'Insights → Visão geral, período de 30 dias. Preciso de três números que aparecem juntos ali: contas alcançadas, visitas ao perfil e seguidores.\n\n' +
+      'Um print da tela inteira resolve. Uma vez por mês.',
+    whyItMatters: 'É o que substitui a conexão do Instagram enquanto ela não volta. Sem esses três números eu não consigo ler nenhum experimento — e um experimento que roda sem leitura é trabalho seu jogado fora, que foi o que aconteceu nos dois ciclos anteriores.'
+  }
+]
+
 const QUESTION_REQUESTS: RequestSeed[] = [
   {
     title: 'Quando você fala em engajamento, o que você quer ver mais?',
-    kind: 'question', priority: 'high', position: 1,
+    kind: 'question', priority: 'high', position: 3,
     description:
       'Me diz a ordem, do mais importante para o menos: mais comentários e conversa? mais alcance e views? mais seguidores?\n\n' +
       'Como responder: escreva na caixa "Quer escrever alguma coisa junto?" aqui embaixo, do seu jeito, e toque em Enviar recado. Não tem certo ou errado.',
-    whyItMatters: 'O ciclo persegue uma métrica só. Eu desenhei para conversa — comentários — porque é onde os números mostram espaço. Se para você engajamento é outra coisa, eu troco o desenho agora, não na terceira semana.'
+    whyItMatters: 'Você já respondeu esta em 13/08 — "primeiro seguidores, segundo comentários e likes, terceiro views" — e foi essa resposta que trocou o ciclo. Fica aqui como registro do que decidiu o rumo.'
   },
   {
     title: 'Quanto tempo por semana você tem, de verdade, para conteúdo?',
-    kind: 'question', priority: 'high', position: 2,
+    kind: 'question', priority: 'high', position: 4,
     description:
       'Contando gravar, editar e escrever legenda — tudo que já é seu.\n\n' +
       'Como responder: escreva aqui embaixo e toque em Enviar recado. Pode ser "umas 6 horas" — não precisa de precisão, precisa de verdade.',
@@ -604,7 +809,7 @@ const QUESTION_REQUESTS: RequestSeed[] = [
   },
   {
     title: 'O que você NÃO quer no seu perfil?',
-    kind: 'question', priority: 'high', position: 3,
+    kind: 'question', priority: 'high', position: 5,
     description:
       'Assunto, formato ou papel que você não quer aí — inclusive quanto de marca você quer mostrar, agora que o time da My Favorite cuida do resto.\n\n' +
       'Como responder: uma lista curta aqui embaixo já resolve. Toque em Enviar recado quando terminar.',
@@ -612,7 +817,7 @@ const QUESTION_REQUESTS: RequestSeed[] = [
   },
   {
     title: 'Além de "qual o link?", o que mais chega no seu direct?',
-    kind: 'question', priority: 'high', position: 4,
+    kind: 'question', priority: 'high', position: 6,
     description:
       'As duas ou três perguntas ou assuntos que mais se repetem — do jeito que as pessoas escrevem.\n\n' +
       'Como responder: escreva aqui embaixo, um por linha, e toque em Enviar recado. Se preferir, tire prints do direct e mande pelo botão Anexar arquivo.',
@@ -620,7 +825,7 @@ const QUESTION_REQUESTS: RequestSeed[] = [
   },
   {
     title: 'Quais personagens você toparia transformar em quadro fixo?',
-    kind: 'question', priority: 'high', position: 5,
+    kind: 'question', priority: 'high', position: 7,
     description:
       'José, Pipo, Velma, renata dramática... quem topa virar série com nome, no mesmo dia da semana?\n\n' +
       'E uma segunda coisa, na mesma resposta: a assessora que já responde o direct com você pode responder comentário em público também?\n\n' +
@@ -648,7 +853,7 @@ const RETAINED_REQUESTS: RequestSeed[] = [
       '4. Toque em Exportar dados e baixe o arquivo.\n' +
       '5. Se ele só deixar 90 dias por vez, repita a exportação mudando o período até cobrir o ano — dois ou três arquivos.\n\n' +
       'Como mandar: pelo botão Anexar arquivo, aqui embaixo. Pode mandar todos de uma vez.',
-    whyItMatters: 'Sem alcance real eu só consigo ver visualização, e visualização conta looping. Com a planilha eu leio comentário e salvamento por alcance — os dois números deste ciclo.'
+    whyItMatters: 'Sem alcance real eu só consigo ver visualização, e visualização conta looping. Com a planilha eu leio quantas pessoas passaram a te seguir por post — o número que decide este ciclo.'
   },
   {
     title: 'O gráfico de "até onde assistiram" de nove vídeos',
@@ -783,7 +988,8 @@ async function main (): Promise<void> {
     tradeOff: NEW_TRADE_OFF,
     northStarMetric: 'Comentários por alcance',
     startsOn: CYCLE2_START,
-    state: 'active',
+    endsOn: CYCLE3_START,
+    state: 'closed',
     createdAt: now,
     updatedAt: now
   }).onDuplicateKeyUpdate({
@@ -792,6 +998,45 @@ async function main (): Promise<void> {
       tradeOff: NEW_TRADE_OFF,
       northStarMetric: 'Comentários por alcance',
       startsOn: CYCLE2_START,
+      endsOn: CYCLE3_START,
+      state: 'closed',
+      updatedAt: now
+    }
+  })
+
+  /* The cycle in force since 13/08/2026, by the client's own target.
+     She ranked what she wants to see — "primeiro seguidores, segundo
+     comentários e likes, terceiro views" — and asked for 1M by December. The
+     diagnosis that put comments first was not wrong; it was answering a
+     different question. It survives as a guard-rail with its baseline as the
+     floor. */
+  const THIRD_GOAL =
+    'Fazer quem ainda não te segue virar seguidor. O alcance já é enorme — o que ' +
+    'não acontece é a pessoa nova decidir te acompanhar.'
+  const THIRD_TRADE_OFF =
+    'Este ciclo abre mão de perseguir comentário como alvo — ele vira guard-rail, ' +
+    'com piso no que já existe hoje. E pauta cujo assunto é a marca sai do seu ' +
+    'perfil pessoal: quatro episódios sobre a coleção alcançaram 179 mil pessoas e ' +
+    'trouxeram 45 seguidores, contra 3.131 de um vídeo de opinião do mesmo tamanho. ' +
+    'Não é julgamento do conteúdo, é conta de espaço.'
+
+  await o.insert(cycle).values({
+    publicCode: ulid(),
+    clientId,
+    title: THIRD_CYCLE_TITLE,
+    goal: THIRD_GOAL,
+    tradeOff: THIRD_TRADE_OFF,
+    northStarMetric: 'Seguidores novos por mês',
+    startsOn: CYCLE3_START,
+    state: 'active',
+    createdAt: now,
+    updatedAt: now
+  }).onDuplicateKeyUpdate({
+    set: {
+      goal: THIRD_GOAL,
+      tradeOff: THIRD_TRADE_OFF,
+      northStarMetric: 'Seguidores novos por mês',
+      startsOn: CYCLE3_START,
       state: 'active',
       updatedAt: now
     }
@@ -799,6 +1044,7 @@ async function main (): Promise<void> {
 
   const oldCycleId = await cycleIdByTitle(OLD_CYCLE_TITLE)
   const newCycleId = await cycleIdByTitle(NEW_CYCLE_TITLE)
+  const thirdCycleId = await cycleIdByTitle(THIRD_CYCLE_TITLE)
 
   // ----------------------------------------------------------- metric defs
   for (const d of DEFS) {
@@ -866,21 +1112,23 @@ async function main (): Promise<void> {
         clientId,
         cycleId,
         metricDefId: requireDef(t.key),
-        baseline: t.baseline,
         baselineOn: BASELINE_ON,
         contaminated: t.contaminated === true ? 1 : 0,
+        isNorthStar: t.northStar === true ? 1 : 0,
         createdAt: now,
         updatedAt: now,
+        ...(t.baseline === undefined ? {} : { baseline: t.baseline }),
         ...(t.target === undefined ? {} : { target: t.target }),
         ...(t.note === undefined ? {} : { note: t.note })
       }).onDuplicateKeyUpdate({
         /* Everything the file authors — `baseline` alone meant a corrected
            target or note printed success and changed nothing. */
         set: {
-          baseline: t.baseline,
+          baseline: t.baseline ?? null,
           baselineOn: BASELINE_ON,
           target: t.target ?? null,
           contaminated: t.contaminated === true ? 1 : 0,
+          isNorthStar: t.northStar === true ? 1 : 0,
           note: t.note ?? null,
           updatedAt: now
         }
@@ -889,6 +1137,7 @@ async function main (): Promise<void> {
   }
   await seedTargets(oldCycleId, OLD_TARGETS)
   await seedTargets(newCycleId, NEW_TARGETS)
+  await seedTargets(thirdCycleId, THIRD_TARGETS)
 
   // ------------------------------------------------------------ benchmarks
   for (const b of BENCHMARKS) {
@@ -939,6 +1188,7 @@ async function main (): Promise<void> {
   }
   await seedExperiments(oldCycleId, OLD_EXPERIMENTS)
   await seedExperiments(newCycleId, NEW_EXPERIMENTS)
+  await seedExperiments(thirdCycleId, THIRD_EXPERIMENTS)
 
   // ------------------------------------------------------ deliveries + steps
   const seedDelivery = async (
@@ -1031,6 +1281,88 @@ async function main (): Promise<void> {
     return deliveryId
   }
 
+  /**
+   * A delivery that is read instead of done: no steps, prose in blocks.
+   *
+   * The finding comes before the evidence, and the last block says what changes
+   * in practice — without which the analysis is a report. Both rules live in
+   * `openspec/changes/analise-que-ela-le`.
+   */
+  const seedAnalise = async (
+    row: {
+      cycleId: number
+      slug: string
+      title: string
+      subtitle: string
+      periodStart: string
+      periodEnd: string
+      readingMinutes: number
+      publishedAt: Date
+    },
+    secoes: Array<{
+      title?: string
+      body: string
+      highlight?: string
+      highlightLabel?: string
+    }>
+  ): Promise<number> => {
+    await o.insert(delivery).values({
+      publicCode: ulid(),
+      clientId,
+      cycleId: row.cycleId,
+      slug: row.slug,
+      title: row.title,
+      subtitle: row.subtitle,
+      kind: 'analysis',
+      periodStart: row.periodStart,
+      periodEnd: row.periodEnd,
+      readingMinutes: row.readingMinutes,
+      position: 0,
+      publishedAt: row.publishedAt,
+      createdAt: now,
+      updatedAt: now
+    }).onDuplicateKeyUpdate({
+      set: {
+        cycleId: row.cycleId,
+        title: row.title,
+        subtitle: row.subtitle,
+        periodStart: row.periodStart,
+        periodEnd: row.periodEnd,
+        readingMinutes: row.readingMinutes,
+        publishedAt: row.publishedAt,
+        updatedAt: now
+      }
+    })
+
+    const [d] = await o.select({ id: delivery.id }).from(delivery)
+      .where(and(eq(delivery.clientId, clientId), eq(delivery.slug, row.slug))).limit(1)
+    const deliveryId = d?.id
+    if (deliveryId === undefined) throw new Error(`Analysis was not created: ${row.slug}`)
+
+    for (const [i, sec] of secoes.entries()) {
+      await o.insert(deliverySection).values({
+        deliveryId,
+        position: i + 1,
+        title: sec.title ?? null,
+        body: sec.body,
+        highlight: sec.highlight ?? null,
+        highlightLabel: sec.highlightLabel ?? null,
+        createdAt: now,
+        updatedAt: now
+      }).onDuplicateKeyUpdate({
+        set: {
+          title: sec.title ?? null,
+          body: sec.body,
+          highlight: sec.highlight ?? null,
+          highlightLabel: sec.highlightLabel ?? null,
+          updatedAt: now
+        }
+      })
+    }
+
+    return deliveryId
+  }
+
   /* The closed cycle's plan leaves the screen (archived) but keeps its rows —
      and her answers, if any ever come, keep their object. */
   const oldDeliveryId = await seedDelivery({
@@ -1046,7 +1378,52 @@ async function main (): Promise<void> {
     archivedAt: new Date('2026-08-12T12:00:00Z')
   }, OLD_STEPS)
 
+  /* The reading of the two exports she sent on 13/08/2026: 376 posts from 16/02
+     to 12/08, plus eight retention screenshots. Written in her own Reels rather
+     than in rates — "45 followers against 3.131" is the same fact as "0,025%
+     against 1,026%" and is the version she can act on. */
+  await seedAnalise({
+    cycleId: thirdCycleId,
+    slug: 'o-que-os-376-posts-dizem',
+    title: 'O seu vídeo mais valioso custou 3% do alcance do seu maior sucesso',
+    subtitle: 'Li os 376 posts que você mandou, de fevereiro a agosto. Tem um padrão muito claro, e ele não é sobre postar mais.',
+    periodStart: '2026-02-16',
+    periodEnd: '2026-08-12',
+    readingMinutes: 4,
+    publishedAt: new Date('2026-08-13T21:00:00Z')
+  }, [
+    {
+      title: 'O achado',
+      highlight: '41×',
+      highlightLabel: 'de diferença entre dois vídeos do mesmo tamanho',
+      body: 'Os quatro episódios de "por dentro da sua peça favorita" alcançaram 179 mil pessoas e trouxeram 45 seguidores.\n\nO "meus top 5 perfumes favoritos", com quase a mesma duração, alcançou 305 mil e trouxe 3.131.\n\nNão é o formato. Não é a duração. É sobre o quê o vídeo fala: quando você dá a sua opinião sobre uma coisa que a pessoa também usa, ela quer te acompanhar. Quando o vídeo é sobre a empresa, ela assiste e vai embora.'
+    },
+    {
+      title: 'E tem uma segunda coisa, que é ainda mais estranha',
+      highlight: '1%',
+      highlightLabel: 'do seu vídeo longo chega em quem ainda não te segue',
+      body: 'Olhei de onde vêm as visualizações dos seus vídeos, um por um.\n\nNos seus vídeos longos, quase todo mundo que assiste já te segue — só cerca de 1% vem do Explorar e da aba de Reels, que são os lugares onde estranho te encontra.\n\nNos seus vídeos curtos é o contrário: 80% vem de gente que não te segue.\n\nJunte as duas coisas e o problema aparece inteiro. O conteúdo que faz estranho querer te seguir quase nunca é mostrado pra estranho. E o conteúdo que os estranhos veem aos milhões é justamente o que eles assistem e esquecem.'
+    },
+    {
+      title: 'Onde está indo o seu alcance',
+      highlight: '39%',
+      highlightLabel: 'de tudo que você alcança vai para vídeos de até 10 segundos',
+      body: 'De fevereiro a agosto, os vídeos de até 10 segundos somaram 33 milhões de alcance — mais de um terço de tudo.\n\nEles são ótimos de distribuição e você não deve parar de fazê-los: são eles que sustentam o seu tamanho. Mas eles quase não trazem seguidor: a cada mil pessoas que veem, menos de uma segue.\n\nNos vídeos acima de 90 segundos, essa conta é mais que o dobro.'
+    },
+    {
+      title: 'O que eu preciso dizer antes de você confiar demais nisso',
+      body: 'São 376 posts, o que é bastante — mas dois avisos honestos.\n\nO número de "seguiu depois de ver" continua subindo enquanto o post é antigo, então posts de fevereiro tiveram mais tempo de somar do que os de agosto. Comparar mês contra mês fica injusto; comparar tipo de vídeo dentro do mesmo período, não.\n\nE a divisão entre "quem já te segue" e "quem não te segue" eu deduzi de onde vieram as visualizações, em oito vídeos. O Instagram tem esse número exato, na aba Público de cada Reel. Vou te pedir isso — é o que transforma essa dedução em medida.'
+    },
+    {
+      title: 'O que muda no que você faz',
+      body: 'Três coisas, e nenhuma delas é postar mais.\n\nPrimeiro: os vídeos onde você dá opinião sobre make, moda, perfume e "o que usar em tal ocasião" deixam de ser eventuais e viram o centro. Você já sabia disso — foi você quem me escreveu que essas pautas sempre performam bem. Os números concordam com você.\n\nSegundo: pauta cujo assunto é a marca sai do seu perfil pessoal. Não é julgamento do conteúdo, é conta de espaço: 45 seguidores por 179 mil pessoas alcançadas não paga o lugar. Isso é assunto do time da My Favorite.\n\nTerceiro: os vídeos curtos continuam, do mesmo jeito, na mesma quantidade. Mas eles vão ganhar um motivo pra pessoa te seguir — hoje eles são vistos por milhões de estranhos e não dizem quem você é.'
+    }
+  ])
+
   const newDeliveryId = await seedDelivery({
+    /* Cycle 2, not 3. This plan belongs to the cycle it was written for, and
+       repointing it would make an archived delivery claim it came from a cycle
+       that started the day it was archived. */
     cycleId: newCycleId,
     slug: 'agora-o-assunto-e-conversa',
     title: 'O foco voltou pro seu perfil. Cinco movimentos, nenhum é postar mais.',
@@ -1056,8 +1433,53 @@ async function main (): Promise<void> {
     readingMinutes: 6,
     position: 1,
     publishedAt: new Date('2026-08-12T12:00:00Z'),
-    archivedAt: null
+    /* Archived after one day. The cycle it belonged to closed on 13/08, and a
+       plan for a closed cycle on her screen is a plan that asks her to do work
+       nobody is reading any more. */
+    archivedAt: new Date('2026-08-13T21:00:00Z')
   }, NEW_STEPS)
+
+  /* The plan of the cycle in force. Three moves, and they are the same three
+     the analysis ends on — if these two screens disagree, she is right not to
+     trust either. */
+  const THIRD_STEPS: StepSeed[] = [
+    {
+      code: 'c1', urgency: 'today', deadlineLabel: 'hoje, se der',
+      title: 'Me mandar a aba Público de cinco Reels',
+      summary: 'Em cada Reel: Ver insights → aba Público. Tem um número dizendo quantos dos que viram já te seguiam. É um print por vídeo.\n\nEscolha cinco: dois curtos, dois longos e o dos perfumes.',
+      evidenceValue: '8',
+      evidenceLabel: 'vídeos em que eu deduzi esse número — este pedido transforma dedução em medida',
+      copyValue: 'Ver insights → Público → quantos já te seguiam',
+      copyLabel: 'o caminho, dentro do Reel'
+    },
+    {
+      code: 'c2', urgency: 'this_week', deadlineLabel: 'esta semana',
+      title: 'Gravar dois vídeos de opinião, do jeito que você já fala',
+      summary: 'Perfume, make, tendência ou "o que usar em tal ocasião". Longo, sem roteiro, do jeito que você faz nos Stories — foi assim o dos perfumes.\n\nNão precisa ser produzido. Precisa ser você dizendo o que acha.',
+      evidenceValue: '3.131',
+      evidenceLabel: 'seguidores que "meus top 5 perfumes" trouxe, contra 45 dos quatro episódios da coleção'
+    },
+    {
+      code: 'c3', urgency: 'ongoing', deadlineLabel: 'a partir de já',
+      title: 'Pauta sobre a coleção sai do seu perfil',
+      summary: 'Bastidor de produção, lançamento, peça — isso é do perfil da marca. No seu, entra só quando for escolha sua dentro de uma pauta sua.\n\nNão é sobre a qualidade do conteúdo. É que o espaço é limitado e essa pauta rende 41× menos.',
+      evidenceValue: '179 mil',
+      evidenceLabel: 'pessoas alcançadas pelos quatro episódios da série, que trouxeram 45 seguidores'
+    }
+  ]
+
+  const thirdDeliveryId = await seedDelivery({
+    cycleId: thirdCycleId,
+    slug: 'quem-te-ve-te-segue',
+    title: 'Três movimentos. Nenhum deles é postar mais.',
+    subtitle: 'Você já publica 8 Reels por semana e alcança 5,4 milhões de contas por mês. Isto aqui não pede mais nada — muda quais desses vídeos carregam a sua opinião.',
+    periodStart: '2026-02-16',
+    periodEnd: '2026-08-12',
+    readingMinutes: 4,
+    position: 1,
+    publishedAt: new Date('2026-08-13T21:00:00Z'),
+    archivedAt: null
+  }, THIRD_STEPS)
 
   // -------------------------------------------------------------- pillars
   const seedPillars = async (cycleId: number, list: PillarSeed[]): Promise<void> => {
@@ -1097,6 +1519,7 @@ async function main (): Promise<void> {
   }
   await seedPillars(oldCycleId, OLD_PILLARS)
   await seedPillars(newCycleId, NEW_PILLARS)
+  await seedPillars(thirdCycleId, THIRD_PILLARS)
 
   // -------------------------------------------------------------- requests
   /*
@@ -1117,14 +1540,14 @@ async function main (): Promise<void> {
     return undefined
   }
 
-  const ALL_REQUESTS: RequestSeed[] = [...QUESTION_REQUESTS, ...RETAINED_REQUESTS]
+  const ALL_REQUESTS: RequestSeed[] = [...MEASURE_REQUESTS, ...QUESTION_REQUESTS, ...RETAINED_REQUESTS]
   for (const r of ALL_REQUESTS) {
     const existing = await requestByTitle([r.title, ...(r.legacyTitles ?? [])])
     if (existing === undefined) {
       await o.insert(request).values({
         publicCode: ulid(),
         clientId,
-        cycleId: newCycleId,
+        cycleId: thirdCycleId,
         title: r.title,
         description: r.description,
         whyItMatters: r.whyItMatters,
@@ -1138,7 +1561,7 @@ async function main (): Promise<void> {
       })
     } else {
       await o.update(request).set({
-        cycleId: newCycleId,
+        cycleId: thirdCycleId,
         title: r.title,
         description: r.description,
         whyItMatters: r.whyItMatters,
@@ -1191,12 +1614,23 @@ async function main (): Promise<void> {
   }
 
   console.log(`Seeded client #${clientId}.`)
-  console.log(`  Cycles: #${oldCycleId} closed ("${OLD_CYCLE_TITLE}"), #${newCycleId} active ("${NEW_CYCLE_TITLE}")`)
-  console.log(`  ${DEFS.length} metric definitions, ${VALUES.length} values, ${OLD_TARGETS.length}+${NEW_TARGETS.length} targets, ${BENCHMARKS.length} benchmarks`)
-  console.log(`  Experiments: ${OLD_EXPERIMENTS.length} closed + ${NEW_EXPERIMENTS.length} active`)
-  console.log(`  Deliveries: #${oldDeliveryId} archived, #${newDeliveryId} active (${NEW_STEPS.length} steps)`)
-  console.log(`  Pillars: ${OLD_PILLARS.length} frozen + ${NEW_PILLARS.length} active`)
-  console.log(`  Requests: ${QUESTION_REQUESTS.length} questions + ${RETAINED_REQUESTS.length} retained, 1 retired if untouched`)
+  console.log(
+    `  Cycles: #${oldCycleId} + #${newCycleId} closed, #${thirdCycleId} active ("${THIRD_CYCLE_TITLE}")`
+  )
+  console.log(`  ${DEFS.length} metric definitions, ${VALUES.length} values, ${OLD_TARGETS.length + NEW_TARGETS.length + THIRD_TARGETS.length} targets, ${BENCHMARKS.length} benchmarks`)
+  console.log(
+    `  Experiments: ${OLD_EXPERIMENTS.length + NEW_EXPERIMENTS.length} closed + ` +
+    `${THIRD_EXPERIMENTS.length} active`
+  )
+  console.log(
+    `  Deliveries: #${oldDeliveryId} + #${newDeliveryId} archived, ` +
+    `#${thirdDeliveryId} active (${THIRD_STEPS.length} steps), 1 analysis to read`
+  )
+  console.log(
+    `  Pillars: ${OLD_PILLARS.length + NEW_PILLARS.length} frozen + ` +
+    `${THIRD_PILLARS.length} active`
+  )
+  console.log(`  Requests: ${MEASURE_REQUESTS.length} measurement + ${QUESTION_REQUESTS.length} questions + ${RETAINED_REQUESTS.length} retained, 1 retired if untouched`)
 }
 
 main()

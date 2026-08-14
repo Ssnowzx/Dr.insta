@@ -1,6 +1,6 @@
 ---
 name: instagram-audit
-description: "Auditoria completa de perfil do Instagram com scorecard de 0 a 100: bio, foto, nome de busca, destaques, grid, posicionamento, oferta e consistencia. Use quando o usuario pedir para 'analisar meu perfil', 'auditar', 'dar uma olhada na minha conta', 'minha bio esta boa?', 'como esta meu perfil', 'o que preciso melhorar', 'meu perfil converte?', 'primeira impressao do perfil', ou quando alguem chega sem dados de performance e precisa de um ponto de partida. Tambem use antes de qualquer plano editorial, para garantir que o perfil sustenta o conteudo. Para diagnostico baseado em numeros use instagram-metrics."
+description: "Auditoria completa de perfil do Instagram com scorecard de 0 a 100: bio, foto, nome de busca, destaques, grid, posicionamento, oferta e consistencia. Use quando o usuario pedir para 'analisar meu perfil', 'auditar', 'dar uma olhada na minha conta', 'minha bio esta boa?', 'como esta meu perfil', 'o que preciso melhorar', 'meu perfil converte?', 'primeira impressao do perfil', ou quando alguem chega sem dados de performance e precisa de um ponto de partida. No ciclo atual a auditoria de perfil e o experimento 2: ela roda sobre as 347 mil visitas mensais que ja existem e decide quem abriu o perfil e ainda nao seguiu. Tambem use antes de qualquer plano editorial. Para diagnostico baseado em numeros use instagram-metrics."
 metadata:
   versao: "1.0.0"
   projeto: myfavorite

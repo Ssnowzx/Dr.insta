@@ -8,13 +8,16 @@ Material em `dados/bianca-olivo-2026-07/` e `dados/metricas/`.
 
 ## Objetivo do ciclo
 
-**Engajamento do perfil dela** — transformar a conversa que já existe em privado em conversa
-pública e recorrente, sem mexer no motor de alcance.
+**Fazer quem ainda não a segue virar seguidor.** O alcance já é enorme e ninguém mexe nele —
+o que não acontece é a pessoa nova decidir acompanhar.
 
-> Substituiu "Caminho até a compra" em **12/08/2026, por decisão da cliente**: o perfil
-> pessoal é dela; a relação com a loja e o e-commerce ficam com a equipe da My Favorite.
-> O diagnóstico de conversão (saves 0,23%, conversão 0,29%, link sem etiqueta) **continua
-> válido** — mudou de dono, não de veracidade. Vira material de handoff para o time da marca.
+> Substituiu "O perfil que conversa" em **13/08/2026, por decisão da cliente**. Ela declarou
+> a ordem — "primeiro seguidores, segundo comentários e likes, terceiro views" — e a meta de
+> 1M até dezembro. O diagnóstico de conversa (comentários 0,21% contra 0,50%) **continua
+> válido**: mudou de prioridade, não de veracidade, e segue no painel como guard-rail.
+>
+> Terceiro ciclo em dez dias. Os dois anteriores fecharam **sem leitura** — nenhum
+> experimento chegou a rodar. Se este fechar igual, o assunto deixa de ser a estratégia.
 
 Traduzido: a audiência dela já conversa com ela — 22 mil respostas de Stories por mês, DMs
 diárias — mas em privado. Em público o perfil aplaude (curtidas na média) e não conversa
@@ -22,9 +25,37 @@ diárias — mas em privado. Em público o perfil aplaude (curtidas na média) e
 (saves/alcance 0,23% contra 1,40%). O ciclo ataca exatamente esses dois sinais — os únicos
 de engajamento abaixo da referência.
 
+## A aritmética, antes de qualquer plano
+
+| | |
+|---|---|
+| Baseline (04/08/2026) | **713.838** seguidores |
+| Ritmo atual | **+20.824/mês** líquidos |
+| Falta para 1M | **286.162** |
+| Prazo assumido: 13/08 → 31/12 | 140 dias |
+| Ritmo necessário | **~62.200/mês** — 3,0× o atual |
+| No ritmo de hoje, 1M chega em | ~outubro de **2027** |
+
+Posts explicam só **34%** do crescimento (julho: 6.987 de +20.824). O resto vem de busca,
+sugestão e perfil. Projetando sobre o alcance-post de julho:
+
+| Conversão média | Seguidores/mês | Projeção em 31/12 |
+|---|---:|---:|
+| 0,060% (hoje) | 20.800 | ~810.000 |
+| 0,20% | 37.300 | ~885.000 |
+| 0,30% | 49.000 | ~939.000 |
+| 0,40% | 60.700 | ~993.000 |
+
+**Conversão sozinha não fecha 1M.** Março/2026 fez 26.847 seguidores por post num mês —
+a corrente com a @virginia — contra 7.000 a 11.000 dos meses normais. A meta fecha com
+conversão de 3–4× **somada** a um evento de escala por mês. Escrito no dia um.
+
+> Suposição declarada: "até dezembro" = **31/12**. Se for 01/12, o ritmo necessário sobe
+> para ~80.000/mês. Confirmar com ela.
+
 ## Métrica-norte
 
-**Comentários por alcance.**
+**Seguidores líquidos por mês.**
 
 Uma única métrica manda no ciclo. Quando houver conflito entre duas recomendações, ganha a
 que move esta. Alcance e views são guard-rail (não podem cair), não alvo — já estão em nível
@@ -37,20 +68,53 @@ alto e otimizá-los seria resolver problema que a conta não tem.
 
 | Métrica | Baseline (jul/2026) | Alvo 90d | Como medir | Cadência |
 |---|---|---|---|---|
-| **Comentários/alcance** | **0,21%** ⚠️ amostra 6 | **≥ 0,50%** (referência do nicho) | Insights por post; API quando ela conectar | por post |
-| **Saves/alcance** | **0,23%** ⚠️ amostra 6 | **≥ 0,8%** (caminho até 1,4%) | Insights por post | por post |
-| **Sends/alcance — controle** | 1,32% | **não cair** | Insights por post | por post |
-| **Respostas em Stories** | 22.000/mês | não cair | Insights > Interações | mensal |
-| **Alcance — guard-rail** | 5.413.754/mês | ≥ baseline | Insights > Visão geral | mensal |
-| **Retorno da mesma pessoa** | sem medição hoje | — | manual (comentários de quem já comentou) | quinzenal |
+| **Seguidores líquidos/mês** ★ | **20.824** | **62.200** | Insights > Público | mensal |
+| Seguidores ÷ alcance | 0,060% | ≥ 0,20% | Seguimentos ÷ Alcance, por post | por post |
+| Visitas ao perfil ÷ alcance | 6,42% | ≥ 9% | Insights > Visão geral | mensal |
+| Alcance de não-seguidor ÷ alcance | **a medir** | — | Insights por Reel > aba **Público** | por post |
+| Seguidores ÷ alcance de não-seguidor | **a medir** | — | derivado do acima | por post |
+| Comentários/alcance — guard-rail | 0,21% ⚠️ amostra 6 | **não cair** | Insights por post | por post |
+| Saves/alcance — guard-rail | 0,23% ⚠️ amostra 6 | **não cair** | Insights por post | por post |
+| Sends/alcance — guard-rail | 1,32% | **não cair** | Insights por post | por post |
+| Alcance — guard-rail | 5.413.754/mês | **não cair** | Insights > Visão geral | mensal |
 
-⚠️ **Os dois baselines de taxa vêm de 6 Reels em 13 dias** — abaixo do mínimo de 7 posts.
-Servem de ponto de partida declarado, não de certeza. A primeira leitura com a conta
-conectada substitui os dois.
+★ é a métrica-norte. As duas linhas "a medir" ficam **sem alvo de propósito**: a divisão
+entre seguidor e estranho foi inferida por fonte de tráfego em 8 Reels — indício, não
+medição. Alvo em cima de indício é ficção, e coletar a aba Público é o passo zero do ciclo.
 
-**Retorno da mesma pessoa não tem baseline nem ferramenta.** A API conectada não dá acesso a
-comentários (escopo recusado de propósito no app da Meta). Enquanto for manual, é leitura
-qualitativa quinzenal — está escrito assim para ninguém fingir precisão.
+## Experimentos do ciclo
+
+Do maior desperdício para o menor. **Um de cada vez**, porque o estágio de baixo multiplica
+o de cima: ampliar distribuição antes de corrigir a decisão de seguir gasta alcance a 0,06%.
+
+| # | Experimento | Variável isolada | Critério de sucesso | Prazo |
+|---|---|---|---|---|
+| 1 | **Longo de opinião com descoberta** | pauta e duração | seguidores/alcance ≥ 0,30% **e** ≥ 15% das views de Explorar/Aba Reels | dias 1–21, mín. 7 posts |
+| 2 | **Perfil como página de decisão** | bio, foto, destaques, primeiros 9 | de cada 100 que abrem o perfil, 9 seguem | dias 22–35 |
+| 3 | **Motivo de seguir no curto** | o que o curto diz sobre ela | na faixa 1–10s, seguidores/alcance ≥ 0,12% | dias 36–63 |
+| 4 | **Colab de escala mensal** | distribuição | ≥ 15.000 seguidores no mês do colab | dias 64–140 |
+
+## O que a evidência diz, medido em 376 posts
+
+| Duração | Posts | Alcance | Seguidores | Conversão |
+|---|---:|---:|---:|---:|
+| 1–10s | 90 | **33.271.101** | 20.460 | 0,061% |
+| 10–20s | 67 | 26.779.728 | 22.332 | 0,083% |
+| 20–45s | 30 | 4.778.645 | 2.845 | 0,060% |
+| 45–90s | 36 | 2.894.827 | 3.299 | 0,114% |
+| **90s+** | 41 | 7.947.289 | 11.606 | **0,146%** |
+
+Os dois extremos, na mesma faixa de duração: a série "por dentro da sua peça favorita"
+(4 eps, 86–89s) fez **179.461 de alcance e 45 seguidores** — 0,025%. O "meus top 5
+perfumes" (99s) fez **305.249 e 3.131** — 1,026%. **41× de diferença**, e não é formato
+nem duração: é o sujeito do conteúdo.
+
+Distribuição, lida em 8 Reels pela aba de fontes: nos longos, 1,0% a 4,2% das views vêm de
+Explorar + Aba Reels; nos curtos, 77,8% a 83,5%. O que converte não chega em estranho.
+
+⚠️ **`Seguimentos` acumula desde a publicação**, então post velho teve mais tempo de somar.
+Comparação entre meses sofre desse viés; comparação por duração e por tema **dentro da mesma
+janela** não sofre — e são essas que sustentam as decisões acima.
 
 ## O que saiu do painel — e para onde foi
 
@@ -107,10 +171,12 @@ variáveis se movendo e nenhuma conclusão válida.
 
 ## Como saberemos que deu errado
 
-Se com **≥ 14 posts do pilar Conversa e 6 semanas** comentários/alcance não passar de
-0,35%, a hipótese "pauta certa gera conversa pública" está errada — o gargalo é ritmo de
-resposta ou a audiência prefere o privado. Aí o ciclo troca: Stories-first (caixinha diária
-+ repost de resposta como conteúdo), antes de insistir em formato de feed.
+Na **semana 6 (24/09/2026)**, projete linearmente o ritmo então observado até 31/12. Se a
+projeção não alcançar 1.000.000, a meta na data está encerrada — e a data é renegociada com
+ela **em números**: projeção, ritmo observado, ritmo necessário. Nunca adiada por otimismo,
+nunca trocada em silêncio.
+
+Referência para essa conversa: mantido o ritmo de 20.824/mês, 31/12 fecha em ~809.600.
 
 ## Regras de leitura
 
@@ -123,5 +189,5 @@ resposta ou a audiência prefere o privado. Aí o ciclo troca: Stories-first (ca
 
 ---
 
-**Início do ciclo:** 12/08/2026
-**Última atualização:** 12/08/2026
+**Início do ciclo:** 13/08/2026
+**Última atualização:** 13/08/2026

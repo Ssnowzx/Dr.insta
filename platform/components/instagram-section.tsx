@@ -1,7 +1,7 @@
 import { DesconectarInstagram } from './instagram-connect.tsx'
 import { ageOf } from '@/lib/freshness'
-import { shortDate } from '@/lib/format'
-import type { ConnectionView } from '@/lib/instagram/connection'
+import { longDate, shortDate } from '@/lib/format'
+import type { ConnectionView, FailedAttempts } from '@/lib/instagram/connection'
 
 /**
  * The connection, as the client sees it.
@@ -48,11 +48,13 @@ const RESULTADOS: Record<string, { texto: string; erro: boolean }> = {
 
 export function InstagramSection ({
   conexao,
+  falhas,
   resultado,
   configurado,
   ehCliente
 }: {
   conexao: ConnectionView | null
+  falhas: FailedAttempts
   resultado?: string
   /** False when the app credentials are absent — the button would lead nowhere. */
   configurado: boolean
@@ -67,7 +69,7 @@ export function InstagramSection ({
       <div className="secao-cab">
         <h2 className="titulo-secao">Seu Instagram</h2>
         <p className="secao-nota">
-          {conectada ? 'conectado' : 'os números chegam sozinhos'}
+          {conectada ? 'os números chegam sozinhos' : 'hoje os números vêm por print'}
         </p>
       </div>
 
@@ -137,14 +139,44 @@ export function InstagramSection ({
 
       {conexao === null && (
         <>
+          {/* Tried and broke. A failed authorisation writes an audit row and no
+              connection row, so without this the screen greets her with the
+              same first-time invitation she already followed — three times, on
+              13/08/2026, each one looking like the first.
+
+              What she gets is the consequence and where the fault is; the
+              provider's own message goes to the consultant only, the same rule
+              `lastError` follows. Blaming the tool is not politeness here, it
+              is accuracy: it broke inside Instagram, after she left this app. */}
+          {falhas.count > 0 && (
+            <div className="grupo grupo-critico" style={{ marginTop: 0 }}>
+              <p className="grupo-titulo">
+                {ehCliente ? 'Você já tentou' : 'Ela já tentou'}{' '}
+                <span className="numero grupo-n">{falhas.count}</span>
+              </p>
+              <p className="grupo-item">
+                {ehCliente
+                  ? 'Quebrou do lado do Instagram, depois de você sair daqui — não é você fazendo errado. Estou resolvendo com eles; assim que destravar eu te aviso e a gente tenta de novo.'
+                  : 'Falhou dentro do Instagram, sem criar conexão. Enquanto isso os números entram pelos prints que ela manda.'}
+              </p>
+              {falhas.lastAt !== null && (
+                <p className="grupo-quem">última tentativa em {longDate(falhas.lastAt)}</p>
+              )}
+              {!ehCliente && falhas.detail !== null && (
+                <p className="grupo-detalhe">Instagram respondeu: {falhas.detail}</p>
+              )}
+            </div>
+          )}
+
           {/* What she is agreeing to, before she agrees. In consequence, not in
               scope names: "instagram_business_manage_insights" tells her
               nothing, and the authorisation screen she lands on is written in
               Meta's words, not ours. */}
           <p className="rodape-nota" style={{ marginTop: 0 }}>
             Conectando sua conta, eu passo a ler sozinho os números que hoje você
-            precisa exportar e me mandar: alcance, salvamentos, compartilhamentos
-            e cliques no link da bio.
+            precisa exportar e me mandar: quantas pessoas passaram a te seguir,
+            quantas abriram seu perfil, o alcance, e salvamentos e
+            compartilhamentos por post.
           </p>
           <p className="rodape-nota">
             <strong>Só leitura.</strong> Não publico nada, não comento, não

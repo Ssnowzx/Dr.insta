@@ -3,7 +3,8 @@
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addRequestComment, setRequestState } from '@/lib/request-actions'
-import type { RequestState } from '@/lib/request-actions'
+import { canMove } from '@/lib/pedido'
+import type { RequestState } from '@/lib/pedido'
 
 /**
  * The interactive half of a request: send a file, write a note, close it.
@@ -80,10 +81,14 @@ function enviarArquivo (
 
 export function RequestActions ({
   pedido,
-  estado
+  estado,
+  papel,
+  levantadoPor
 }: {
   pedido: string
   estado: RequestState
+  papel: 'consultant' | 'client'
+  levantadoPor: 'consultant' | 'client'
 }) {
   const router = useRouter()
   const [pendente, iniciar] = useTransition()
@@ -92,6 +97,7 @@ export function RequestActions ({
   const [enviando, setEnviando] = useState(false)
   const campo = useRef<HTMLInputElement>(null)
   const nota = useRef<HTMLTextAreaElement>(null)
+  const desfecho = useRef<HTMLTextAreaElement>(null)
 
   async function aoEscolher (lista: FileList | null) {
     if (lista === null || lista.length === 0) return
@@ -126,16 +132,23 @@ export function RequestActions ({
     })
   }
 
-  function mudar (novo: RequestState) {
+  function mudar (novo: RequestState, texto?: string) {
     setErro(null)
     iniciar(async () => {
-      const r = await setRequestState(pedido, novo)
+      const r = await setRequestState(pedido, novo, texto)
       if (!r.ok) { setErro(r.error ?? 'Não consegui salvar.'); return }
+      if (desfecho.current !== null) desfecho.current.value = ''
       router.refresh()
     })
   }
 
-  const fechado = estado === 'delivered' || estado === 'dropped'
+  const fechado = estado === 'concluded' || estado === 'dropped'
+
+  /* The buttons are derived from the same rule the server enforces. Offering a
+     move the domain will refuse is worse than not offering it: she presses,
+     gets an error, and learns the screen does not know its own state. */
+  const pode = (para: RequestState): boolean =>
+    canMove(estado, para, levantadoPor, papel)
 
   return (
     <div className="acoes">
@@ -189,27 +202,62 @@ export function RequestActions ({
         </div>
       </div>
 
-      {/* Closing is hers to declare. An upload moves a request to "em andamento"
-          and stops there — deciding it is finished on her behalf would be me
-          answering my own question. */}
+      {/* Which buttons exist is decided by `canMove`, the same function the
+          server checks — not by role. Deciding by role offered "Mandei tudo que
+          dava" on a request SHE raised, where the material was owed by him: one
+          press moved it out of his queue and the timeline narrated a delivery
+          nobody made. */}
       <div className="fechar">
-        {fechado
-          ? (
-            <button type="button" className="btn-reabrir" disabled={pendente} onClick={() => mudar('open')}>
-              Reabrir este pedido
-            </button>
-            )
-          : (
-            <>
-              <button type="button" className="btn-fechar" disabled={pendente} onClick={() => mudar('delivered')}>
-                Mandei tudo que dava
-              </button>
-              <button type="button" className="btn-dispensar" disabled={pendente} onClick={() => mudar('dropped')}>
-                Não vou conseguir esse
-              </button>
-            </>
-            )}
+        {pode('open') && fechado && (
+          <button type="button" className="btn-reabrir" disabled={pendente} onClick={() => mudar('open')}>
+            Reabrir este pedido
+          </button>
+        )}
+
+        {pode('answered') && (
+          <button type="button" className="btn-fechar" disabled={pendente} onClick={() => mudar('answered')}>
+            Mandei tudo que dava
+          </button>
+        )}
+
+        {pode('analyzing') && (
+          <button type="button" className="btn-fechar" disabled={pendente} onClick={() => mudar('analyzing')}>
+            Comecei a olhar
+          </button>
+        )}
+
+        {pode('dropped') && (
+          <button type="button" className="btn-dispensar" disabled={pendente} onClick={() => mudar('dropped')}>
+            {papel === 'consultant' ? 'Dispensar' : 'Não vou conseguir esse'}
+          </button>
+        )}
       </div>
+
+      {pode('concluded') && (
+        <div className="nota nota-desfecho">
+          <label htmlFor={`desfecho-${pedido}`}>O que saiu desse pedido?</label>
+          <textarea
+            id={`desfecho-${pedido}`}
+            ref={desfecho}
+            rows={4}
+            maxLength={8000}
+            placeholder="Ex.: os 16 prints mostram que o vídeo longo quase não chega em quem ainda não te segue — é isso que estamos atacando primeiro"
+          />
+          <div className="nota-pe">
+            <button
+              type="button"
+              className="btn-nota"
+              disabled={pendente}
+              onClick={() => mudar('concluded', desfecho.current?.value)}
+            >
+              {pendente ? 'Salvando…' : 'Concluir com essa resposta'}
+            </button>
+          </div>
+          <p className="envio-dica">
+            Ela vê esse texto no lugar do pedido. Sem ele não dá para concluir.
+          </p>
+        </div>
+      )}
 
       {erro !== null && <p className="nota-erro" role="alert">{erro}</p>}
     </div>

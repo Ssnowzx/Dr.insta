@@ -52,9 +52,12 @@ export default async function AppLayout ({ children }: { children: ReactNode }) 
      she found out he had published something by opening the screen. The
      connection made that asymmetry untenable: a credential only she can renew
      would have been announced to him and left for him to relay. */
+  /* The request badge is now per-role too, for the same reason. It used to
+     count only what was hers to answer, so his own backlog was invisible to him
+     inside the product and visible to her only as silence. */
   const [unread, pedidos] = await Promise.all([
     countUnread(identity.userId, clientId, consultant),
-    openRequestCount(clientId)
+    openRequestCount(clientId, identity.role)
   ])
 
   const brand = profile?.brand ?? 'My Favorite'

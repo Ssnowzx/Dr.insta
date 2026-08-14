@@ -203,6 +203,30 @@ export const pillar = mysqlTable('pillar', {
   index('ix_pillar_client').on(t.clientId)
 ])
 
+/**
+ * Prose inside a delivery, for the ones that are read rather than done.
+ *
+ * `highlight` is text, not a decimal: it holds "41×", "0,025%", "3.131" —
+ * already formatted, in the unit the sentence uses. A number column would make
+ * the screen re-decide formatting the writer had already decided, and "41×" is
+ * not a quantity in any unit this schema knows.
+ */
+export const deliverySection = mysqlTable('delivery_section', {
+  id: id(),
+  deliveryId: fk('delivery_id').notNull(),
+  position: smallint({ unsigned: true }).notNull().default(0),
+  /** Absent means this block continues the one above rather than opening. */
+  title: varchar({ length: 200 }),
+  body: text().notNull(),
+  highlight: varchar({ length: 40 }),
+  highlightLabel: varchar('highlight_label', { length: 160 }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt()
+}, t => [
+  uniqueIndex('uq_section_position').on(t.deliveryId, t.position),
+  index('ix_section_delivery').on(t.deliveryId, t.position)
+])
+
 /** Three states, not two: `blocked` is what a checkbox threw away. */
 export const stepStatus = mysqlTable('step_status', {
   id: id(),
@@ -230,7 +254,12 @@ export const request = mysqlTable('request', {
   kind: mysqlEnum(['data', 'action', 'question', 'material']).notNull().default('data'),
   raisedBySide: mysqlEnum('raised_by_side', ['consultant', 'client']).notNull().default('consultant'),
   priority: mysqlEnum(['low', 'medium', 'high']).notNull().default('medium'),
-  state: mysqlEnum(['open', 'in_progress', 'delivered', 'dropped']).notNull().default('open'),
+  /* In the order the baton travels. `analyzing` is the only one that promises
+     human attention, which is why nothing sets it automatically. */
+  state: mysqlEnum(['open', 'answered', 'analyzing', 'concluded', 'dropped'])
+    .notNull().default('open'),
+  /** What came out of it. Required to conclude — see `lib/pedido-store.ts`. */
+  outcome: text(),
   dueOn: date('due_on', { mode: 'string' }),
   openedBy: fk('opened_by'),
   closedAt: datetime('closed_at'),
@@ -326,6 +355,15 @@ export const metricTarget = mysqlTable('metric_target', {
   baselineOn: date('baseline_on', { mode: 'string' }),
   target: decimal({ precision: 16, scale: 6 }),
   contaminated: tinyint().notNull().default(0),
+  /**
+   * Which metric decides THIS cycle.
+   *
+   * Not `metric_def.tier`: that classifies the catalogue, and a metric demoted
+   * there would rewrite what a closed cycle claims it was steering by. A cycle
+   * has exactly one, enforced by a unique index over a generated column — see
+   * `db/migrations/009-norte-por-ciclo.sql`.
+   */
+  isNorthStar: tinyint('is_north_star').notNull().default(0),
   note: text(),
   createdAt: createdAt(),
   updatedAt: updatedAt()

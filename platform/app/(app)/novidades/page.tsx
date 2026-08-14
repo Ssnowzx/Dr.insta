@@ -97,11 +97,27 @@ export default async function Novidades () {
             tom="critico"
             acao={{ href: '/conta', rotulo: 'ver a conexão' }}
           />
+          {/* Second, and above everything she did: this is not news about her,
+              it is a debt of his. The product cheerfully counted her homework
+              and never once counted his — and his silence was invisible here
+              while being perfectly visible to her, as no answer. */}
+          <Grupo
+            titulo="Ela respondeu e ninguém abriu"
+            itens={digest.stale}
+            tom="critico"
+            acao={{ href: '/pedidos', rotulo: 'ver a fila' }}
+          />
           <Grupo
             titulo="Não conseguiu entrar"
             itens={digest.askedForAccess}
             tom="critico"
             acao={{ href: '/conta', rotulo: 'gerar link de acesso' }}
+          />
+          <Grupo
+            titulo="Ela pediu uma coisa"
+            itens={digest.raisedByHer}
+            tom="critico"
+            acao={{ href: '/pedidos', rotulo: 'abrir o pedido' }}
           />
           <Grupo titulo="Travou" itens={digest.blocked} tom="critico" />
           <Grupo titulo="Mandou arquivo" itens={digest.files} tom="dado" />
@@ -145,19 +161,47 @@ function Grupo ({
 }) {
   if (itens.length === 0) return null
 
+  const primeiro = itens[0] as DigestItem
+
+  /* When every line would repeat the same detail and the same byline, they are
+     not information — they are the same sentence printed N times. Five new
+     requests used to render fifteen lines: five titles, five identical "Novo
+     pedido para você", five identical "Rodrigo · 12 ago". Said once at the top,
+     the group becomes five lines and the titles are what the eye lands on. */
+  const detalheIgual = itens.length > 1 &&
+    itens.every(i => i.detail === primeiro.detail) &&
+    primeiro.detail !== null && primeiro.detail !== ''
+
+  const assinaturaIgual = itens.length > 1 && itens.every(
+    i => i.who === primeiro.who && shortDate(i.at) === shortDate(primeiro.at)
+  )
+
   return (
     <div className={`grupo grupo-${tom}`}>
       <p className="grupo-titulo">
         {titulo} <span className="numero grupo-n">{itens.length}</span>
       </p>
+
+      {detalheIgual && <p className="grupo-detalhe">{primeiro.detail}</p>}
+      {assinaturaIgual && (
+        <p className="grupo-quem">{primeiro.who} · {shortDate(primeiro.at)}</p>
+      )}
+
       <ul className="grupo-lista">
         {itens.map((i, n) => (
           <li key={`${i.title}-${n}`}>
-            <p className="grupo-item">{i.title}</p>
-            {i.detail !== null && i.detail !== '' && (
+            <p className="grupo-item">
+              {i.title}
+              {i.count !== undefined && (
+                <> <span className="numero grupo-n">{i.count}</span></>
+              )}
+            </p>
+            {!detalheIgual && i.detail !== null && i.detail !== '' && (
               <p className="grupo-detalhe">{i.detail}</p>
             )}
-            <p className="grupo-quem">{i.who} · {shortDate(i.at)}</p>
+            {!assinaturaIgual && (
+              <p className="grupo-quem">{i.who} · {shortDate(i.at)}</p>
+            )}
           </li>
         ))}
       </ul>

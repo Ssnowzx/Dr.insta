@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import { auditLog, file, request as requestTable, requestEvent } from '@/db/schema'
 import { requireSession } from '@/lib/dal'
+import { findRequest, promoteOnDelivery } from '@/lib/pedido-store'
 import { canReach } from '@/lib/scope'
 import {
   ACCEPTED_LABEL, buildPath, decodeName, isAccepted, MAX_BYTES, storeStream
@@ -48,17 +49,11 @@ export async function POST (req: NextRequest): Promise<NextResponse> {
 
   /* Resolve the request from its public code and read ITS client, rather than
      trusting a client id from the caller. */
-  const rows = await orm()
-    .select({ id: requestTable.id, clientId: requestTable.clientId, state: requestTable.state })
-    .from(requestTable)
-    .where(eq(requestTable.publicCode, publicCode))
-    .limit(1)
-
-  const target = rows[0]
+  const target = await findRequest(publicCode)
 
   /* Absent and out-of-scope answer identically. A distinct 403 would confirm the
      request exists, and a public code is guessable enough to probe with. */
-  if (target === undefined || !canReach(identity, target.clientId)) {
+  if (target === null || !canReach(identity, target.clientId)) {
     return fail('Esse pedido não está mais aqui.', 404)
   }
 
@@ -109,24 +104,20 @@ export async function POST (req: NextRequest): Promise<NextResponse> {
     ...(fileId === undefined ? {} : { fileId })
   })
 
-  /* An open request moves to in_progress on its first file. Marking it
-     `delivered` automatically would decide on her behalf that this was
-     everything I asked for. */
-  if (target.state === 'open') {
-    await orm()
-      .update(requestTable)
-      .set({ state: 'in_progress', updatedAt: now })
-      .where(and(eq(requestTable.id, target.id), eq(requestTable.state, 'open')))
+  /* The same promotion the comment path uses, from the same module. It moves an
+     open request to `answered` and stops there.
 
-    await orm().insert(requestEvent).values({
-      requestId: target.id,
-      userId: identity.userId,
-      kind: 'state_change',
-      fromState: 'open',
-      toState: 'in_progress',
-      createdAt: now
-    })
-  }
+     It does NOT reach `analyzing`, and it does not reach `concluded`.
+     `concluded` would decide on her behalf that this was everything I asked
+     for; `analyzing` would claim a person is reading it, seconds after upload,
+     while nobody is. On 13/08/2026 sixteen files landed through this very route
+     and her screen said "em andamento" from that second on — which is the label
+     this whole chain was rebuilt to stop telling. */
+  await promoteOnDelivery(
+    target,
+    { userId: identity.userId, role: identity.role },
+    now
+  )
 
   const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
   await orm().insert(auditLog).values({

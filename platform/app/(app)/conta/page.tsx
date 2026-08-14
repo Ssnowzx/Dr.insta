@@ -6,7 +6,7 @@ import { signOut } from '@/lib/auth-actions'
 import { clientProfile, clientUsers } from '@/lib/dashboard'
 import { clientScope, requireSession } from '@/lib/dal'
 import { shortDate } from '@/lib/format'
-import { connectionFor } from '@/lib/instagram/connection'
+import { connectionFor, failedAttempts } from '@/lib/instagram/connection'
 import { credentialsFromEnv } from '@/lib/instagram/oauth'
 
 export const metadata: Metadata = { title: 'Conta' }
@@ -27,7 +27,10 @@ export default async function Conta ({
      self-service path. The consultant mints a link here and relays it. */
   const pessoas = consultor ? await clientUsers(clientId) : []
 
-  const conexao = await connectionFor(clientId)
+  const [conexao, falhas] = await Promise.all([
+    connectionFor(clientId),
+    failedAttempts(clientId)
+  ])
   /* `searchParams` is a Promise in Next 16 — reading it as a plain object
      silently yields undefined. */
   const { instagram } = await searchParams
@@ -118,6 +121,7 @@ export default async function Conta ({
 
       <InstagramSection
         conexao={conexao}
+        falhas={falhas}
         configurado={credentialsFromEnv(process.env.APP_URL ?? '') !== null}
         ehCliente={!consultor}
         {...(instagram === undefined ? {} : { resultado: instagram })}

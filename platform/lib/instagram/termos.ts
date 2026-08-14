@@ -19,13 +19,23 @@
  * Bump this whenever either list changes. Dated rather than numbered so the
  * value itself says when it was written.
  */
-export const TERMS_VERSION = '2026-08-07'
+export const TERMS_VERSION = '2026-08-13'
 
-/** What the platform will read. */
+/**
+ * What the platform will read.
+ *
+ * The list has to match `lib/instagram/collect.ts`, not the current cycle. On
+ * 13/08/2026 it was missing followers — collected as `follows_and_unfollows`
+ * and the number the cycle is decided on — while naming bio-link clicks, which
+ * left scope on 12/08. The temptation was to drop the clicks line for tidiness;
+ * that would have produced the same gap inverted, since they are still fetched.
+ * A consent list is an inventory of what is read, not a statement of intent.
+ */
 export const LE = [
+  'Quantas pessoas passaram a te seguir e quantas deixaram — os totais do período, nunca quem',
   'Quantas contas viram seus posts, e quantas abriram seu perfil',
   'Salvamentos, compartilhamentos, curtidas e comentários — os totais, não quem fez',
-  'Cliques no link da sua bio',
+  'Cliques no link da sua bio — coletado, hoje só de interesse da equipe da marca',
   'A lista dos seus posts, com data, duração e legenda',
   'Até onde as pessoas assistem seus Reels, em média',
   'Faixa etária, gênero e cidade de quem te acompanha — somados, nunca pessoa por pessoa'

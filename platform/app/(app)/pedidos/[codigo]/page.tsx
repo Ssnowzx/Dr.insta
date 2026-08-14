@@ -7,6 +7,7 @@ import { requestDetail } from '@/lib/dashboard'
 import { requireSession } from '@/lib/dal'
 import { canReach } from '@/lib/scope'
 import { longDate, shortDate } from '@/lib/format'
+import { LABEL, narrate, turnOf } from '@/lib/pedido'
 
 export const metadata: Metadata = { title: 'Pedido' }
 export const dynamic = 'force-dynamic'
@@ -18,21 +19,6 @@ const TIPO: Record<string, string> = {
   material: 'um material'
 }
 
-const ESTADO: Record<string, { rot: string; classe: string }> = {
-  open: { rot: 'em aberto', classe: 'selo-atencao' },
-  in_progress: { rot: 'em andamento', classe: 'selo-neutro' },
-  delivered: { rot: 'entregue', classe: 'selo-ok' },
-  dropped: { rot: 'dispensado', classe: 'selo-neutro' }
-}
-
-/** The state change, written the way a person would say it out loud. */
-function narrar (de: string | null, para: string | null): string {
-  if (para === 'in_progress') return 'começou a mexer nisso'
-  if (para === 'delivered') return 'marcou como entregue'
-  if (para === 'dropped') return 'dispensou este pedido'
-  if (para === 'open') return de === null ? 'abriu o pedido' : 'reabriu o pedido'
-  return 'mudou o estado'
-}
 
 /**
  * One request, with everything that happened to it.
@@ -56,7 +42,7 @@ export default async function Pedido ({
      way to test whether a request exists. */
   if (pedido === null) notFound()
 
-  const estado = ESTADO[pedido.state] ?? ESTADO.open
+  const estado = LABEL[pedido.state]
   const arquivos = pedido.events.filter(e => e.kind === 'file' && e.fileCode !== null)
 
   return (
@@ -109,13 +95,31 @@ export default async function Pedido ({
         </section>
       )}
 
+      {pedido.outcome !== null && pedido.outcome !== '' && (
+        <section className="secao">
+          <div className="secao-cab">
+            <h2 className="titulo-secao">O que saiu daqui</h2>
+          </div>
+          <div className="grupo grupo-ok">
+            <p className="grupo-item"><RequestText text={pedido.outcome} /></p>
+          </div>
+        </section>
+      )}
+
       <section className="secao">
         <div className="secao-cab">
           <h2 className="titulo-secao">
-            {identity.role === 'consultant' ? 'Responder por ela' : 'Sua vez'}
+            {turnOf(pedido.state, pedido.raisedBySide) === identity.role
+              ? 'Sua vez'
+              : 'O que você pode fazer aqui'}
           </h2>
         </div>
-        <RequestActions pedido={pedido.publicCode} estado={pedido.state} />
+        <RequestActions
+          pedido={pedido.publicCode}
+          estado={pedido.state}
+          papel={identity.role}
+          levantadoPor={pedido.raisedBySide}
+        />
       </section>
 
       <section className="secao">
@@ -137,7 +141,7 @@ export default async function Pedido ({
                     </p>
 
                     {e.kind === 'state_change' && (
-                      <p className="evento-texto">{narrar(e.fromState, e.toState)}</p>
+                      <p className="evento-texto">{narrate(e.fromState, e.toState)}</p>
                     )}
 
                     {e.kind === 'comment' && e.body !== null && (

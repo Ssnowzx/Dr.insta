@@ -1,5 +1,20 @@
 # Pilares editoriais
 
+> **Revisto em 13/08/2026** para o ciclo de seguidores. O mix em vigor é
+> **Espelho 45% · Opinião 30% · Vale guardar 15% · Personagens 10%**, sem aumento de
+> volume — ela já publica cerca de 8 Reels por semana.
+>
+> O pilar **Opinião** é novo e é o centro: vídeo longo em que ela diz o que acha de
+> perfume, make, tendência ou o que usar em cada ocasião. Evidência: "meus top 5 perfumes"
+> (99s) trouxe 3.131 seguidores contra 45 dos quatro episódios sobre a coleção, com
+> alcance parecido — 41× de diferença.
+>
+> **Pauta cujo sujeito é a marca sai do perfil pessoal** enquanto seguidores forem o norte.
+> Não é julgamento de qualidade: 179 mil pessoas alcançadas por 45 seguidores não paga o
+> espaço. É assunto da equipe da My Favorite.
+>
+> O detalhamento abaixo é do ciclo anterior e será reescrito na próxima revisão de pauta.
+
 > 3 a 5 pilares. Menos que 3, o perfil fica raso. Mais que 5, fica sem identidade
 > e o algoritmo tem dificuldade de entender para quem recomendar a conta.
 
@@ -13,7 +28,7 @@ A marca pode aparecer, mas como escolha dela, na voz dela, nunca como pauta obri
 
 | Pilar | % | Papel estratégico | Métrica que ele move |
 |---|---|---|---|
-| **Espelho** | 50% | Motor de distribuição. É o que traz não-seguidor e sustenta o alcance. Não se mexe | sends/reach |
+| **Espelho** | 45% | Motor de distribuição. É o que traz não-seguidor e sustenta o alcance. Não se mexe | sends/reach |
 | **Conversa** | 20% | Converte reconhecimento em comentário: pauta que termina em pergunta na voz dela | **comentários/reach** |
 | **Vale guardar** | 20% | Conserta o salvamento com utilidade no formato dela — qualquer marca | **saves/reach** |
 | **Personagens** | 10% | Recorrência: a mesma pessoa voltando para ver o próximo episódio | retorno + comentários |

@@ -79,14 +79,48 @@ export default async function Plano () {
 
   const ciclo = await activeCycle(clientId)
 
-  const [lista, respostas, ensaios, mix] = await Promise.all([
+  const [todasEntregas, respostas, ensaios, mix] = await Promise.all([
     deliveries(clientId, identity.userId),
     ehConsultor ? clientStepAnswers(clientId) : Promise.resolve([]),
     ciclo === null ? Promise.resolve([]) : experiments(clientId, ciclo.id),
     ciclo === null ? Promise.resolve([]) : pillars(clientId, ciclo.id)
   ])
 
-  const porEtapa = new Map(respostas.map(r => [r.stepId, r]))
+  /* `deliveries()` stopped using an INNER JOIN on `step`, so it now returns the
+     deliveries that are read rather than done. This screen is the chores; a
+     step-less delivery here would render a heading, an empty score and nothing
+     under it. They live in /analise. */
+  const lista = todasEntregas.filter(e => e.steps.length > 0)
+
+  /* First entry wins, not last. `clientStepAnswers` orders by `updatedAt`
+     descending, and `new Map(pairs)` keeps the LAST pair for a repeated key —
+     so building it straight from the list handed the consultant the OLDEST
+     answer for any step two client users had both touched. */
+  const porEtapa = new Map<number, typeof respostas[number]>()
+  for (const r of respostas) if (!porEtapa.has(r.stepId)) porEtapa.set(r.stepId, r)
+
+  /**
+   * The state of a step, from the right person's point of view.
+   *
+   * `deliveries()` joins `step_status` on the id of whoever is reading, and the
+   * consultant has never marked anything — so every step reads `pending` for
+   * him. The headline then said "Faltam 3" and every score said "0 de 3" while
+   * the blocks right below listed, correctly, what she had already marked done.
+   * One screen contradicting itself.
+   *
+   * For him the answer is hers, which is what `clientStepAnswers` loaded. For
+   * her it is her own row, which is what the join already resolved.
+   */
+  const estadoDe = (etapa: { id: number; state: string }): string =>
+    ehConsultor ? porEtapa.get(etapa.id)?.state ?? 'pending' : etapa.state
+
+  /* Blocked does NOT count as pending. It is not waiting on her — she already
+     told me it stopped, and the next move is mine. Counting it here would keep
+     the headline asking her for something she has finished asking me about. */
+  const pendentes = lista
+    .flatMap(e => e.steps)
+    .filter(s => estadoDe(s) !== 'done' && estadoDe(s) !== 'blocked')
+    .length
 
   if (lista.length === 0) {
     return (
@@ -100,88 +134,29 @@ export default async function Plano () {
 
   return (
     <>
+      {/* The lead answers "what is this screen", which she already knows by
+          the time she has clicked Plano. What she does not know is how much is
+          left — so that is what it says now, and the instructions moved to
+          where the checkboxes actually are. */}
       <header className="pagina-cab">
         <p className="sobrancelha">O que fazer</p>
-        <h1 className="display">Seu plano</h1>
+        <h1 className="display">
+          {pendentes === 0
+            ? 'Tudo marcado.'
+            : pendentes === 1
+              ? 'Falta um.'
+              : `Faltam ${pendentes}.`}
+        </h1>
         <p className="lead">
-          Cada item traz o número que o motivou. Marque conforme for fazendo — não
-          precisa esperar terminar tudo. E se algum travar, me conta o que travou:
-          isso é tão útil quanto o que deu certo.
+          {pendentes === 0
+            ? 'Nada pendente aqui. Quando eu publicar o próximo passo, ele aparece nesta tela.'
+            : 'Marque conforme for fazendo — não precisa terminar tudo. E se algum travar, me conta o que travou: isso é tão útil quanto o que deu certo.'}
         </p>
       </header>
 
-      {/* The mix comes BEFORE the chores.
-
-          The five adjustments are what to do; the pillars are what they are for.
-          Presented after, they read as an appendix nobody reaches; presented
-          first, each chore below arrives already belonging to something. This
-          whole section lived in a markdown file she has never opened. */}
-      {mix.length > 0 && (
-        <section className="secao">
-          <div className="secao-cab">
-            <h2 className="titulo-secao">Como o seu conteúdo se divide</h2>
-            <p className="secao-nota">o mesmo volume, outra proporção</p>
-          </div>
-
-          <p className="rodape-nota" style={{ marginTop: 0, marginBottom: '1.25rem' }}>
-            Você publica cerca de 8 Reels por semana e escreve tudo sozinha. Isto
-            aqui <strong>não pede nada a mais</strong> — é a mesma quantidade,
-            dividida de outro jeito.
-          </p>
-
-          <MixBarra pilares={mix} />
-
-          <ol className="pilares">
-            {mix.map(p => (
-              <li className={p.isControl ? 'pilar pilar-controle' : 'pilar'} key={p.id}>
-                <div className="pilar-cab">
-                  <h3 className="pilar-nome">{p.name}</h3>
-                  {p.sharePct !== null && (
-                    <span className="numero pilar-share">{p.sharePct}%</span>
-                  )}
-                  {p.isControl && <span className="selo selo-neutro">não mexer</span>}
-                </div>
-
-                {p.perWeek !== null && <p className="pilar-ritmo">{p.perWeek}</p>}
-                {p.thesis !== null && <p className="pilar-tese">{p.thesis}</p>}
-                {p.roleNote !== null && <p className="pilar-papel">{p.roleNote}</p>}
-                {p.evidence !== null && <p className="pilar-prova">{p.evidence}</p>}
-
-                <dl className="pilar-regras">
-                  {p.metricLabel !== null && (
-                    <div>
-                      <dt>move</dt>
-                      <dd>{p.metricLabel}</dd>
-                    </div>
-                  )}
-                  {p.successLabel !== null && (
-                    <div>
-                      <dt>dá certo se</dt>
-                      <dd>{p.successLabel}</dd>
-                    </div>
-                  )}
-                </dl>
-              </li>
-            ))}
-          </ol>
-
-          {/* The price of the mix, on the same screen as the mix and not in a
-              footnote. Reallocating trades reach for arrival, and for the first
-              weeks the fall is the only visible half of that trade — which is
-              how someone concludes they broke it and reverts a week before the
-              reading window closes. */}
-          {ciclo?.tradeOff != null && (
-            <p className="troca">
-              <span className="troca-rot">o que isso custa</span>
-              {ciclo.tradeOff}
-            </p>
-          )}
-        </section>
-      )}
-
       {lista.map(entrega => {
-        const feitos = entrega.steps.filter(s => s.state === 'done').length
-        const travados = entrega.steps.filter(s => s.state === 'blocked').length
+        const feitos = entrega.steps.filter(s => estadoDe(s) === 'done').length
+        const travados = entrega.steps.filter(s => estadoDe(s) === 'blocked').length
         const total = entrega.steps.length
         const parte = total === 0 ? 0 : (feitos / total) * 100
 
@@ -221,12 +196,17 @@ export default async function Plano () {
             <ol className="etapas">
               {entrega.steps.map(etapa => {
                 const resposta = porEtapa.get(etapa.id)
-                const selo = etapa.state === 'done'
+                /* `estadoDe` and not `etapa.state`: the row's own styling is the
+                   one thing rendered outside the two branches below, so on the
+                   consultant's side it was the last place still painting every
+                   step as untouched. */
+                const estado = estadoDe(etapa)
+                const selo = estado === 'done'
                   ? 'ok'
-                  : etapa.state === 'blocked' ? 'critico' : 'neutro'
+                  : estado === 'blocked' ? 'critico' : 'neutro'
 
                 return (
-                  <li className={`etapa etapa-${etapa.state}`} key={etapa.id}>
+                  <li className={`etapa etapa-${estado}`} key={etapa.id}>
                     <div className="etapa-cab">
                       <span className="etapa-prazo">
                         {etapa.deadlineLabel ?? URGENCIA[etapa.urgency]}
@@ -313,6 +293,78 @@ export default async function Plano () {
           </section>
         )
       })}
+
+      {/* The mix used to come BEFORE the chores, on the argument that a chore
+          arrives better when it already belongs to something. Moved below them
+          on 13/08/2026, after reading the rendered screen.
+
+          The argument was right about reading order and wrong about who reads.
+          She opens this with one question — what do I do — and answering it on
+          line four of a 1.500-word page means the answer is reached by
+          scrolling past the reasoning. The reasoning was not deleted; it moved
+          to where reasoning belongs, after the thing it justifies. */}
+      {mix.length > 0 && (
+        <section className="secao">
+          <div className="secao-cab">
+            <h2 className="titulo-secao">Como o seu conteúdo se divide</h2>
+            <p className="secao-nota">o mesmo volume, outra proporção</p>
+          </div>
+
+          <p className="rodape-nota" style={{ marginTop: 0, marginBottom: '1.25rem' }}>
+            Você publica cerca de 8 Reels por semana e escreve tudo sozinha. Isto
+            aqui <strong>não pede nada a mais</strong> — é a mesma quantidade,
+            dividida de outro jeito.
+          </p>
+
+          <MixBarra pilares={mix} />
+
+          <ol className="pilares">
+            {mix.map(p => (
+              <li className={p.isControl ? 'pilar pilar-controle' : 'pilar'} key={p.id}>
+                <div className="pilar-cab">
+                  <h3 className="pilar-nome">{p.name}</h3>
+                  {p.sharePct !== null && (
+                    <span className="numero pilar-share">{p.sharePct}%</span>
+                  )}
+                  {p.isControl && <span className="selo selo-neutro">não mexer</span>}
+                </div>
+
+                {p.perWeek !== null && <p className="pilar-ritmo">{p.perWeek}</p>}
+                {p.thesis !== null && <p className="pilar-tese">{p.thesis}</p>}
+                {p.roleNote !== null && <p className="pilar-papel">{p.roleNote}</p>}
+                {p.evidence !== null && <p className="pilar-prova">{p.evidence}</p>}
+
+                <dl className="pilar-regras">
+                  {p.metricLabel !== null && (
+                    <div>
+                      <dt>move</dt>
+                      <dd>{p.metricLabel}</dd>
+                    </div>
+                  )}
+                  {p.successLabel !== null && (
+                    <div>
+                      <dt>dá certo se</dt>
+                      <dd>{p.successLabel}</dd>
+                    </div>
+                  )}
+                </dl>
+              </li>
+            ))}
+          </ol>
+
+          {/* The price of the mix, on the same screen as the mix and not in a
+              footnote. Reallocating trades reach for arrival, and for the first
+              weeks the fall is the only visible half of that trade — which is
+              how someone concludes they broke it and reverts a week before the
+              reading window closes. */}
+          {ciclo?.tradeOff != null && (
+            <p className="troca">
+              <span className="troca-rot">o que isso custa</span>
+              {ciclo.tradeOff}
+            </p>
+          )}
+        </section>
+      )}
 
       {/* The experiments. Four of them sat in the database from the first seed
           and no screen ever read them, so the plan arrived as a list of chores

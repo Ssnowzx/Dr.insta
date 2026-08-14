@@ -6,6 +6,8 @@ import {
   step, stepStatus, user
 } from '@/db/schema'
 import { shortDate } from './format.ts'
+import { staleRequests } from './dashboard.ts'
+import { DIAS_ATE_COBRAR, hasOutcome } from './pedido.ts'
 
 /**
  * What a client did in a window, for the daily summary.
@@ -22,6 +24,50 @@ export interface DigestItem {
   detail: string | null
   at: Date
   who: string
+  /** How many events this one line stands for. Absent means one. */
+  count?: number
+  /** What the line is about, for merging. The title is not unique. */
+  key?: string | number
+}
+
+/**
+ * Collapses repetition, because a summary that lists every event is a log.
+ *
+ * On 13/08/2026 she uploaded sixteen files across three requests and the
+ * screen rendered sixteen lines, fourteen of which said the same thing. The
+ * reader's job became scrolling, and the two items that actually needed a
+ * decision were buried among identical rows.
+ *
+ * Merged by title, so "she sent eight files to the retention request" is one
+ * line carrying a count — the information is not lost, it is stated once.
+ */
+function condensar (itens: DigestItem[]): DigestItem[] {
+  const porTitulo = new Map<string | number, DigestItem[]>()
+
+  for (const i of itens) {
+    /* By the request, not by its title. Two requests can carry the same words
+       and merging them would report one upload session that never happened. */
+    const chave = i.key ?? i.title
+    const lista = porTitulo.get(chave)
+    if (lista === undefined) porTitulo.set(chave, [i])
+    else lista.push(i)
+  }
+
+  return [...porTitulo.values()].map(lista => {
+    const primeiro = lista[0] as DigestItem
+    if (lista.length === 1) return primeiro
+
+    /* The first detail plus a count, rather than all of them joined: the point
+       of collapsing is not to move the wall of text one level down. */
+    const resto = lista.length - 1
+    return {
+      ...primeiro,
+      count: lista.length,
+      detail: primeiro.detail === null
+        ? null
+        : `${primeiro.detail} e mais ${resto}`
+    }
+  })
 }
 
 export interface Digest {
@@ -37,6 +83,17 @@ export interface Digest {
   delivered: DigestItem[]
   /** Someone tried to sign in and could not. There is no reset email, so this is how he finds out. */
   askedForAccess: DigestItem[]
+  /** Requests she opened. Until now nothing here ever looked at the request table. */
+  raisedByHer: DigestItem[]
+  /**
+   * Material she sent that he never opened.
+   *
+   * Not bounded by the window, like `connection` and for the same reason: this
+   * is a state, not an event. A request that has been sitting for nine days
+   * should not stop being reported because the day it arrived scrolled away —
+   * that is precisely when it most needs saying.
+   */
+  stale: DigestItem[]
   /**
    * The Instagram connection stopped working.
    *
@@ -111,7 +168,9 @@ export async function digestFor (
       toState: requestEvent.toState,
       at: requestEvent.createdAt,
       who: user.name,
+      requestId: request.id,
       requestTitle: request.title,
+      outcome: request.outcome,
       fileName: file.originalName
     })
     .from(requestEvent)
@@ -131,17 +190,20 @@ export async function digestFor (
   const delivered: DigestItem[] = []
 
   for (const r of eventRows) {
-    const base = { title: r.requestTitle, at: r.at, who: r.who }
+    const base = { title: r.requestTitle, at: r.at, who: r.who, key: r.requestId }
     if (r.kind === 'file') {
       files.push({ ...base, detail: r.fileName ?? r.body })
     } else if (r.kind === 'comment') {
       comments.push({ ...base, detail: r.body })
-    } else if (r.kind === 'state_change' && r.toState === 'delivered') {
-      delivered.push({ ...base, detail: null })
+    } else if (r.kind === 'state_change' && r.toState === 'concluded') {
+      /* The outcome here too. The fix landed only on her side, and his was
+         throwing away a text that cannot be absent — concluding without one is
+         refused in `pedido-store.ts`. */
+      delivered.push({ ...base, detail: hasOutcome(r.outcome) ? r.outcome : null })
     }
-    /* `in_progress` transitions are deliberately dropped: they fire
-       automatically on the first upload or comment, so reporting them would
-       double-count the very event that caused them. */
+    /* `answered` transitions are deliberately dropped: they fire automatically
+       on the first upload or comment, so reporting them would double-count the
+       very event that caused them. */
   }
 
   // ------------------------------------------------ asked for access
@@ -167,11 +229,55 @@ export async function digestFor (
     who: r.who
   }))
 
+  // ----------------------------------------------------- raised by her
+  /* Nothing in this digest ever consulted the `request` table itself, because
+     until now only the seed could create a row and every request was his. With
+     both sides able to open one, a request she raises would otherwise reach him
+     only if she also commented on it. */
+  const dela = await orm()
+    .select({ title: request.title, detail: request.description, at: request.createdAt })
+    .from(request)
+    .where(and(
+      eq(request.clientId, clientId),
+      eq(request.raisedBySide, 'client'),
+      gte(request.createdAt, since),
+      lt(request.createdAt, until)
+    ))
+    .orderBy(desc(request.createdAt))
+
+  const raisedByHer: DigestItem[] = dela.map(r => ({
+    title: r.title,
+    detail: r.detail,
+    at: r.at,
+    who: c.name
+  }))
+
+  // ------------------------------------------------------------- stale
+  const stale = await staleRequests(clientId, new Date(
+    until.getTime() - DIAS_ATE_COBRAR * 24 * 60 * 60 * 1000
+  ))
+
+  const paradas: DigestItem[] = stale.map(r => {
+    const dias = Math.floor((until.getTime() - r.updatedAt.getTime()) / (24 * 60 * 60 * 1000))
+    return {
+      title: r.title,
+      detail: `há ${dias} dias`,
+      at: r.updatedAt,
+      who: c.name
+    }
+  })
+
   // ------------------------------------------------------ connection
   const connection = await connectionTrouble(clientId, until)
 
-  const total = blocked.length + done.length + files.length +
-    comments.length + delivered.length + askedForAccess.length + connection.length
+  /* Condensed BEFORE counting. The headline number and the list under it have
+     to be the same thing: saying "25 novidades" above twelve lines teaches the
+     reader that the number is decoration. */
+  const arquivos = condensar(files)
+
+  const total = blocked.length + done.length + arquivos.length +
+    comments.length + delivered.length + askedForAccess.length +
+    raisedByHer.length + paradas.length + connection.length
 
   return {
     clientId: c.id,
@@ -180,10 +286,15 @@ export async function digestFor (
     until,
     blocked,
     done,
-    files,
+    /* Files are the one group that reliably repeats: one upload session is many
+       events on the same request. Comments are NOT condensed — each one carries
+       different words, and merging them would throw away what she wrote. */
+    files: arquivos,
     comments,
     delivered,
     askedForAccess,
+    raisedByHer,
+    stale: paradas,
     connection,
     total
   }
@@ -262,7 +373,10 @@ export async function clientDigestFor (
       /* Only what he asked of her. A request she raised herself is not news to
          her, and `dropped` is not waiting on anyone. */
       eq(request.raisedBySide, 'consultant'),
-      inArray(request.state, ['open', 'in_progress']),
+      /* `open` alone, now that the chain says whose turn it is. Once she has
+         answered, the ball is his — and listing it here as "novo pedido para
+         você" would ask her again for something she already sent. */
+      eq(request.state, 'open'),
       gte(request.createdAt, since),
       lt(request.createdAt, until)
     ))
@@ -301,7 +415,8 @@ export async function clientDigestFor (
       body: requestEvent.body,
       at: requestEvent.createdAt,
       kind: requestEvent.kind,
-      toState: requestEvent.toState
+      toState: requestEvent.toState,
+      outcome: request.outcome
     })
     .from(requestEvent)
     .innerJoin(request, eq(request.id, requestEvent.requestId))
@@ -320,8 +435,17 @@ export async function clientDigestFor (
   for (const r of respostas) {
     if (r.kind === 'comment') {
       answered.push({ title: r.title, detail: r.body, at: r.at, who: 'Rodrigo' })
-    } else if (r.toState === 'delivered') {
-      answered.push({ title: r.title, detail: 'Fechado.', at: r.at, who: 'Rodrigo' })
+    } else if (r.toState === 'concluded') {
+      /* The outcome, not the word "Fechado.". Concluding now requires writing
+         what came out of the request, and announcing the close while throwing
+         that text away would tell her something happened and hide the only
+         part she asked for. */
+      answered.push({
+        title: r.title,
+        detail: hasOutcome(r.outcome) ? r.outcome : 'Fechado.',
+        at: r.at,
+        who: 'Rodrigo'
+      })
     }
   }
 

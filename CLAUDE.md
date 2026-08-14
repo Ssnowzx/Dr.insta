@@ -38,19 +38,31 @@ Escreva em **português do Brasil**, direto, sem jargão vazio ("engajar a audi�
 |---|---|
 | Tipo | Conta única (não é agência) |
 | Nicho | **Moda / Lifestyle** — sempre rode o motor com `--nicho lifestyle` |
-| Objetivo — próximos 90 dias | **Engajamento do perfil dela** — conversa pública e recorrente no @bianca.olivo |
-| Métrica-norte | Comentários por alcance (0,21% → ≥ 0,50%) |
+| Objetivo — próximos 90 dias | **Fazer quem ainda não a segue virar seguidor** — 1M até dezembro, alvo declarado por ela |
+| Métrica-norte | Seguidores líquidos por mês (20.824 → 62.200) |
 | Fonte de dados | Input manual / CSV do Insights + API oficial quando ela conectar a conta na plataforma |
 
 O detalhamento vivo (bio, ICP, pilares, voz, metas) está em **`perfil/`**. Leia antes de qualquer recomendação de conteúdo. Se `perfil/perfil.md` ainda tem marcadores `[PREENCHER]`, colete o que falta antes de produzir plano editorial — mas não bloqueie análise de métricas por isso.
 
-**Consequência prática do objetivo escolhido:** priorize `comentários/reach`, `saves/reach` e retorno da mesma pessoa. Nesta ordem. Alcance e views são guard-rail — não podem cair, mas não são alvo.
+**Consequência prática do objetivo escolhido:** priorize `seguidores/alcance` e `visitas ao perfil/alcance`. Nesta ordem. Comentários, saves e sends viram **guard-rail com piso no próprio baseline** — não podem cair, e não são alvo.
 
-Atenção ao que **não** é o gargalo: alcance, sends/reach e resposta em Stories já estão em nível alto — em julho/2026 foram 5,4M de contas alcançadas, 284 mil compartilhamentos em Reels, 22 mil respostas em Stories e +20.824 seguidores. Reporte esses números, **não otimize**. O engajamento que falta é específico: comentário público (0,21% contra 0,50% do nicho) e salvamento (0,23% contra 1,40%). A audiência já conversa com ela — em privado; o ciclo leva essa conversa para o público.
+**O denominador muda para esta métrica.** A regra 1 continua valendo em geral, mas quem já segue não pode seguir de novo: conversão em seguidor se normaliza por **alcance de não-seguidor**, e toda taxa declara qual denominador usou.
 
-**O que saiu do escopo:** a relação perfil→loja (link, UTM, receita, conversão, voz de marca) é da **equipe da My Favorite** desde 12/08/2026, por decisão da cliente. O diagnóstico de conversão continua válido e vira handoff — não recomende mais nada que trate o perfil dela como canal de venda. Crescimento de seguidores segue como métrica de vaidade.
+Atenção ao que **não** é o gargalo: alcance total. Em julho/2026 foram 5,4M de contas alcançadas, 284 mil compartilhamentos e 22 mil respostas em Stories. O gargalo é o que acontece **depois** de alcançar. Medido sobre 376 posts de 16/02 a 12/08:
 
-> Este objetivo substituiu "Caminho até a compra" em **12/08/2026, por decisão da cliente**: o perfil pessoal é dela; a marca tem equipe própria. O ciclo anterior (04/08–12/08) fechou sem leitura — os experimentos não chegaram a rodar. Histórico completo em `openspec/` e `dados/bianca-olivo-2026-07/INDICE.md`.
+- Vídeo longo de opinião converte **41×** melhor que pauta institucional — 3.131 seguidores contra 45, com alcance parecido
+- E quase nunca chega em estranho: ~1% das visualizações do longo vêm de Explorar e Aba Reels, contra ~80% no curto
+- 39% de todo o alcance vai para vídeos de até 10s, que convertem 0,061%
+
+Ou seja: o conteúdo que faz estranho seguir não é mostrado a estranho, e o que os estranhos veem não os converte. Detalhe em `dados/metricas/` e na análise publicada para ela.
+
+**O que saiu do escopo:** a relação perfil→loja (link, UTM, receita, conversão, voz de marca) é da **equipe da My Favorite** desde 12/08/2026, por decisão da cliente. O diagnóstico de conversão continua válido e vira handoff — não recomende mais nada que trate o perfil dela como canal de venda.
+
+> Este objetivo substituiu "Engajamento do perfil dela" em **13/08/2026, por decisão da cliente**. Ela declarou a ordem do que quer ver — "primeiro seguidores, segundo comentários e likes, terceiro views" — e a meta de 1M até dezembro. O diagnóstico anterior não estava errado; respondia outra pergunta, e segue no painel como guard-rail.
+>
+> **Três ciclos, dois fechados sem leitura.** "Caminho até a compra" (04/08–12/08) e "O perfil que conversa" (12/08–13/08) terminaram antes da primeira leitura. Isso é padrão a observar: se o terceiro fechar igual, o problema deixou de ser a estratégia e passou a ser a cadência de troca de objetivo. Histórico em `openspec/`.
+>
+> **A aritmética, declarada:** faltam 286.162 seguidores em 140 dias — 62.200/mês, três vezes o ritmo atual. Conversão sozinha não fecha; a meta só fecha com conversão de 3–4× **somada** a um evento de escala por mês. Isso está escrito desde o dia um, não descoberto na semana 6.
 
 ---
 
@@ -163,7 +175,9 @@ Ao arquivar (`/opsx:archive`), escreva **o que realmente aconteceu com a métric
 
 ## 5. Regras de análise (inegociáveis)
 
-1. **Alcance é o denominador.** Toda taxa de interação usa alcance, não seguidores. Se o usuário só tem seguidores, calcule assim mas rotule explicitamente como `ER por seguidores (base inflada/deflacionada — não comparável entre contas)`.
+1. **Alcance é o denominador** — com um refinamento para o ciclo em vigor. Toda taxa de interação usa alcance, não seguidores. Se o usuário só tem seguidores, calcule assim mas rotule explicitamente como `ER por seguidores (base inflada/deflacionada — não comparável entre contas)`.
+
+   **Para conversão em seguidor, o denominador honesto é o alcance de não-seguidor.** Quem já segue não pode seguir de novo, e usar o alcance total mistura quem podia converter com quem não podia. Toda taxa de conversão declara qual denominador usou; sem essa declaração a leitura é incompleta.
 
 2. **Três sinais primários de ranqueamento**, na ordem: watch time/retenção → sends/reach → likes/reach. Sends (compartilhamento em DM) pesa muito mais que like para distribuição. Otimize nessa ordem.
 
@@ -252,3 +266,5 @@ OpenSpec: `/opsx:explore`, `/opsx:propose`, `/opsx:apply`, `/opsx:archive`, `/op
 - **Otimizar hashtag.** Hashtag hoje é um sinal fraco de descoberta. Se o usuário perguntar sobre hashtags, responda a pergunta honestamente e redirecione para o que move o ponteiro (retenção, sends, SEO de legenda/alt).
 - **Gerar calendário genérico.** Um calendário que serviria para qualquer conta de marketing não serve para esta. Ancore em `perfil/pilares.md` e `perfil/icp.md`.
 - **Confundir engajamento com engajamento útil.** Comentário "🔥" não é comunidade. Meça respostas com substância, DMs iniciadas e retorno da mesma pessoa.
+- **Elogiar formato pelo alcance.** Um Reel de 8 segundos com 2 milhões de views pode ter trazido 40 seguidores. Alcance e conversão são perguntas diferentes, e neste ciclo manda a segunda.
+- **Propor pauta cujo sujeito é a marca.** Sai do perfil pessoal enquanto seguidores forem o norte: 179 mil pessoas alcançadas por 45 seguidores não paga o espaço. Encaminhe para a equipe da My Favorite.

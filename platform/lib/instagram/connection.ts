@@ -1,7 +1,7 @@
 import 'server-only'
-import { and, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { orm } from '@/db/client'
-import { instagramConnection } from '@/db/schema'
+import { auditLog, instagramConnection } from '@/db/schema'
 import { open, seal } from '../crypto-box.ts'
 import { ulid } from '../ulid.ts'
 import { SCOPES } from './oauth.ts'
@@ -43,6 +43,48 @@ export async function connectionFor (clientId: number): Promise<ConnectionView |
     .limit(1)
 
   return rows[0] ?? null
+}
+
+/**
+ * Attempts that broke before a connection ever existed.
+ *
+ * A failed authorisation writes an audit row and nothing else: no
+ * `instagram_connection` row is created, so `connectionFor` returns null and
+ * every screen presents her as someone who has not tried. She tried three times
+ * on 13/08/2026 and the product showed her the same first-time invitation each
+ * time, with the same "pode tentar de novo" underneath.
+ *
+ * `detail` is the provider's own description and is for the consultant only —
+ * the same rule `ConnectionView.lastError` follows. She gets the consequence.
+ */
+export interface FailedAttempts {
+  count: number
+  lastAt: Date | null
+  detail: string | null
+}
+
+export async function failedAttempts (clientId: number): Promise<FailedAttempts> {
+  const rows = await orm()
+    .select({ at: auditLog.createdAt, details: auditLog.details })
+    .from(auditLog)
+    .where(and(
+      eq(auditLog.clientId, clientId),
+      eq(auditLog.action, 'instagram_auth_failed')
+    ))
+    .orderBy(desc(auditLog.createdAt))
+    .limit(20)
+
+  const ultima = rows[0]
+  if (ultima === undefined) return { count: 0, lastAt: null, detail: null }
+
+  /* `details` is JSON written by the route; reading it defensively because a
+     screen must not break over the shape of a log entry. */
+  const bruto = ultima.details
+  const detail = bruto !== null && typeof bruto === 'object' && 'detail' in bruto
+    ? String((bruto as { detail: unknown }).detail)
+    : null
+
+  return { count: rows.length, lastAt: ultima.at, detail }
 }
 
 export interface StoredToken {

@@ -1,10 +1,11 @@
 import 'server-only'
 import { cache } from 'react'
-import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, lt, or, sql } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import {
-  benchmark, client, cycle, delivery, experiment, metricDef, metricTarget,
-  metricValue, file, pillar, post, request, requestEvent, step, stepStatus, user
+  benchmark, client, cycle, delivery, deliverySection, experiment, metricDef,
+  metricTarget, metricValue, file, pillar, post, request, requestEvent, step,
+  stepStatus, user
 } from '@/db/schema'
 import { mediana } from './acervo.ts'
 import { ORIGENS_MEDIDAS, resolverPorChave } from './precedencia.ts'
@@ -108,6 +109,8 @@ export interface MetricCard {
   baseline: number | null
   target: number | null
   contaminated: boolean
+  /** Whether THIS cycle is decided by this metric. Not the catalogue's tier. */
+  isNorthStar: boolean
   targetNote: string | null
   benchmark: number | null
   benchmarkSource: string | null
@@ -159,6 +162,7 @@ export async function metrics (
       baseline: metricTarget.baseline,
       target: metricTarget.target,
       contaminated: metricTarget.contaminated,
+      isNorthStar: metricTarget.isNorthStar,
       targetNote: metricTarget.note,
       benchmarkValue: benchmark.value,
       benchmarkSource: benchmark.source,
@@ -208,6 +212,7 @@ export async function metrics (
     baseline: num(r.baseline),
     target: num(r.target),
     contaminated: r.contaminated === 1,
+    isNorthStar: r.isNorthStar === 1,
     targetNote: r.targetNote,
     benchmark: num(r.benchmarkValue),
     benchmarkSource: r.benchmarkSource,
@@ -418,7 +423,13 @@ export async function deliveries (clientId: number, userId: number): Promise<Del
       comment: stepStatus.comment
     })
     .from(delivery)
-    .innerJoin(step, eq(step.deliveryId, delivery.id))
+    /* `leftJoin` and not `inner`: a delivery with no steps is a delivery that is
+       read rather than done, and an INNER JOIN made those invisible everywhere —
+       no screen, no count, no summary. `delivery.kind` has offered 'analysis'
+       since the first migration and nothing could ever render one. The callers
+       now decide what to do with a step-less delivery; the JOIN no longer
+       decides what exists. */
+    .leftJoin(step, eq(step.deliveryId, delivery.id))
     .leftJoin(stepStatus, and(
       eq(stepStatus.stepId, step.id),
       eq(stepStatus.userId, userId)
@@ -445,6 +456,18 @@ export async function deliveries (clientId: number, userId: number): Promise<Del
       }
       map.set(r.deliveryId, entry)
     }
+
+    /* Null on the left join, meaning this delivery has no steps at all. The
+       entry above still exists — that is the whole point.
+
+       The three columns are checked one by one rather than inferred from
+       `stepId`, because the left join made each of them independently nullable
+       and the compiler is right not to take one as proof of the others. They
+       are `NOT NULL` in the schema, so in practice they are null together. */
+    if (r.stepId === null || r.code === null || r.stepTitle === null || r.urgency === null) {
+      continue
+    }
+
     entry.steps.push({
       id: r.stepId,
       code: r.code,
@@ -473,32 +496,56 @@ export interface RequestRow {
   whyItMatters: string | null
   kind: 'data' | 'action' | 'question' | 'material'
   priority: 'low' | 'medium' | 'high'
-  state: 'open' | 'in_progress' | 'delivered' | 'dropped'
+  state: 'open' | 'answered' | 'analyzing' | 'concluded' | 'dropped'
+  raisedBySide: 'consultant' | 'client'
+  outcome: string | null
   dueOn: string | null
   createdAt: Date
+  updatedAt: Date
 }
 
 /**
- * How many requests are still hers to answer.
+ * The SQL form of `turnOf()`: rows whose turn belongs to `role`.
+ *
+ * Kept as one expression reused by every caller rather than repeated per query.
+ * The two definitions — this one and the function in `request-actions.ts` —
+ * have to agree, and the badge disagreeing with the screen behind it is exactly
+ * how a counter teaches people to stop trusting it.
+ */
+function turnBelongsTo (role: 'consultant' | 'client') {
+  const outro = role === 'consultant' ? 'client' : 'consultant'
+
+  return or(
+    /* Someone else asked and this side still owes the answer. */
+    and(eq(request.raisedBySide, outro), eq(request.state, 'open')),
+    /* This side asked, the material arrived, and now it is on them. */
+    and(
+      eq(request.raisedBySide, role),
+      inArray(request.state, ['answered', 'analyzing'])
+    )
+  )
+}
+
+/**
+ * How many requests are waiting on whoever is reading.
  *
  * This exists because the product had no way of telling HER anything. The
  * consultant has `/novidades` and a bell; she had neither, and no email is sent
  * by design — so a request opened for her sat there until she happened to look,
- * or until he messaged her outside the platform. The count on the nav item is
- * the smallest thing that closes that loop from his side to hers.
+ * or until he messaged her outside the platform.
  *
- * `open` and `in_progress` both count, matching the panel and the list she
- * opens: a badge that disagrees with the screen behind it teaches her not to
- * trust the badge.
+ * It now counts for both sides, and that is the point: the badge used to count
+ * only her homework, so his own backlog was invisible to him inside the product
+ * and visible to her only as silence.
  */
-export async function openRequestCount (clientId: number): Promise<number> {
+export async function openRequestCount (
+  clientId: number,
+  role: 'consultant' | 'client'
+): Promise<number> {
   const [row] = await orm()
     .select({ n: sql<number>`COUNT(*)` })
     .from(request)
-    .where(and(
-      eq(request.clientId, clientId),
-      inArray(request.state, ['open', 'in_progress'])
-    ))
+    .where(and(eq(request.clientId, clientId), turnBelongsTo(role)))
 
   /* `sql<number>` is an assertion, not a conversion — MySQL hands COUNT back as
      a string, and `"0" > 0` is false while `"0"` is truthy. */
@@ -506,23 +553,244 @@ export async function openRequestCount (clientId: number): Promise<number> {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+const CAMPOS_PEDIDO = {
+  id: request.id,
+  publicCode: request.publicCode,
+  title: request.title,
+  description: request.description,
+  whyItMatters: request.whyItMatters,
+  kind: request.kind,
+  priority: request.priority,
+  state: request.state,
+  raisedBySide: request.raisedBySide,
+  outcome: request.outcome,
+  dueOn: request.dueOn,
+  createdAt: request.createdAt,
+  updatedAt: request.updatedAt
+}
+
+export interface ReadingSection {
+  id: number
+  title: string | null
+  body: string
+  highlight: string | null
+  highlightLabel: string | null
+}
+
+export interface ReadingDelivery {
+  id: number
+  slug: string
+  title: string
+  subtitle: string | null
+  kind: 'plan' | 'analysis' | 'report' | 'audit'
+  periodStart: string | null
+  periodEnd: string | null
+  readingMinutes: number | null
+  publishedAt: Date | null
+  sections: ReadingSection[]
+}
+
+/**
+ * The deliveries that are read rather than done, newest first.
+ *
+ * Separate from `deliveries()` because the questions differ: that one answers
+ * "what is left for her to do" and needs per-user step state, this one answers
+ * "what did you find out" and needs prose. They agree on what "published" means
+ * by both reading the same two columns, which is the only part worth sharing.
+ */
+export async function readingDeliveries (clientId: number): Promise<ReadingDelivery[]> {
+  const rows = await orm()
+    .select({
+      id: delivery.id,
+      slug: delivery.slug,
+      title: delivery.title,
+      subtitle: delivery.subtitle,
+      kind: delivery.kind,
+      periodStart: delivery.periodStart,
+      periodEnd: delivery.periodEnd,
+      readingMinutes: delivery.readingMinutes,
+      publishedAt: delivery.publishedAt,
+      sectionId: deliverySection.id,
+      sectionTitle: deliverySection.title,
+      body: deliverySection.body,
+      highlight: deliverySection.highlight,
+      highlightLabel: deliverySection.highlightLabel
+    })
+    .from(delivery)
+    /* `leftJoin`, for the same reason `deliveries()` stopped using an inner one
+       three hundred lines up: an analysis published before its blocks are
+       written would not exist, and the JOIN would be deciding that — which is
+       the one thing the spec for this feature says it must never do. Written
+       inner on the first pass, in the same change that forbade it. */
+    .leftJoin(deliverySection, eq(deliverySection.deliveryId, delivery.id))
+    .where(and(
+      eq(delivery.clientId, clientId),
+      inArray(delivery.kind, ['analysis', 'report', 'audit']),
+      isNotNull(delivery.publishedAt),
+      sql`${delivery.archivedAt} IS NULL`
+    ))
+    .orderBy(desc(delivery.publishedAt), deliverySection.position)
+
+  const mapa = new Map<number, ReadingDelivery>()
+
+  for (const r of rows) {
+    let entrada = mapa.get(r.id)
+    if (entrada === undefined) {
+      entrada = {
+        id: r.id,
+        slug: r.slug,
+        title: r.title,
+        subtitle: r.subtitle,
+        kind: r.kind,
+        periodStart: r.periodStart,
+        periodEnd: r.periodEnd,
+        readingMinutes: r.readingMinutes,
+        publishedAt: r.publishedAt,
+        sections: []
+      }
+      mapa.set(r.id, entrada)
+    }
+    /* Null on the left join: a delivery with no blocks yet. The entry above
+       still exists, and the screen decides what to say about it. */
+    if (r.sectionId === null || r.body === null) continue
+
+    entrada.sections.push({
+      id: r.sectionId,
+      title: r.sectionTitle,
+      body: r.body,
+      highlight: r.highlight,
+      highlightLabel: r.highlightLabel
+    })
+  }
+
+  return [...mapa.values()]
+}
+
+export interface Progresso {
+  key: string
+  label: string
+  unit: Unit
+  decimals: number
+  /** Registered at the start of the cycle. Never recomputed from the series. */
+  baseline: number | null
+  baselineOn: string | null
+  target: number | null
+  points: Array<{ period: string; value: number }>
+}
+
+/**
+ * The cycle's north-star metric over the months, with where it started.
+ *
+ * The baseline comes from `metric_target`, not from the first point in the
+ * series. Deriving it would move it every time an older month is imported, and
+ * a baseline that moves with the result turns any performance into progress —
+ * the quietest way a panel can lie.
+ */
+export async function northStarProgress (
+  clientId: number,
+  cycleId: number
+): Promise<Progresso | null> {
+  const [alvo] = await orm()
+    .select({
+      key: metricDef.metricKey,
+      label: metricDef.label,
+      unit: metricDef.unit,
+      decimals: metricDef.decimals,
+      baseline: metricTarget.baseline,
+      baselineOn: metricTarget.baselineOn,
+      target: metricTarget.target
+    })
+    .from(metricTarget)
+    .innerJoin(metricDef, eq(metricDef.id, metricTarget.metricDefId))
+    .where(and(
+      eq(metricTarget.clientId, clientId),
+      eq(metricTarget.cycleId, cycleId),
+      /* The per-cycle flag. `metric_def.tier` classifies the catalogue and now
+         matches two rows; which one decides THIS cycle is a fact about the
+         cycle. A unique index keeps it at one. */
+      eq(metricTarget.isNorthStar, 1)
+    ))
+    .limit(1)
+
+  if (alvo === undefined) return null
+
+  const valores = await orm()
+    .select({ period: metricValue.period, value: metricValue.value })
+    .from(metricValue)
+    .innerJoin(metricDef, eq(metricDef.id, metricValue.metricDefId))
+    .where(and(
+      eq(metricValue.clientId, clientId),
+      eq(metricValue.granularity, 'month'),
+      eq(metricDef.metricKey, alvo.key),
+      inArray(metricValue.source, [...ORIGENS_MEDIDAS])
+    ))
+    .orderBy(metricValue.period)
+
+  return {
+    key: alvo.key,
+    label: alvo.label,
+    unit: alvo.unit,
+    decimals: alvo.decimals,
+    baseline: alvo.baseline === null ? null : Number.parseFloat(alvo.baseline),
+    baselineOn: alvo.baselineOn,
+    target: alvo.target === null ? null : Number.parseFloat(alvo.target),
+    points: valores.map(v => ({ period: v.period, value: Number.parseFloat(v.value) }))
+  }
+}
+
 export async function requests (clientId: number): Promise<RequestRow[]> {
   return await orm()
-    .select({
-      id: request.id,
-      publicCode: request.publicCode,
-      title: request.title,
-      description: request.description,
-      whyItMatters: request.whyItMatters,
-      kind: request.kind,
-      priority: request.priority,
-      state: request.state,
-      dueOn: request.dueOn,
-      createdAt: request.createdAt
-    })
+    .select(CAMPOS_PEDIDO)
     .from(request)
     .where(eq(request.clientId, clientId))
     .orderBy(request.state, request.position)
+}
+
+/**
+ * The consultant's work queue: what is on him, oldest first.
+ *
+ * Ordered by `updatedAt` ascending and not by position, because the question
+ * this list answers is "what has been waiting longest", not "what did I decide
+ * matters most". A queue sorted by my own priority is a queue that never
+ * surfaces the thing I quietly avoided.
+ */
+export async function workQueue (clientId: number): Promise<RequestRow[]> {
+  return await orm()
+    .select(CAMPOS_PEDIDO)
+    .from(request)
+    .where(and(eq(request.clientId, clientId), turnBelongsTo('consultant')))
+    .orderBy(request.updatedAt)
+}
+
+/**
+ * Requests that arrived and were never opened.
+ *
+ * `answered` and older than the cutoff — `analyzing` is excluded on purpose:
+ * once he has said he is reading it, the clock stops. That is the whole reward
+ * for pressing the button, and without it the state would never be used.
+ */
+export async function staleRequests (
+  clientId: number,
+  cutoff: Date
+): Promise<RequestRow[]> {
+  return await orm()
+    .select(CAMPOS_PEDIDO)
+    .from(request)
+    .where(and(
+      eq(request.clientId, clientId),
+      /* Whose turn it is, not the state alone. Filtering on `answered` by
+         itself inverted the meaning for anything SHE raised: there, `answered`
+         means HE replied and the ball is hers — and the digest was reporting
+         her own pending item to him as "ela respondeu e ninguém abriu".
+
+         Through the same expression the work queue uses, so the two screens
+         that print this group under the same title cannot disagree about what
+         belongs in it. It also widens correctly: a request she opened and he
+         never answered is his debt too, and the old filter missed it. */
+      turnBelongsTo('consultant'),
+      lt(request.updatedAt, cutoff)
+    ))
+    .orderBy(request.updatedAt)
 }
 
 /**
@@ -633,8 +901,11 @@ export async function requestDetail (
       kind: request.kind,
       priority: request.priority,
       state: request.state,
+      raisedBySide: request.raisedBySide,
+      outcome: request.outcome,
       dueOn: request.dueOn,
-      createdAt: request.createdAt
+      createdAt: request.createdAt,
+      updatedAt: request.updatedAt
     })
     .from(request)
     .where(eq(request.publicCode, publicCode))

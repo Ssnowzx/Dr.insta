@@ -1,9 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { NovoPedido } from '@/components/novo-pedido'
 import { RequestText } from '@/components/request-text'
-import { requests } from '@/lib/dashboard'
-import { clientScope } from '@/lib/dal'
+import { requests, workQueue } from '@/lib/dashboard'
+import type { RequestRow } from '@/lib/dashboard'
+import { clientScope, requireSession } from '@/lib/dal'
 import { shortDate } from '@/lib/format'
+import { DIAS_ATE_COBRAR, LABEL, turnOf } from '@/lib/pedido'
 
 export const metadata: Metadata = { title: 'Pedidos' }
 export const dynamic = 'force-dynamic'
@@ -15,25 +18,40 @@ const TIPO: Record<string, string> = {
   material: 'um material'
 }
 
-const ESTADO: Record<string, { rot: string; classe: string }> = {
-  open: { rot: 'em aberto', classe: 'selo-atencao' },
-  in_progress: { rot: 'em andamento', classe: 'selo-neutro' },
-  delivered: { rot: 'entregue', classe: 'selo-ok' },
-  dropped: { rot: 'dispensado', classe: 'selo-neutro' }
+/** How long a request has been sitting, in whole days. */
+function diasParado (row: RequestRow): number {
+  return Math.floor((Date.now() - row.updatedAt.getTime()) / 86_400_000)
 }
 
 /**
- * Intake.
+ * Intake, in two versions, because the two sides ask opposite questions.
  *
- * Every ask carries why it matters, because an ask without a reason is a chore.
- * Four of these five are just "send me the data" — saying so up front is what
- * keeps the list from reading as five pieces of homework.
+ * Hers is "what does he still need from me, and what came back". His is "what
+ * landed and have I looked at it". This screen used to be one list written
+ * entirely in her voice — the heading said "O que falta de você" — and served
+ * unchanged to him, so the consultant had no work queue anywhere in the product
+ * and she had no way to see that anything she sent had been read.
  */
 export default async function Pedidos () {
-  const lista = await requests(await clientScope())
-  const abertos = lista.filter(p => p.state === 'open' || p.state === 'in_progress')
-  const fechados = lista.filter(p => p.state === 'delivered' || p.state === 'dropped')
-  const soDado = abertos.filter(p => p.kind === 'data').length
+  const identity = await requireSession()
+  const clientId = await clientScope()
+
+  return identity.role === 'consultant'
+    ? <Dele clientId={clientId} />
+    : <Dela clientId={clientId} />
+}
+
+// --------------------------------------------------------------------- dela
+
+async function Dela ({ clientId }: { clientId: number }) {
+  const lista = await requests(clientId)
+
+  const minhaVez = lista.filter(p => turnOf(p.state, p.raisedBySide) === 'client')
+  const comigo = lista.filter(p => turnOf(p.state, p.raisedBySide) === 'consultant')
+  const voltou = lista.filter(
+    p => p.state === 'concluded' && p.outcome !== null && p.outcome !== ''
+  )
+  const soDado = minhaVez.filter(p => p.kind === 'data').length
 
   return (
     <>
@@ -41,22 +59,22 @@ export default async function Pedidos () {
         <p className="sobrancelha">O que falta de você</p>
         <h1 className="display">Pedidos</h1>
         <p className="lead">
-          {abertos.length === 0
+          {minhaVez.length === 0
             ? 'Nada pendente. Quando eu precisar de alguma coisa, aparece aqui.'
-            : soDado === abertos.length
-              ? `São ${abertos.length} pedidos, e todos são só me mandar um dado — nada de gravar ou produzir.`
-              : `São ${abertos.length} pedidos, e ${soDado} deles são só me mandar um dado.`}
+            : soDado === minhaVez.length
+              ? `São ${minhaVez.length} pedidos, e todos são só me mandar um dado — nada de gravar ou produzir.`
+              : `São ${minhaVez.length} pedidos, e ${soDado} deles são só me mandar um dado.`}
         </p>
       </header>
 
       <ul className="pedidos">
-        {abertos.map(p => {
-          const estado = ESTADO[p.state] ?? ESTADO.open
+        {minhaVez.map(p => {
+          const estado = LABEL[p.state]
           return (
             <li className="pedido" key={p.id}>
               <div className="pedido-cab">
                 <span className="pedido-tipo">{TIPO[p.kind]}</span>
-                <span className={`selo ${estado?.classe ?? ''}`}>{estado?.rot}</span>
+                <span className={`selo ${estado.classe}`}>esperando você</span>
               </div>
 
               <h2 className="pedido-titulo">
@@ -86,23 +104,140 @@ export default async function Pedidos () {
         })}
       </ul>
 
-      {fechados.length > 0 && (
+      {/* The group this whole change exists for. She sent sixteen files on
+          13/08 and had no screen that could ever tell her what they produced. */}
+      {voltou.length > 0 && (
         <section className="secao">
           <div className="secao-cab">
-            <h2 className="titulo-secao">Já resolvidos</h2>
+            <h2 className="titulo-secao">O que voltou pra você</h2>
+          </div>
+          {voltou.map(p => (
+            <div className="grupo grupo-ok" key={p.id}>
+              <p className="grupo-titulo">
+                <Link href={`/pedidos/${p.publicCode}`}>{p.title}</Link>
+              </p>
+              <p className="grupo-item"><RequestText text={p.outcome ?? ''} /></p>
+              <p className="grupo-quem">respondido em {shortDate(p.updatedAt)}</p>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {comigo.length > 0 && (
+        <section className="secao">
+          <div className="secao-cab">
+            <h2 className="titulo-secao">Está comigo</h2>
+            <p className="secao-nota">você já respondeu — a vez é minha</p>
           </div>
           <ul className="lista-simples">
-            {fechados.map(p => (
+            {comigo.map(p => (
               <li key={p.id}>
                 <Link className="lista-item" href={`/pedidos/${p.publicCode}`}>
                   <span className="lista-titulo">{p.title}</span>
-                  <span className="lista-meta">{ESTADO[p.state]?.rot}</span>
+                  <span className="lista-meta">{LABEL[p.state].rot}</span>
                 </Link>
               </li>
             ))}
           </ul>
         </section>
       )}
+
+      <NovoPedido
+        titulo="Precisa de alguma coisa?"
+        dica="Escreve aqui e chega pra mim com histórico, em vez de sumir no WhatsApp."
+      />
+    </>
+  )
+}
+
+// ---------------------------------------------------------------------- dele
+
+async function Dele ({ clientId }: { clientId: number }) {
+  const [fila, lista] = await Promise.all([workQueue(clientId), requests(clientId)])
+
+  const paradas = fila.filter(
+    p => p.state === 'answered' && diasParado(p) >= DIAS_ATE_COBRAR
+  )
+  const restante = fila.filter(p => !paradas.includes(p))
+  const comEla = lista.filter(p => turnOf(p.state, p.raisedBySide) === 'client')
+
+  return (
+    <>
+      <header className="pagina-cab">
+        <p className="sobrancelha">Sua fila</p>
+        <h1 className="display">
+          {fila.length === 0 ? 'Nada com você.' : `${fila.length} com você.`}
+        </h1>
+        <p className="lead">
+          {fila.length === 0
+            ? 'Quando ela responder alguma coisa, cai aqui.'
+            : 'O mais antigo primeiro — não o mais importante, porque a fila que eu ordeno é a fila onde some o que eu evitei.'}
+        </p>
+      </header>
+
+      {paradas.length > 0 && (
+        <section className="secao">
+          <div className="secao-cab">
+            <h2 className="titulo-secao">Ela respondeu e ninguém abriu</h2>
+            <p className="secao-nota">
+              <span className="numero">{paradas.length}</span> parado
+            </p>
+          </div>
+          {paradas.map(p => (
+            <div className="grupo grupo-critico" key={p.id}>
+              <p className="grupo-titulo">
+                <Link href={`/pedidos/${p.publicCode}`}>{p.title}</Link>
+              </p>
+              <p className="grupo-detalhe">há {diasParado(p)} dias</p>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {restante.length > 0 && (
+        <section className="secao">
+          <div className="secao-cab">
+            <h2 className="titulo-secao">Na sua mão</h2>
+          </div>
+          <ul className="lista-simples">
+            {restante.map(p => (
+              <li key={p.id}>
+                <Link className="lista-item" href={`/pedidos/${p.publicCode}`}>
+                  <span className="lista-titulo">{p.title}</span>
+                  <span className="lista-meta">
+                    {LABEL[p.state].rot} · {diasParado(p)}d
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {comEla.length > 0 && (
+        <section className="secao">
+          <div className="secao-cab">
+            <h2 className="titulo-secao">Esperando ela</h2>
+          </div>
+          <ul className="lista-simples">
+            {comEla.map(p => (
+              <li key={p.id}>
+                <Link className="lista-item" href={`/pedidos/${p.publicCode}`}>
+                  <span className="lista-titulo">{p.title}</span>
+                  <span className="lista-meta">
+                    {LABEL[p.state].rot} · {diasParado(p)}d
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <NovoPedido
+        titulo="Abrir um pedido"
+        dica="O texto normalmente vem pronto pelo terminal — aqui é para o que não pode esperar."
+      />
     </>
   )
 }

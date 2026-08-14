@@ -115,16 +115,31 @@ export default async function Conteudo ({
         )}
       </header>
 
-      {/* The finding, stated before the list rather than left to be discovered:
-          brand content has never shipped short. */}
-      {contas.marcaCurto === 0 && contas.marcaTotal > 0 && (
-        <p className="achado">
-          <strong>Uma casa vazia:</strong> nenhum dos {contas.marcaTotal} Reels que
-          falam da marca tem 20 segundos ou menos. Não é que o formato curto de
-          peça tenha ido mal — ele nunca foi testado. Ligue os dois filtros
-          abaixo e veja a casa vazia por dentro.
-        </p>
-      )}
+      {/* The "empty house" note used to live here: brand content had never
+          shipped short, so short-form product was worth testing. Removed on
+          13/08/2026 for two reasons, either of which is enough.
+
+          It belonged to the conversion cycle, and the perfil→loja relationship
+          left this product's scope on 12/08 — it is the brand team's now.
+
+          And the data since then contradicts it. Across 376 posts, content
+          whose subject is the brand converts to followers at 0,025% against a
+          0,079% average, and the 1–10s bucket is the WORST converter in the
+          set (0,061% against 0,146% for 90s+). The note was pointing her at
+          the two things the numbers now argue against. */}
+
+      {/* What replaced it. Measured on 376 posts from the two exports she sent
+          on 13/08, and phrased as two of her own Reels rather than as a rate:
+          "0,025% against 1,026%" is true and unusable, "one brought 45 people
+          and the other brought 3.131" is the same fact she can act on. */}
+      <p className="achado">
+        <strong>O mesmo tamanho, 41× de diferença:</strong> os quatro episódios de
+        “por dentro da sua peça favorita” somaram 179 mil pessoas alcançadas e
+        trouxeram <strong>45 seguidores</strong>. O “meus top 5 perfumes”, com
+        quase a mesma duração, alcançou 305 mil e trouxe{' '}
+        <strong>3.131</strong>. Não é o formato nem o tamanho — é sobre o quê o
+        vídeo fala.
+      </p>
 
       {/* Two groups, labelled, because the controls are two questions and not
           one list of five answers. Unlabelled they read as mutually exclusive,
@@ -163,18 +178,15 @@ export default async function Conteudo ({
           : <>Todos os <span className="numero">{contas.total}</span> Reels.</>}
       </p>
 
+      {/* The empty-cut text used to say "uma casa vazia... nunca foi testado",
+          which read as an invitation to try it. The only empty crossing in the
+          archive is short × brand, and both halves are what the 376 posts argue
+          against: short is the worst follower converter, and brand-subject
+          content leaves the personal feed this cycle. The thesis was removed
+          from the top of this screen on 13/08 and had survived two clicks
+          below it. */}
       {lista.length === 0
-        ? (
-          <p className="achado">
-            {duracao !== undefined && marca !== undefined
-              ? <>
-                  <strong>Nenhum Reel aqui.</strong> Esse cruzamento não existe no
-                  seu acervo — é uma casa vazia, não uma falha da busca. Nunca foi
-                  testado, então não há resultado ruim: há resultado nenhum.
-                </>
-              : <>Nenhum Reel com esse recorte.</>}
-          </p>
-          )
+        ? <p className="achado">Nenhum Reel com esse recorte.</p>
         : (
           <ul className="acervo">
             {lista.map(p => (

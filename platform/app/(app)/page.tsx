@@ -7,7 +7,8 @@ import {
   activeCycle, clientProfile, latestPeriod, metrics,
   monthlySeries, requests
 } from '@/lib/dashboard'
-import { clientScope } from '@/lib/dal'
+import { clientScope, requireSession } from '@/lib/dal'
+import { turnOf } from '@/lib/pedido'
 import { connectionFor } from '@/lib/instagram/connection'
 import { format, longDate, monthLabel } from '@/lib/format'
 
@@ -60,6 +61,8 @@ export default async function Painel () {
     )
   }
 
+  const identity = await requireSession()
+
   const [todas, pedidos, series] = await Promise.all([
     metrics(clientId, cycle.id, period, profile?.niche ?? 'lifestyle'),
     requests(clientId),
@@ -68,19 +71,50 @@ export default async function Painel () {
 
   const cartoes = todas.filter(m => !HANDED_OFF.has(m.key))
 
-  /* The two sides of the thesis plate: the private conversation that already
-     exists, and the public one the cycle is chasing. */
-  const privado = cartoes.find(m => m.key === 'story_replies' && m.value !== null)
-  const publico = cartoes.find(m => m.key === 'comments_reach' && m.value !== null)
+  /* The two sides of the thesis plate: how many are reached, and how few of
+     them decide to follow. It used to hold Stories replies against comments —
+     the thesis of the cycle that closed on 13/08 — and went on saying "este
+     ciclo puxa a conversa para o público" four lines under a goal that says
+     the opposite. Read from the cards so it follows the cycle instead of
+     restating one. */
+  const vistas = cartoes.find(m => m.key === 'reach' && m.value !== null)
+  const seguiram = cartoes.find(m => m.key === 'followers_net' && m.value !== null)
 
   /* The north-star metric leaves the grid and gets the full width. Sorting it
      first inside a grid of identical cards made it *first*, not *primary* — and
      a reader scanning nine equal rectangles has no way to tell which one the
      cycle is decided on. */
-  const norte = cartoes.find(m => m.tier === 'north_star' && m.value !== null) ?? null
-  const decidem = cartoes.filter(m => m.tier === 'decision' && m.value !== null)
-  const acompanhar = cartoes.filter(m => m.tier === 'monitor' && m.value !== null)
-  const abertos = pedidos.filter(p => p.state === 'open' || p.state === 'in_progress')
+  /* By the per-cycle flag, not by `metric_def.tier`. The catalogue now holds
+     two metrics tiered `north_star` — the followers one this cycle steers by,
+     and comments-per-reach, which kept its tier so the closed cycle's screens
+     still say what they said. Scanning the tier here would pick whichever the
+     query returned first. */
+  const norte = cartoes.find(m => m.isNorthStar && m.value !== null) ?? null
+
+  /* A guard-rail is a metric whose target IS its baseline: the cycle asks it not
+     to fall, not to rise. Recognised by the numbers rather than by a list, so a
+     new floor added to the seed lands in the right group without a code change.
+     `piso` is checked before `tier` for the same reason the north star is: the
+     tier classifies the catalogue, and whether a metric is a floor is a fact
+     about THIS cycle. */
+  const ehPiso = (m: typeof cartoes[number]): boolean =>
+    m.baseline !== null && m.target !== null && m.target === m.baseline
+
+  const visiveis = cartoes.filter(m => m.value !== null && !m.isNorthStar)
+
+  /* Comments-per-reach fell through every bucket: it keeps `tier: north_star`
+     in the catalogue — that is what makes the closed cycle's screens still read
+     correctly — while carrying `isNorthStar = 0` here. It matched no filter and
+     vanished from the panel, which the cycle's own spec forbids: the diagnosis
+     it came from stays visible as a debt. */
+  const piso = visiveis.filter(ehPiso)
+  const decidem = visiveis.filter(m => !ehPiso(m) && m.tier === 'decision')
+  const acompanhar = visiveis.filter(
+    m => !ehPiso(m) && m.tier !== 'decision'
+  )
+  /* Whose turn it is, not merely "not closed". A request she has already
+     answered is not something the panel should keep asking her for. */
+  const abertos = pedidos.filter(p => turnOf(p.state, p.raisedBySide) === identity.role)
 
   return (
     <>
@@ -93,39 +127,40 @@ export default async function Painel () {
         <DataAge period={period} syncedAt={conexao?.state === 'active' ? conexao.lastSyncAt : null} />
       </header>
 
-      {privado !== undefined && publico !== undefined && (
+      {vistas !== undefined && seguiram !== undefined && (
         <section className="placa">
-          <h2 className="placa-sobrancelha">A conversa existe — no privado</h2>
+          <h2 className="placa-sobrancelha">O alcance já é seu</h2>
           <p className="placa-sub">
-            Nos Stories, sua audiência responde aos milhares todo mês. Na parte
-            que todo mundo vê — os comentários — quase silêncio. Este ciclo puxa
-            a conversa para o público.
+            Todo mês milhões de contas veem você, e boa parte delas ainda não te
+            segue. O que este ciclo persegue é o segundo número: quantas dessas
+            pessoas decidem te acompanhar.
           </p>
           {/* The same two-number statement the funnel's collapse used: the
               plate-native pattern, so both numbers read on the dark wool. */}
           <div className="colapso">
             <div className="colapso-lado">
               <span className="numero colapso-n">
-                {format(privado.value, privado.unit, privado.decimals)}
+                {format(vistas.value, vistas.unit, vistas.decimals)}
               </span>
-              <span className="colapso-rot">respostas nos seus Stories, no mês</span>
+              <span className="colapso-rot">contas alcançadas no mês</span>
             </div>
             <div className="colapso-meio" aria-hidden="true">
               <span className="colapso-regua" />
-              <span className="colapso-taxa">a mesma audiência, em público</span>
+              <span className="colapso-taxa">quantas decidiram te seguir</span>
             </div>
             <div className="colapso-lado colapso-lado-fim">
               <span className="numero colapso-n">
-                {format(publico.value, publico.unit, publico.decimals)}
+                {format(seguiram.value, seguiram.unit, seguiram.decimals)}
               </span>
-              <span className="colapso-rot">comentam, por alcance</span>
+              <span className="colapso-rot">passaram a te seguir</span>
             </div>
           </div>
-          {publico.benchmark !== null && (
+          {seguiram.target !== null && (
             <p className="placa-sub">
-              A referência do nicho é{' '}
-              {format(publico.benchmark, publico.unit, publico.decimals)} — é essa
-              distância que o ciclo quer fechar.
+              O alvo do ciclo é{' '}
+              {format(seguiram.target, seguiram.unit, seguiram.decimals)} por mês.
+              A distância não é de alcance — é de quantas dessas pessoas param e
+              decidem te acompanhar.
             </p>
           )}
         </section>
@@ -164,6 +199,28 @@ export default async function Painel () {
         </div>
       </section>
 
+      {/* Its own section, and not folded into the one above. A floor and a
+          target look identical on a bar — same shape, same "alvo do ciclo"
+          label — and reading "no alvo" on a number the cycle only asks not to
+          fall is how a floor gets mistaken for an achievement. */}
+      {piso.length > 0 && (
+        <section className="secao">
+          <div className="secao-cab">
+            <h2 className="titulo-secao">O que não pode cair</h2>
+            <p className="secao-nota">piso, não alvo</p>
+          </div>
+          <div className="grade-metricas">
+            {piso.map(m => <MetricBar key={m.key} metric={m} />)}
+          </div>
+          <p className="rodape-nota">
+            Estes não são alvo deste ciclo — o alvo é seguidor. Eles estão aqui
+            porque crescer às custas deles seria comprar audiência que não
+            conversa e não guarda. Se algum começar a cair de verdade, isso muda
+            o plano.
+          </p>
+        </section>
+      )}
+
       {series.length > 0 && (
         <section className="secao">
           <div className="secao-cab">
@@ -192,9 +249,9 @@ export default async function Painel () {
               it, so the two can never drift apart. */}
           <p className="rodape-nota">
             Estes dois vêm da exportação pública dos seus Reels, não dos Insights.
-            Servem para ver esforço e resultado lado a lado.{' '}
-            <strong>Se as views baixarem um pouco enquanto o comentário sobe, é o
-            combinado</strong> — e o alcance do mês tem guarda. Está escrito em{' '}
+            Servem para ver esforço e resultado lado a lado. Views é o terceiro
+            item da sua própria ordem de prioridade — está aqui como contexto, não
+            como alvo. O que este ciclo abre mão está escrito em{' '}
             <Link href="/plano">o que isso custa</Link>, no seu plano.
           </p>
         </section>
@@ -209,7 +266,8 @@ export default async function Painel () {
           {acompanhar.map(m => <MetricStat key={m.key} metric={m} />)}
         </div>
         <p className="rodape-nota">
-          Estes números estão na média do seu nicho ou acima dela. Eles entram
+          Estes entram para dar contexto e para detectar queda. Não são alvo — e
+          quando um deles tem referência de nicho, ela aparece no próprio cartão. Eles entram
           aqui para dar contexto e para a gente perceber se caírem — não para
           serem melhorados neste ciclo.
         </p>
