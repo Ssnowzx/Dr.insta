@@ -17,27 +17,37 @@ import { randomBytes } from 'node:crypto'
  */
 
 /**
- * The trailing slash is load-bearing. Do not remove it.
+ * The `/third_party/` in this path is load-bearing on an iPhone. Do not
+ * "simplify" it back to `/oauth/authorize`.
  *
- * On an iPhone, `www.instagram.com` claims its own links: the app's
- * `apple-app-site-association` lists what iOS should hand to the Instagram app,
- * and the authorisation flow is excluded from that — but the exclusion is
- * written `/oauth/authorize/*`, with a slash. Our URL was `/oauth/authorize`
- * with a query string and no slash, which does not match the exclusion, so iOS
- * treated it as a link belonging to the app.
+ * `www.instagram.com` claims its own links: the app's
+ * `apple-app-site-association` tells iOS which URLs belong to the Instagram app.
+ * The authorisation flow IS excluded there — but the exclusion is written
+ * `/oauth/authorize/*`, and the documented entry point is `/oauth/authorize`
+ * plus a query string. That does not match the pattern, so iOS handed the
+ * navigation to the app, where the consent screen does not exist: a stuck
+ * skeleton and "Ocorreu um erro". Measured on 14/08/2026 from a screen
+ * recording — the tell is the iOS back affordance reading "Safari", which only
+ * appears once you are no longer in Safari.
  *
- * The consequence, measured on 14/08/2026 from a screen recording she sent: she
- * taps "Continuar para o Instagram" in Safari, our 303 leaves for Instagram, and
- * the phone opens the Instagram APP instead — where the consent screen is not a
- * screen that exists. It shows a stuck skeleton and "Ocorreu um erro". The tell
- * in the recording is the iOS back affordance in the status bar reading
- * "Safari", which only appears once you are no longer in Safari.
+ * A trailing slash was tried first and did not help: iOS does not treat `*` as
+ * matching the empty string, so `/oauth/authorize/` stayed outside the
+ * exclusion. `/oauth/authorize/third_party/` has a segment after the slash, so
+ * it matches unambiguously.
  *
- * Instagram answers identically with or without the slash (302 to
- * `/oauth/authorize/third_party/`, same parameters), so this costs nothing and
- * takes the URL out of the app's claim.
+ * This is where the documented endpoint sends the browser anyway: it answers 302
+ * to exactly this path, and from here to `/accounts/login/`, which the same file
+ * excludes as `/accounts/login/*`. So the whole chain stays in the browser.
+ * Verified end to end against the live endpoint: 200, `Login • Instagram`, with
+ * our `state` intact in the page.
+ *
+ * The cost of the shortcut, stated: this is an internal path, not a documented
+ * one, and Instagram can move it without telling anyone. It is load-bearing
+ * only for iOS — on desktop the documented entry point works fine — so if it
+ * ever 404s, going back to `/oauth/authorize` restores every browser except
+ * iPhones.
  */
-const AUTHORIZE_URL = 'https://www.instagram.com/oauth/authorize/'
+const AUTHORIZE_URL = 'https://www.instagram.com/oauth/authorize/third_party/'
 const TOKEN_URL = 'https://api.instagram.com/oauth/access_token'
 const GRAPH_URL = 'https://graph.instagram.com'
 
