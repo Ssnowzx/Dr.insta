@@ -193,7 +193,7 @@ export async function metrics (
 
   /* One card per definition. `resolverPorChave` keeps the order each key first
      appeared in, so the query's ordering survives. */
-  return resolverPorChave(
+  const cartoes = resolverPorChave(
     rows.map(r => ({ ...r, value: num(r.value) })),
     r => r.key
   ).map(({ escolhido: r, divergentes }) => ({
@@ -221,7 +221,69 @@ export async function metrics (
       .filter((d): d is typeof d & { value: number } => d.value !== null)
       .map(d => ({ source: d.source, value: d.value }))
   }))
+
+  return derivarTaxas(cartoes, period)
 }
+
+/**
+ * Rates that are two stored numbers divided, recomputed when the panel is read.
+ *
+ * `profile_visits_reach` was a stored figure with a hand-written note —
+ * "347.482 visitas ÷ 5.413.754 contas alcançadas em julho" — and both went stale
+ * the moment the API started measuring reach. On 14/08/2026 the panel showed
+ * 5.584.671 as July's reach in one card and 5.413.754 inside the note of the
+ * card below it: two answers to "how many accounts did she reach in July" on one
+ * screen. Fixing the note would have bought a month; the numerator or the
+ * denominator moves again and it is stale once more.
+ *
+ * Only the ratio is derived. The numerator still arrives by hand —
+ * `profile_visits` has no counterpart in the Instagram API, only per media —
+ * so this does not remove the monthly screenshot, it just stops the division
+ * from being frozen.
+ *
+ * `follows_reach` is deliberately NOT here, even though it looks identical. Its
+ * denominator is reach summed per post, which double-counts whoever saw two
+ * posts, and is a different quantity from account reach. Deriving it from
+ * `reach` would silently change what the number means.
+ */
+const TAXAS_DERIVADAS = [
+  {
+    key: 'profile_visits_reach',
+    numerador: 'profile_visits',
+    denominador: 'reach',
+    nota: (n: number, d: number, mes: string): string =>
+      `Derivado: ${inteiro(n)} visitas ÷ ${inteiro(d)} contas alcançadas em ${mes}.`
+  }
+] as const
+
+export function derivarTaxas (cartoes: MetricCard[], period: string): MetricCard[] {
+  const valor = new Map(cartoes.map(c => [c.key, c.value]))
+  const mes = mesDe(period)
+
+  return cartoes.map(cartao => {
+    const regra = TAXAS_DERIVADAS.find(t => t.key === cartao.key)
+    if (regra === undefined) return cartao
+
+    const n = valor.get(regra.numerador) ?? null
+    const d = valor.get(regra.denominador) ?? null
+
+    /* Both parts, or nothing changes. A period without one of them keeps the
+       stored value — an older figure is worth more than an empty card, and the
+       note that comes with it still says where it came from. */
+    if (n === null || d === null || d === 0) return cartao
+
+    return { ...cartao, value: n / d, note: regra.nota(n, d, mes) }
+  })
+}
+
+/** "julho", from a `YYYY-MM-01`. UTC, matching how periods are stamped. */
+function mesDe (period: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', timeZone: 'UTC' })
+    .format(new Date(`${period}T00:00:00Z`))
+}
+
+const inteiro = (n: number): string =>
+  new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(n)
 
 export interface CycleSummary {
   id: number
