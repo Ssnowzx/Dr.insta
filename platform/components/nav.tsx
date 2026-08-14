@@ -93,22 +93,38 @@ function ativo (pathname: string, href: string): boolean {
  * What the count on a destination means, spelled out for a screen reader.
  *
  * A bare "3" beside "Pedidos" is announced as "Pedidos 3", which could be a
- * position in a list as easily as a number of open items.
+ * position in a list as easily as a number of open items. The unit is per
+ * destination because they do not count the same thing: news is unread, a
+ * request is outstanding, and "Novidades: 12 em aberto" is the wrong sentence.
  */
-function rotuloCom (label: string, n: number): string | undefined {
-  return n === 0 ? undefined : `${label}: ${n} em aberto`
+const UNIDADE: Record<string, string> = {
+  '/novidades': 'sem ler',
+  '/pedidos': 'em aberto'
+}
+
+function rotuloCom (href: string, label: string, n: number): string | undefined {
+  return n === 0 ? undefined : `${label}: ${n} ${UNIDADE[href] ?? 'em aberto'}`
+}
+
+/**
+ * The badge on a destination, decided once for both navs.
+ *
+ * The rail and the bottom bar each had their own version of this expression,
+ * and they disagreed: the bar counted news, the rail did not, because the rail
+ * carried a second hand-written Novidades item above the list instead.
+ */
+function contagem (href: string, pedidos: number, novidades: number): number {
+  return href === '/pedidos' ? pedidos : href === '/novidades' ? novidades : 0
 }
 
 export function NavLateral ({
   marca,
   conta,
-  consultor,
   novidades,
   pedidos
 }: {
   marca: string
   conta: string
-  consultor: boolean
   novidades: number
   pedidos: number
 }) {
@@ -121,31 +137,25 @@ export function NavLateral ({
         <span className="rail-marca-conta">{conta}</span>
       </div>
 
-      <ul className="rail-lista">
-        {/* Both sides have news now, from different digests — see
-            `lib/digest.ts`. It used to be his alone, which meant the platform
-            told him about her and never her about him. */}
-        <li>
-          <Link
-            href="/novidades"
-            className={ativo(pathname, '/novidades') ? 'rail-item rail-item-ativo' : 'rail-item'}
-            aria-current={ativo(pathname, '/novidades') ? 'page' : undefined}
-          >
-            <Sino />
-            <span>Novidades</span>
-            {novidades > 0 && <span className="numero contador">{novidades}</span>}
-          </Link>
-        </li>
+      {/* Both sides have news now, from different digests — see `lib/digest.ts`.
+          It used to be his alone, which meant the platform told him about her
+          and never her about him.
 
+          Novidades is the first entry of DESTINOS and is rendered by the map
+          like every other one. It used to be written out here as well, from
+          when it was not in the list, and the day it joined the list nobody
+          removed this — so the rail printed "Novidades" twice, once with the
+          badge and once without, on every screen either of them opened. */}
+      <ul className="rail-lista">
         {DESTINOS.map(d => {
-          const n = d.href === '/pedidos' ? pedidos : 0
+          const n = contagem(d.href, pedidos, novidades)
           return (
             <li key={d.href}>
               <Link
                 href={d.href}
                 className={ativo(pathname, d.href) ? 'rail-item rail-item-ativo' : 'rail-item'}
                 aria-current={ativo(pathname, d.href) ? 'page' : undefined}
-                aria-label={rotuloCom(d.label, n)}
+                aria-label={rotuloCom(d.href, d.label, n)}
               >
                 <Icone nome={d.icon} />
                 <span>{d.label}</span>
@@ -198,16 +208,14 @@ export function NavInferior ({
   return (
     <nav className="barra" aria-label="Seções">
       {NA_BARRA.map(d => {
-        const n = d.href === '/pedidos'
-          ? pedidos
-          : d.href === '/novidades' ? novidades : 0
+        const n = contagem(d.href, pedidos, novidades)
         return (
           <Link
             key={d.href}
             href={d.href}
             className={ativo(pathname, d.href) ? 'barra-item barra-item-ativo' : 'barra-item'}
             aria-current={ativo(pathname, d.href) ? 'page' : undefined}
-            aria-label={rotuloCom(d.label, n)}
+            aria-label={rotuloCom(d.href, d.label, n)}
           >
             <Icone nome={d.icon} />
             <span>{d.label}</span>

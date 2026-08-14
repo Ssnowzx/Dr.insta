@@ -69,7 +69,6 @@ export default async function AppLayout ({ children }: { children: ReactNode }) 
       <NavLateral
         marca={brand}
         conta={account}
-        consultor={consultant}
         novidades={unread}
         pedidos={pedidos}
       />
