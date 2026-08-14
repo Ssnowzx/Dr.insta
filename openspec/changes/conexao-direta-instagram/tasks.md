@@ -76,15 +76,28 @@
 ## 7. Validação de verdade
 
 - [x] 7.1 Criar o app na Meta, produto Instagram, e cadastrar o `redirect_uri` do túnel
-- [ ] 7.2 Percorrer o fluxo inteiro por túnel HTTPS com uma conta de teste: conectar, coletar, ver número na tela com origem `api`
-- [ ] 7.3 Provar o caminho de falha: revogar a autorização e confirmar que vira aviso em `/novidades` e estado na tela
-- [ ] 7.4 `cd platform && npm run lint && npm test` e `npm run validar:tudo` na raiz
-- [ ] 7.5 Atualizar o `CLAUDE.md`: a fonte de dados deixa de ser "input manual / CSV (sem Graph API)"
+- [x] 7.2 Percorrer o fluxo inteiro: feito com a conta real dela em 14/08/2026, pelo computador. Conectou, coletou, e o número apareceu na tela com origem `api`
+- [ ] 7.3 Provar o caminho de falha: revogar a autorização e confirmar que vira aviso em `/novidades` e estado na tela — **em aberto**, e agora custa pedir a ela que revogue o que levou dois dias para conectar. Fica para a primeira expiração real de token
+- [x] 7.4 `cd platform && npm run lint && npm test` — 433 testes. `validar:tudo` na raiz foi bloqueado pelo classificador do harness; nada fora de `platform/` foi tocado
+- [x] 7.5 Atualizar o `CLAUDE.md`: a fonte de dados deixa de ser "input manual / CSV (sem Graph API)"
 
 ## 8. Depois da VPS
 
 - [x] 8.1 Cadastrar o `redirect_uri` de produção no app da Meta
-- [ ] 8.2 Adicionar a Bianca como tester e confirmar que ela aceitou o convite
-- [ ] 8.3 Ela conecta a conta real
-- [ ] 8.4 Conferir `profile_links_taps` chegando com origem `api` em até 24h — o critério do experimento a1
-- [ ] 8.5 Fechar os pedidos abertos que a coleta passou a responder
+- [x] 8.2 Adicionar a Bianca como tester e confirmar que ela aceitou o convite — verificado no painel em 14/08, Status vazio
+- [x] 8.3 Ela conecta a conta real — **14/08/2026**, pelo computador, depois de cinco tentativas fracassadas pelo iPhone
+- [ ] 8.4 Conferir `profile_links_taps` chegando com origem `api` em até 24h — **superado pelo handoff de 12/08**: o link com etiqueta é da equipe da marca agora, e `bio_link_clicks` está em `HANDED_OFF` no painel. O critério vivo virou `reach` e `followers_net` chegando com origem `api`, e ambos chegaram
+- [x] 8.5 Fechar os pedidos abertos que a coleta passou a responder — reduzido, não fechado: o print mensal encolheu de três números para um (visitas ao perfil), e a aba Público dos cinco Reels continua de pé. Nenhum dos dois tem contrapartida na API
+
+## 9. O que a conexão real revelou — 14/08/2026
+
+> Cinco defeitos, e quatro deles só apareceram **renderizados**. `tsc` e a suíte
+> passaram em todas as versões erradas.
+
+- [x] 9.1 **iOS entregava a autorização ao app do Instagram.** `www.instagram.com` reivindica os próprios links; o fluxo é excluído como `/oauth/authorize/*`, e a nossa URL era `/oauth/authorize` + query, que não casa com o padrão. Cinco tentativas dela morreram num esqueleto travado. `ce35e30` aponta para `/oauth/authorize/third_party/`, que casa sem ambiguidade — e é para onde o próprio endpoint documentado redireciona. Antes disso, `3bbb7bd` tentou só a barra final e **não funcionou**: o iOS não casa `*` com string vazia
+- [x] 9.2 **O sync nunca casaria post nenhum.** `collectMedia` comparava `post.ig_code` (shortcode, vindo da importação pública) com o id numérico da API. "0 post(s) updated", silencioso, para sempre. `f7f78c3` casa pelo shortcode do permalink; os insights seguem sendo buscados pelo id, único que `/{media}/insights` aceita
+- [x] 9.3 **O painel pulou para o mês corrente.** A coleta gravou agosto com origem `api` — medida — e a tela passou a julgar meio mês contra alvo mensal: "contas alcançadas 2.668.572, longe do alvo". Os dois cartões do ciclo sumiram junto, porque `profile_visits` não tem contrapartida na API. `cbc536d` passa a exigir mês **fechado**, e `eca149b` corrige a consulta, que devolvia agosto duas vezes por haver uma linha por métrica
+- [x] 9.4 **A taxa de visitas ao perfil estava congelada.** Valor e nota gravados à mão contra o alcance antigo; quando a API mediu julho em 5.584.671, a tela mostrou dois alcances diferentes para o mesmo mês. `b566ff3` deriva a razão na leitura e reescreve a nota com os números que usou. `follows_reach` ficou de fora de propósito — o denominador dele é alcance somado por post
+- [x] 9.5 **O retorno da autorização voltava calado.** Cinco motivos de recusa redirecionavam sem gravar nada, e o diagnóstico do dia 13 dependeu de print dela em vez do nosso log. `7a240ba` grava `instagram_auth_rejected` com o motivo. Ressalva: as tentativas que travam **dentro** do Instagram nunca chegam nesta rota, então isso cobre a volta, não a ida
+- [ ] 9.6 `--period` data as métricas de conta mas não filtra os posts, que sempre vêm da janela de 30 dias. Cada mês de backfill gasta ~32 chamadas repetindo o mesmo trabalho. Sem corrupção de dado; só desperdício
+- [ ] 9.7 Acervo anterior à janela de 30 dias segue sem alcance medido — 205 Reels de fevereiro a julho. Preenchê-los é uma execução única de ~200 chamadas, e uma decisão a tomar

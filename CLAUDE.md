@@ -40,7 +40,9 @@ Escreva em **português do Brasil**, direto, sem jargão vazio ("engajar a audi�
 | Nicho | **Moda / Lifestyle** — sempre rode o motor com `--nicho lifestyle` |
 | Objetivo — próximos 90 dias | **Fazer quem ainda não a segue virar seguidor** — 1M até dezembro, alvo declarado por ela |
 | Métrica-norte | Seguidores líquidos por mês (20.824 → 62.200) |
-| Fonte de dados | Input manual / CSV do Insights + API oficial quando ela conectar a conta na plataforma |
+| Fonte de dados | **API oficial desde 14/08/2026** — conta conectada, coleta diária às 03:00. Print mensal só para *visitas ao perfil*, que a API não expõe |
+
+**O que a coleta traz e o que ela não traz.** Por mês, da conta: alcance, views, curtidas, comentários, salvamentos, compartilhamentos, respostas de Stories e seguidores líquidos. Por post, nos últimos 30 dias: alcance, views, salvamentos, compartilhamentos e retenção. **Não traz** — e por isso continua dependendo dela: **visitas ao perfil** (só existe por mídia na API) e a **divisão seguidor / não-seguidor**, que é o denominador honesto da conversão e sustenta o achado dos 41×. Posts anteriores à janela de 30 dias também não têm alcance medido.
 
 O detalhamento vivo (bio, ICP, pilares, voz, metas) está em **`perfil/`**. Leia antes de qualquer recomendação de conteúdo. Se `perfil/perfil.md` ainda tem marcadores `[PREENCHER]`, colete o que falta antes de produzir plano editorial — mas não bloqueie análise de métricas por isso.
 

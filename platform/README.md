@@ -249,6 +249,36 @@ The token is stored encrypted (AES-256-GCM, key outside the database) and
 refreshed with fifteen days to spare. **Losing `ENCRYPTION_KEY` loses the
 connection**; she reconnects in two clicks.
 
+#### Two traps this cost two days to find
+
+**The authorisation URL must stay `/oauth/authorize/third_party/`.** On iOS,
+`www.instagram.com` claims its own links, and the app's
+`apple-app-site-association` excludes the flow as `/oauth/authorize/*` — with a
+slash. The documented entry point is `/oauth/authorize` plus a query string,
+which does **not** match that pattern, so the phone hands the navigation to the
+Instagram app, where the consent screen does not exist: a stuck skeleton and
+"Ocorreu um erro". A bare trailing slash does not help either — iOS does not
+treat `*` as matching the empty string. `third_party` has a segment after the
+slash, matches unambiguously, and is where the documented endpoint redirects on
+its own. It is an internal path and Instagram may move it; if it ever 404s,
+reverting to `/oauth/authorize` fixes every browser except iPhones.
+
+**Per-post insights match the archive by shortcode, not by media id.** The API
+answers with its own numeric id; `post.ig_code` holds the shortcode from the
+permalink, because the archive is built from the public export, which never sees
+that id. Comparing one against the other finds nothing and reports "0 post(s)
+updated", which is indistinguishable from the API having no recent posts. The
+insights call still uses the numeric id — it is the only identifier
+`/{media}/insights` accepts.
+
+#### What the API does not give
+
+`profile_visits` has no account-level metric — it exists only per media — so the
+second step of the funnel still arrives by monthly screenshot. The
+follower / non-follower split of an audience is not exposed either, and that is
+the honest denominator for follower conversion. Neither absence is a bug to fix
+here; both are why some requests to the client remain open.
+
 Collection runs from cron on the host, not from a timer inside the server —
 which would die on every restart and keep no log anyone can read:
 

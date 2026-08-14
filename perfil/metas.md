@@ -82,6 +82,23 @@ alto e otimizá-los seria resolver problema que a conta não tem.
 entre seguidor e estranho foi inferida por fonte de tráfego em 8 Reels — indício, não
 medição. Alvo em cima de indício é ficção, e coletar a aba Público é o passo zero do ciclo.
 
+> **A fonte mudou em 14/08/2026, os alvos não.** A conta foi conectada e o alcance
+> de julho passou a ser medido pela API: **5.584.671**, contra os 5.413.754
+> transcritos do print. Diferença de 3,2%, e a versão medida é a melhor.
+>
+> **O baseline da tabela fica como está.** Trocar a régua no meio do ciclo faria o
+> guard-rail medir contra um número que ninguém acordou, e faria o "não cair"
+> parecer cumprido por mudança de fonte. Os alvos deste ciclo foram fixados sobre
+> os números de 13/08; na virada do próximo, tudo passa a nascer medido.
+>
+> Consequência prática no painel: a taxa de visitas ao perfil é derivada na
+> leitura desde `b566ff3`, então ela acompanha o alcance vigente — 347.482 ÷
+> 5.584.671 = **6,22%**, onde antes se lia 6,42%. Mesma realidade, denominador
+> melhor.
+>
+> **Visitas ao perfil continua sendo print.** Não existe como métrica de conta na
+> API. É o único número do pedido mensal que sobrou.
+
 ## Experimentos do ciclo
 
 Do maior desperdício para o menor. **Um de cada vez**, porque o estágio de baixo multiplica
