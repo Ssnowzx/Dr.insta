@@ -170,5 +170,5 @@ async function countUnread (
     return digest?.total ?? 0
   }
 
-  return (await clientDigestFor(clientId, since, now)).total
+  return (await clientDigestFor(clientId, since, now, userId)).total
 }

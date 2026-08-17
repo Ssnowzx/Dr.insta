@@ -38,10 +38,34 @@ export type RequestState = 'open' | 'answered' | 'analyzing' | 'concluded' | 'dr
 /** One answer given by someone on the client's team. */
 export interface TeamAnswer {
   stepId: number
+  userId: number
   userName: string
   state: StepState
   comment: string | null
   updatedAt: Date
+}
+
+/**
+ * This reader's OWN answers, by step.
+ *
+ * Separate from the team's, and the separation is load-bearing. `step_status`
+ * is one row per person, so the note a control EDITS must be that person's — a
+ * textarea pre-filled with a teammate's sentence writes the teammate's words
+ * into the reader's row, under the reader's name, on the next save. Worse than
+ * losing a note: it fabricates one.
+ *
+ * That is not hypothetical. It shipped on 17/08/2026, in the same change that
+ * made the STATE shared: the display note and the editable note became one
+ * value, and `marcar()` sends the textarea on every state change — so merely
+ * tapping "feito" would have copied the other person's note across.
+ */
+export function ownAnswers (
+  answers: TeamAnswer[],
+  userId: number
+): Map<number, TeamAnswer> {
+  const map = new Map<number, TeamAnswer>()
+  for (const a of answers) if (a.userId === userId) map.set(a.stepId, a)
+  return map
 }
 
 /**
@@ -90,7 +114,10 @@ export interface Resolved {
   state: StepState
   /** Who answered. Null when the platform decided it, or when nobody has. */
   by: string | null
+  /** That person's id, so a screen can tell "mine" from "my teammate's". */
+  byId: number | null
   at: Date | null
+  /** The newest note from anyone on the team. For DISPLAY — see `ownAnswers`. */
   comment: string | null
   /** Present exactly when the platform proved it. */
   proof: Proof | null
@@ -200,6 +227,7 @@ export function resolveStep (
          answers "quem marcou?" with the platform, on a step she marked herself,
          is a screen taking her work. */
       by: answer?.state === 'done' ? answer.userName : null,
+      byId: answer?.state === 'done' ? answer.userId : null,
       at: answer?.state === 'done' ? answer.updatedAt : proof.at,
       comment: answer?.comment ?? null,
       proof
@@ -207,12 +235,13 @@ export function resolveStep (
   }
 
   if (answer === null) {
-    return { state: 'pending', by: null, at: null, comment: null, proof: null }
+    return { state: 'pending', by: null, byId: null, at: null, comment: null, proof: null }
   }
 
   return {
     state: answer.state,
     by: answer.userName,
+    byId: answer.userId,
     at: answer.updatedAt,
     comment: answer.comment,
     proof: null

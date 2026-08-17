@@ -3162,3 +3162,16 @@ a.btn-acesso:hover { border-color: var(--dado); text-decoration: none; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Who wrote the note above it. A teammate's note and your own look identical
+   without this, and on a two-person account "not mine" is the first thing you
+   need to know about a sentence. */
+.resposta-nota-quem {
+  display: block;
+  font-family: var(--mono);
+  font-size: .625rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin-bottom: .25rem;
+}

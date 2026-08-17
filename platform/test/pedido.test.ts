@@ -135,7 +135,7 @@ describe('o resumo dela lê o que ele fechou', () => {
     })
 
     // ACT
-    const dela = await clientDigestFor(clientId, ...janela())
+    const dela = await clientDigestFor(clientId, ...janela(), clientUser)
 
     // ASSERT
     expect(dela.answered).toHaveLength(1)
@@ -149,7 +149,7 @@ describe('o resumo dela lê o que ele fechou', () => {
     })
 
     // ACT
-    const dela = await clientDigestFor(clientId, ...janela())
+    const dela = await clientDigestFor(clientId, ...janela(), clientUser)
 
     // ASSERT
     expect(dela.answered).toHaveLength(1)
@@ -163,7 +163,7 @@ describe('o resumo dela lê o que ele fechou', () => {
     })
 
     // ACT
-    const dela = await clientDigestFor(clientId, ...janela())
+    const dela = await clientDigestFor(clientId, ...janela(), clientUser)
 
     // ASSERT
     expect(dela.answered).toHaveLength(0)

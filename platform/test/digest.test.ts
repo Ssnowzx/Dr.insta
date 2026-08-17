@@ -25,6 +25,10 @@ let deliveryId = 0
 
 const at = (iso: string): Date => new Date(iso)
 
+/* The window both suites read. Module-level because two describes need it, and
+   a copy in each is a copy that drifts. */
+const janela = (): [Date, Date] => [at('2026-03-10T00:00:00Z'), at('2026-03-11T00:00:00Z')]
+
 beforeAll(async () => {
   const now = new Date()
 
@@ -307,8 +311,6 @@ describe('digestFor and the Instagram connection', () => {
  * she learns to skip, and then the one that needed her is skipped too.
  */
 describe('clientDigestFor', () => {
-  const janela = (): [Date, Date] => [at('2026-03-10T00:00:00Z'), at('2026-03-11T00:00:00Z')]
-
   afterEach(async () => {
     await orm().delete(instagramConnection).where(eq(instagramConnection.clientId, clientId))
   })
@@ -323,7 +325,9 @@ describe('clientDigestFor', () => {
 
   it('should say nothing when nothing changed', async () => {
     // ARRANGE / ACT
-    const dela = await clientDigestFor(clientId, at('2026-01-01T00:00:00Z'), at('2026-01-02T00:00:00Z'))
+    const dela = await clientDigestFor(
+      clientId, at('2026-01-01T00:00:00Z'), at('2026-01-02T00:00:00Z'), clientUser
+    )
 
     // ASSERT
     expect(dela.total).toBe(0)
@@ -334,7 +338,7 @@ describe('clientDigestFor', () => {
     await conectar('expired')
 
     // ACT
-    const dela = await clientDigestFor(clientId, ...janela())
+    const dela = await clientDigestFor(clientId, ...janela(), clientUser)
 
     // ASSERT — she is the only one who can renew it
     expect(dela.connection).toHaveLength(1)
@@ -345,7 +349,7 @@ describe('clientDigestFor', () => {
     await conectar('failing')
 
     // ACT
-    const dela = await clientDigestFor(clientId, ...janela())
+    const dela = await clientDigestFor(clientId, ...janela(), clientUser)
 
     // ASSERT — handing over worry with no action is what teaches her to
     // ignore the bell. That state belongs on his screen.
@@ -358,7 +362,7 @@ describe('clientDigestFor', () => {
     await conectar('active')
 
     // ACT
-    const dela = await clientDigestFor(clientId, ...janela())
+    const dela = await clientDigestFor(clientId, ...janela(), clientUser)
 
     // ASSERT
     expect(dela.connection).toEqual([])
@@ -370,10 +374,74 @@ describe('clientDigestFor', () => {
 
     // ACT
     const dele = await digestFor(clientId, ...janela())
-    const dela = await clientDigestFor(clientId, ...janela())
+    const dela = await clientDigestFor(clientId, ...janela(), clientUser)
 
     // ASSERT
     expect(dele?.blocked).toHaveLength(1)
     expect(dela.total).toBe(0)
+  })
+})
+
+/**
+ * Two people on the client side.
+ *
+ * Every group in her digest was about HIM, from when "the client" meant one
+ * person. With an assistant working the same profile that left the two of them
+ * invisible to each other — and two people acting on shared state with no
+ * shared record is how a request gets answered twice.
+ */
+describe('clientDigestFor — a teammate', () => {
+  let colega = 0
+
+  beforeAll(async () => {
+    const now = new Date()
+    const [u] = await orm().insert(user).values({
+      publicCode: ulid(), clientId, email: `${MARK}-colega@example.invalid`,
+      name: 'Assessora Pessoa', jobTitle: 'assessora', role: 'client',
+      createdAt: now, updatedAt: now
+    }).$returningId()
+    colega = u?.id ?? 0
+  })
+
+  afterAll(async () => {
+    await orm().delete(stepStatus).where(eq(stepStatus.userId, colega))
+    await orm().delete(user).where(eq(user.id, colega))
+  })
+
+  it('should report what the teammate did', async () => {
+    // ARRANGE — the assistant marked a chore; Bianca's screen said nothing
+    await markAt(colega, 'done', at('2026-03-10T14:00:00Z'))
+
+    // ACT — read by the OTHER person on the team
+    const dela = await clientDigestFor(clientId, ...janela(), clientUser)
+
+    // ASSERT
+    expect(dela.team).toHaveLength(1)
+    expect(dela.team[0]?.detail).toContain('Assessora Pessoa')
+    expect(dela.team[0]?.detail).toContain('feito')
+  })
+
+  it('should NOT report the reader their own action', async () => {
+    // ARRANGE — the rule every other group here follows. Telling someone what
+    // they just did is noise, and noise is what stops the screen being opened.
+    await markAt(colega, 'done', at('2026-03-10T14:00:00Z'))
+
+    // ACT — read by the person who did it
+    const dele = await clientDigestFor(clientId, ...janela(), colega)
+
+    // ASSERT
+    expect(dele.team).toEqual([])
+  })
+
+  it('should carry what blocked them, not just that it blocked', async () => {
+    // ARRANGE — "travou" alone sends the other one to go and look. The sentence
+    // is the whole reason the state exists.
+    await markAt(colega, 'blocked', at('2026-03-10T14:00:00Z'), 'não achei essa aba')
+
+    // ACT
+    const dela = await clientDigestFor(clientId, ...janela(), clientUser)
+
+    // ASSERT
+    expect(dela.team[0]?.detail).toContain('não achei essa aba')
   })
 })

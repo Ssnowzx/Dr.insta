@@ -29,7 +29,7 @@ export default async function Novidades () {
   const clientId = await clientScope()
 
   const digest = consultor ? await digestFor(clientId, since, until) : null
-  const dela = consultor ? null : await clientDigestFor(clientId, since, until)
+  const dela = consultor ? null : await clientDigestFor(clientId, since, until, identity.userId)
   const total = digest?.total ?? dela?.total ?? 0
 
   return (
@@ -72,6 +72,15 @@ export default async function Novidades () {
             itens={dela.requests}
             tom="critico"
             acao={{ href: '/pedidos', rotulo: 'ver os pedidos' }}
+          />
+          {/* Right after what needs her, and before what I published. Two
+              people work this profile: knowing that the other one already
+              answered a request is what stops it being answered twice, and it
+              is more urgent than a new delivery to read. */}
+          <Grupo
+            titulo="Sua equipe"
+            itens={dela.team}
+            tom="neutro"
           />
           <Grupo
             titulo="Roteiro novo"

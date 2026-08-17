@@ -8,7 +8,7 @@ import {
 import type { PillarRow } from '@/lib/dashboard'
 import { clientScope, requireSession } from '@/lib/dal'
 import { longDate, shortDate } from '@/lib/format'
-import { newestPerStep, resolveStep, stillPending } from '@/lib/verificacao'
+import { newestPerStep, ownAnswers, resolveStep, stillPending } from '@/lib/verificacao'
 import type { Resolved } from '@/lib/verificacao'
 
 export const metadata: Metadata = { title: 'Plano' }
@@ -114,6 +114,14 @@ export default async function Plano () {
 
   const porEtapa = newestPerStep(respostas)
 
+  /* This reader's OWN rows, kept apart from the team's. `step_status` is one row
+     per person, so the note the control EDITS has to be theirs — see
+     `ownAnswers`. Feeding it the team's note made a textarea pre-filled with a
+     teammate's sentence, and `marcar()` posts that textarea on every state
+     change: tapping "feito" would have written Bianca's words into Cris's row,
+     under Cris's name. */
+  const minhas = ownAnswers(respostas, identity.userId)
+
   /* Resolved once, into a map, rather than recomputed at each of the six places
      that ask. The old version called `estadoDe` inside the headline, the score,
      the badge and the row class, and the day one of those was left reading the
@@ -126,7 +134,9 @@ export default async function Plano () {
   )
 
   const de = (id: number): Resolved =>
-    estado.get(id) ?? { state: 'pending', by: null, at: null, comment: null, proof: null }
+    estado.get(id) ?? {
+      state: 'pending', by: null, byId: null, at: null, comment: null, proof: null
+    }
 
   /* Blocked does NOT count as pending. It is not waiting on them — they already
      said it stopped, and the next move is mine. */
@@ -296,9 +306,12 @@ export default async function Plano () {
                         <StepControl
                           stepId={etapa.id}
                           estado={r.state}
-                          comentario={r.comment}
+                          comentario={minhas.get(etapa.id)?.comment ?? null}
                           {...(r.by === null ? {} : { quem: r.by })}
                           {...(r.at === null ? {} : { quando: shortDate(r.at) })}
+                          {...(r.comment !== null && r.byId !== identity.userId && r.by !== null
+                            ? { notaDeOutro: { texto: r.comment, quem: r.by } }
+                            : {})}
                           somenteLeitura={ehConsultor}
                         />
                         )}

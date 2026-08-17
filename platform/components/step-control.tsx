@@ -42,14 +42,25 @@ export function StepControl ({
   comentario,
   quem,
   quando,
+  notaDeOutro,
   somenteLeitura = false
 }: {
   stepId: number
   estado: StepState
+  /**
+   * THIS person's note, never the team's.
+   *
+   * It is the textarea's `defaultValue`, and `marcar()` posts that textarea on
+   * every state change — so a teammate's sentence here would be written into
+   * this person's row, under this person's name, by a tap on "feito". The
+   * team's note is `notaDeOutro`, displayed and not editable.
+   */
   comentario: string | null
   /** Who last answered, when someone has. */
   quem?: string
   quando?: string
+  /** A note written by the OTHER person on the team. Read-only, attributed. */
+  notaDeOutro?: { texto: string; quem: string }
   somenteLeitura?: boolean
 }) {
   const [pendente, iniciar] = useTransition()
@@ -136,6 +147,16 @@ export function StepControl ({
         <p className="resposta-quem">
           {quem} marcou{quando === undefined ? '' : ` em ${quando}`}. Se mudou, é
           só tocar de novo.
+        </p>
+      )}
+
+      {/* What the teammate wrote, shown and not editable. It used to be loaded
+          into the textarea below, which is how one person's words got saved
+          under the other's name. */}
+      {notaDeOutro !== undefined && (
+        <p className="resposta-nota">
+          <span className="resposta-nota-quem">{notaDeOutro.quem} anotou</span>
+          {notaDeOutro.texto}
         </p>
       )}
 

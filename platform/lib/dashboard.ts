@@ -1008,6 +1008,11 @@ export async function teamStepAnswers (clientId: number): Promise<TeamAnswer[]> 
   return await orm()
     .select({
       stepId: stepStatus.stepId,
+      /* Which of them, not just their name. The screen needs to tell the
+         reader's OWN row apart from a teammate's: the note a control EDITS has
+         to be the reader's, or saving copies one person's words into the
+         other's row under the other's name. */
+      userId: stepStatus.userId,
       userName: user.name,
       state: stepStatus.state,
       comment: stepStatus.comment,

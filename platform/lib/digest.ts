@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, desc, eq, gte, inArray, isNotNull, lt } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, isNotNull, lt, ne } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import {
   auditLog, client, delivery, file, instagramConnection, request, requestEvent,
@@ -395,6 +395,24 @@ export interface ClientDigest {
   /** He answered something she was waiting on. */
   answered: DigestItem[]
   /**
+   * What the OTHER person on her own team did.
+   *
+   * This digest was built when "the client" meant one person, so every group in
+   * it is about HIM. With Bianca and her assistant both working the profile,
+   * that left the two of them invisible to each other: Cris could mark three
+   * chores and upload five files and Bianca's Novidades would say nothing.
+   *
+   * They talk outside the product, of course — and that is exactly the problem
+   * this closes. Two people acting on shared state with no shared record is how
+   * the same request gets answered twice and a chore gets marked done by
+   * someone who did not do it.
+   *
+   * The reader's OWN actions are excluded, the rule every other group here
+   * follows: telling someone what they just did is noise, and noise is what
+   * teaches a person to stop opening the screen.
+   */
+  team: DigestItem[]
+  /**
    * New pautas and what he wrote back on the ones they were talking about.
    *
    * Its own group and not folded into `published`: a delivery is read once, a
@@ -408,7 +426,18 @@ export interface ClientDigest {
 export async function clientDigestFor (
   clientId: number,
   since: Date,
-  until: Date
+  until: Date,
+  /**
+   * Who is reading, so their own actions can be left out.
+   *
+   * REQUIRED, and it was optional for about ten minutes. This function answers
+   * "what changed here that I did not do", and that question has no meaning
+   * without knowing who "I" am — a default would have to guess, and the guess
+   * that fails open reports a person's own work back to them, which is exactly
+   * what every other group here refuses to do. `test/digest.test.ts` caught it
+   * on the first run.
+   */
+  readerId: number
 ): Promise<ClientDigest> {
   const connection: DigestItem[] = []
 
@@ -545,15 +574,119 @@ export async function clientDigestFor (
     }))
   ]
 
+  // ------------------------------------------------- her own teammate
+  const team = await teamActivity(clientId, since, until, readerId)
+
   return {
     connection,
     requests,
     published,
     answered,
     ideas,
+    team,
     total: connection.length + requests.length + published.length +
-      answered.length + ideas.length
+      answered.length + ideas.length + team.length
   }
+}
+
+/**
+ * What the other people on this client's team did.
+ *
+ * Three sources, because three things change shared state: marking a chore,
+ * writing or uploading on a request, and moving a pauta. Each is scoped to
+ * client-side users other than the reader.
+ *
+ * `ne(user.id, readerId)` and NOT a filter applied afterwards: pulling the
+ * reader's own rows out in JavaScript would still have read them, and the
+ * moment someone adds a `limit` the reader's own activity starts pushing the
+ * teammate's off the list.
+ */
+async function teamActivity (
+  clientId: number,
+  since: Date,
+  until: Date,
+  readerId: number
+): Promise<DigestItem[]> {
+  const [passos, eventos, pautas] = await Promise.all([
+    orm()
+      .select({
+        title: step.title,
+        state: stepStatus.state,
+        comment: stepStatus.comment,
+        at: stepStatus.updatedAt,
+        who: user.name
+      })
+      .from(stepStatus)
+      .innerJoin(step, eq(step.id, stepStatus.stepId))
+      .innerJoin(user, eq(user.id, stepStatus.userId))
+      .where(and(
+        eq(step.clientId, clientId),
+        eq(user.clientId, clientId),
+        ne(user.id, readerId),
+        gte(stepStatus.updatedAt, since),
+        lt(stepStatus.updatedAt, until)
+      ))
+      .orderBy(desc(stepStatus.updatedAt)),
+
+    orm()
+      .select({
+        title: request.title,
+        kind: requestEvent.kind,
+        body: requestEvent.body,
+        fileName: file.originalName,
+        at: requestEvent.createdAt,
+        who: user.name,
+        requestId: request.id
+      })
+      .from(requestEvent)
+      .innerJoin(request, eq(request.id, requestEvent.requestId))
+      .innerJoin(user, eq(user.id, requestEvent.userId))
+      .leftJoin(file, eq(file.id, requestEvent.fileId))
+      .where(and(
+        eq(request.clientId, clientId),
+        eq(user.clientId, clientId),
+        ne(user.id, readerId),
+        inArray(requestEvent.kind, ['comment', 'file']),
+        gte(requestEvent.createdAt, since),
+        lt(requestEvent.createdAt, until)
+      ))
+      .orderBy(desc(requestEvent.createdAt)),
+
+    ideaNotesSince(clientId, since, until, 'client', readerId)
+  ])
+
+  const itens: DigestItem[] = [
+    ...passos.map(p => ({
+      title: p.title,
+      detail: p.state === 'blocked'
+        ? `${p.who} marcou que travou${p.comment === null ? '' : `: ${abertura(p.comment, 90)}`}`
+        : p.state === 'done'
+          ? `${p.who} marcou como feito`
+          : `${p.who} reabriu`,
+      at: p.at,
+      who: p.who
+    })),
+    ...eventos.map(e => ({
+      title: e.title,
+      detail: e.kind === 'file'
+        ? `${e.who} anexou ${e.fileName ?? 'um arquivo'}`
+        : `${e.who} escreveu: ${abertura(e.body ?? '', 90)}`,
+      at: e.at,
+      who: e.who,
+      /* By the request, so an upload session of eight files collapses to one
+         line instead of eight identical ones. */
+      key: `equipe-${e.requestId}-${e.kind}`
+    })),
+    ...pautas.map(n => ({
+        title: n.title,
+      detail: `${n.who} comentou: ${abertura(n.body, 90)}`,
+      at: n.at,
+      who: n.who,
+      key: `equipe-pauta-${n.code}`
+    }))
+  ]
+
+  return condensar(itens).sort((a, b) => b.at.getTime() - a.at.getTime())
 }
 
 /** What each broken state means for him, in one line. */

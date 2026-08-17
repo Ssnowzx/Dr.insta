@@ -224,7 +224,15 @@ export async function ideaNotesSince (
   clientId: number,
   since: Date,
   until: Date,
-  side: 'client' | 'consultant'
+  side: 'client' | 'consultant',
+  /**
+   * Whose notes to leave out — the reader's own.
+   *
+   * Needed once the client side is two people: "what my teammate wrote" cannot
+   * be expressed by role alone. Zero is no user, so the default excludes
+   * nobody and the four callers that do not care are unaffected.
+   */
+  exceptUserId = 0
 ): Promise<Array<{ title: string; body: string; who: string; at: Date; code: string }>> {
   const rows = await orm()
     .select({
@@ -240,6 +248,7 @@ export async function ideaNotesSince (
     .where(and(
       eq(idea.clientId, clientId),
       side === 'client' ? eq(user.role, 'client') : eq(user.role, 'consultant'),
+      ne(user.id, exceptUserId),
       sql`${ideaNote.createdAt} >= ${since}`,
       sql`${ideaNote.createdAt} < ${until}`
     ))

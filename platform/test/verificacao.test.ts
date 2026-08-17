@@ -27,6 +27,7 @@ const passo = (over: Partial<Verifiable> = {}): Verifiable => ({
 
 const resposta = (over: Partial<TeamAnswer> = {}): TeamAnswer => ({
   stepId: 1,
+  userId: 1,
   userName: 'Bianca',
   state: 'pending',
   comment: null,
