@@ -83,7 +83,7 @@ describe('deliveries', () => {
     // ARRANGE — the whole point of dropping the INNER JOIN. An analysis has no
     // chores, and for months that meant it could not be rendered anywhere.
     // ACT
-    const lista = await deliveries(clientId, userId)
+    const lista = await deliveries(clientId)
 
     // ASSERT
     const achada = lista.find(d => d.id === semEtapas)
@@ -95,7 +95,7 @@ describe('deliveries', () => {
     // ARRANGE — the half a careless revert would break: the plan still needs
     // its steps, in the order the seed gave them
     // ACT
-    const lista = await deliveries(clientId, userId)
+    const lista = await deliveries(clientId)
 
     // ASSERT
     const achada = lista.find(d => d.id === comEtapas)

@@ -4,9 +4,11 @@ import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { and, eq } from 'drizzle-orm'
 import { orm } from '@/db/client'
-import { auditLog, step, stepStatus } from '@/db/schema'
+import { auditLog, request, step, stepStatus } from '@/db/schema'
 import { requireSession } from './dal.ts'
+import { observedFacts } from './dashboard.ts'
 import { canReach } from './scope.ts'
+import { proofFor } from './verificacao.ts'
 
 /**
  * Marking a step.
@@ -42,8 +44,16 @@ export async function setStepState (
      that arrived with the request would let one client mark another client's
      steps by editing a number in the payload. */
   const rows = await orm()
-    .select({ id: step.id, clientId: step.clientId })
+    .select({
+      id: step.id,
+      clientId: step.clientId,
+      verifyKey: step.verifyKey,
+      requestId: step.requestId,
+      requestState: request.state,
+      requestCode: request.publicCode
+    })
     .from(step)
+    .leftJoin(request, eq(request.id, step.requestId))
     .where(eq(step.id, stepId))
     .limit(1)
 
@@ -53,6 +63,20 @@ export async function setStepState (
      that" would confirm the step exists, and step ids are sequential. */
   if (found === undefined || !canReach(identity, found.clientId)) {
     return { ok: false, error: 'Esse item não está mais aqui. Recarregue a página.' }
+  }
+
+  /* A step the platform can see was done is not open to being marked undone.
+     The screen does not offer the control in that case, so reaching this is
+     either a stale tab or a crafted request — and a state written here would be
+     ignored by every reader anyway, since `resolveStep` lets proof win. Failing
+     loudly beats accepting a write that changes nothing on screen, which is how
+     someone concludes the app does not save. */
+  const proof = proofFor(found, await observedFacts(found.clientId))
+  if (proof !== null && state !== 'done') {
+    return {
+      ok: false,
+      error: `Este item eu já conferi por aqui — ${proof.label}. Se estiver errado, me conta em Pedidos que eu ajusto.`
+    }
   }
 
   const trimmed = comment === null ? null : comment.trim().slice(0, MAX_COMMENT)
@@ -104,6 +128,10 @@ export async function setStepState (
 export async function setStepComment (stepId: number, comment: string): Promise<StepResult> {
   const identity = await requireSession()
 
+  /* This person's own row, deliberately. The state the SCREEN shows is the
+     team's, but writing a note must not silently adopt someone else's answer as
+     this person's — `step_status` stays one row per person, and a comment saved
+     over an assistant's "travou" would rewrite what she reported. */
   const rows = await orm()
     .select({
       clientId: step.clientId,

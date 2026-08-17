@@ -3,12 +3,14 @@ import { cache } from 'react'
 import { and, desc, eq, inArray, isNotNull, lt, or, sql } from 'drizzle-orm'
 import { orm } from '@/db/client'
 import {
-  benchmark, client, cycle, delivery, deliverySection, experiment, metricDef,
-  metricTarget, metricValue, file, pillar, post, request, requestEvent, step,
-  stepStatus, user
+  benchmark, client, cycle, delivery, deliverySection, experiment,
+  instagramConnection, metricDef, metricTarget, metricValue, file, pillar, post,
+  request, requestEvent, step, stepStatus, user
 } from '@/db/schema'
 import { mediana } from './acervo.ts'
 import { ORIGENS_MEDIDAS, resolverPorChave } from './precedencia.ts'
+import { VERIFY_INSTAGRAM } from './verificacao.ts'
+import type { ObservedFacts, TeamAnswer } from './verificacao.ts'
 import type { Unit } from './format.ts'
 
 /**
@@ -439,8 +441,15 @@ export interface StepRow {
   copyValue: string | null
   copyLabel: string | null
   copyNote: string | null
-  state: 'pending' | 'done' | 'blocked'
-  comment: string | null
+  /* How this step can prove itself, and the state of what would prove it. The
+     row carries no `state` any more: the answer belongs to the team and to the
+     facts, and it is `lib/verificacao.ts` that puts the two together. A `state`
+     here would be a fourth place for the same question to be answered. */
+  verifyKey: string | null
+  requestId: number | null
+  requestState: 'open' | 'answered' | 'analyzing' | 'concluded' | 'dropped' | null
+  requestCode: string | null
+  requestTitle: string | null
 }
 
 export interface DeliveryWithSteps {
@@ -454,13 +463,22 @@ export interface DeliveryWithSteps {
 }
 
 /**
- * The published deliveries and their steps, with this user's own state.
+ * The published deliveries and their steps.
  *
- * The join to `step_status` carries `userId` so two people following the same
- * delivery each see their own answers. Joining on the step alone would show
- * whichever of them wrote last.
+ * It no longer takes a user, and that is the fix rather than a tidy-up. The join
+ * to `step_status` used to carry the reader's own id, so with two people on the
+ * client side — Bianca and her assistant — whatever one of them marked read
+ * "a fazer" to the other, and the same chore would be done twice or by neither.
+ *
+ * What replaces it: `teamStepAnswers` for what the team said, `observedFacts`
+ * for what the platform saw, and `lib/verificacao.ts` to put them together. One
+ * state, for everyone who opens the screen.
+ *
+ * The `leftJoin` to `request` is how a chore stops being asked for once she has
+ * answered it in Pedidos — the two used to be the same job on two screens with
+ * nothing joining them.
  */
-export async function deliveries (clientId: number, userId: number): Promise<DeliveryWithSteps[]> {
+export async function deliveries (clientId: number): Promise<DeliveryWithSteps[]> {
   const rows = await orm()
     .select({
       deliveryId: delivery.id,
@@ -481,8 +499,11 @@ export async function deliveries (clientId: number, userId: number): Promise<Del
       copyLabel: step.copyLabel,
       copyNote: step.copyNote,
       position: step.position,
-      state: stepStatus.state,
-      comment: stepStatus.comment
+      verifyKey: step.verifyKey,
+      requestId: step.requestId,
+      requestState: request.state,
+      requestCode: request.publicCode,
+      requestTitle: request.title
     })
     .from(delivery)
     /* `leftJoin` and not `inner`: a delivery with no steps is a delivery that is
@@ -492,9 +513,13 @@ export async function deliveries (clientId: number, userId: number): Promise<Del
        now decide what to do with a step-less delivery; the JOIN no longer
        decides what exists. */
     .leftJoin(step, eq(step.deliveryId, delivery.id))
-    .leftJoin(stepStatus, and(
-      eq(stepStatus.stepId, step.id),
-      eq(stepStatus.userId, userId)
+    /* Scoped by client as well as by id. Matching on `step.requestId` alone
+       would be enough today — the ids come from the same seed — but every domain
+       query here filters by client, and the one that does not is the one that
+       leaks after a restored dump. */
+    .leftJoin(request, and(
+      eq(request.id, step.requestId),
+      eq(request.clientId, clientId)
     ))
     .where(and(
       eq(delivery.clientId, clientId),
@@ -542,12 +567,40 @@ export async function deliveries (clientId: number, userId: number): Promise<Del
       copyValue: r.copyValue,
       copyLabel: r.copyLabel,
       copyNote: r.copyNote,
-      state: r.state ?? 'pending',
-      comment: r.comment
+      verifyKey: r.verifyKey,
+      requestId: r.requestId,
+      requestState: r.requestState,
+      requestCode: r.requestCode,
+      requestTitle: r.requestTitle
     })
   }
 
   return [...map.values()]
+}
+
+/**
+ * The facts the platform can see for itself, keyed by `step.verify_key`.
+ *
+ * One query per verifier, and there is one verifier. Adding a second means
+ * adding a query here and a case in `proofFor` — deliberately not a registry
+ * with dynamic dispatch, which would be machinery for a list of two.
+ */
+export async function observedFacts (clientId: number): Promise<ObservedFacts> {
+  const rows = await orm()
+    .select({ connectedAt: instagramConnection.connectedAt })
+    .from(instagramConnection)
+    .where(and(
+      eq(instagramConnection.clientId, clientId),
+      /* `active` only. `failing` still counts as connected — the credential is
+         valid and she did the thing — but `expired` and `revoked` do not, and
+         the rule in `resolveStep` keeps a step that was already done from
+         reverting when one of those arrives. */
+      inArray(instagramConnection.state, ['active', 'failing'])
+    ))
+    .limit(1)
+
+  const row = rows[0]
+  return row === undefined ? {} : { [VERIFY_INSTAGRAM]: row.connectedAt }
 }
 
 export interface RequestRow {
@@ -938,23 +991,20 @@ export function periodOf (date: Date): string {
   return `${ano}-${mes}-01`
 }
 
-export interface StepAnswer {
-  stepId: number
-  userName: string
-  state: 'pending' | 'done' | 'blocked'
-  comment: string | null
-  updatedAt: Date
-}
-
 /**
- * Every answer on this client's steps, whoever gave it.
+ * Every answer the CLIENT'S TEAM gave on this client's steps.
  *
- * The consultant view needs this because `deliveries()` filters `step_status` by
- * the reader's own user id — and the consultant never marked anything. Without
- * a separate query the consultant would see an empty plan and conclude she has
- * not started.
+ * One list, read by both roles. It used to exist only for the consultant, as a
+ * workaround for `deliveries()` joining on the reader's own id; now it is the
+ * single source of "what did they say about this chore", and the per-user rows
+ * behind it are what still answers "which of them said it".
+ *
+ * The `user.clientId` filter is what keeps a consultant's own marking out. He
+ * can mark a step — the action allows it, and sometimes he does it on her behalf
+ * after a call — but his answer must not become the team's, or the plan would
+ * report her work back to her in her own screen.
  */
-export async function clientStepAnswers (clientId: number): Promise<StepAnswer[]> {
+export async function teamStepAnswers (clientId: number): Promise<TeamAnswer[]> {
   return await orm()
     .select({
       stepId: stepStatus.stepId,
@@ -966,7 +1016,10 @@ export async function clientStepAnswers (clientId: number): Promise<StepAnswer[]
     .from(stepStatus)
     .innerJoin(step, eq(step.id, stepStatus.stepId))
     .innerJoin(user, eq(user.id, stepStatus.userId))
-    .where(eq(step.clientId, clientId))
+    .where(and(
+      eq(step.clientId, clientId),
+      eq(user.clientId, clientId)
+    ))
     .orderBy(desc(stepStatus.updatedAt))
 }
 
@@ -1322,6 +1375,8 @@ export async function archiveAge (
 export interface ClientUser {
   id: number
   name: string
+  /** What she does, for the screen to say. Never a permission — see the schema. */
+  jobTitle: string | null
   email: string
   hasPassword: boolean
   lastSeenAt: Date | null
@@ -1338,6 +1393,7 @@ export async function clientUsers (clientId: number): Promise<ClientUser[]> {
     .select({
       id: user.id,
       name: user.name,
+      jobTitle: user.jobTitle,
       email: user.email,
       passwordHash: user.passwordHash,
       lastSeenAt: user.lastSeenAt
@@ -1357,6 +1413,7 @@ export async function clientUsers (clientId: number): Promise<ClientUser[]> {
   return rows.map(r => ({
     id: r.id,
     name: r.name,
+    jobTitle: r.jobTitle,
     email: r.email,
     hasPassword: r.passwordHash !== null,
     lastSeenAt: r.lastSeenAt

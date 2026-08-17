@@ -63,6 +63,13 @@ export const user = mysqlTable('user', {
   email: varchar({ length: 190 }).notNull(),
   passwordHash: varchar('password_hash', { length: 255 }),
   name: varchar({ length: 120 }).notNull(),
+  /**
+   * What this person does — "assessora de conteúdo". Descriptive, never a
+   * permission: the access rule is still `clientId` and nothing else, and the
+   * one thing an assistant may not do is decided from
+   * `instagram_connection.connectedBy`, a fact that already existed.
+   */
+  jobTitle: varchar('job_title', { length: 80 }),
   role: mysqlEnum(['consultant', 'client']).notNull(),
   active: tinyint().notNull().default(1),
   lastSeenAt: datetime('last_seen_at'),
@@ -154,6 +161,25 @@ export const step = mysqlTable('step', {
   id: id(),
   deliveryId: fk('delivery_id').notNull(),
   clientId: fk('client_id').notNull(),
+  /**
+   * The request this chore IS, when it is one.
+   *
+   * Step `c1` and request #32 were the same job on two screens with nothing
+   * joining them: she sent the prints in Pedidos and Plano went on asking. With
+   * this set, the step is done the moment the request leaves `open`.
+   *
+   * No foreign key — see `db/migrations/010`. A dangling id degrades to "this
+   * step verifies nothing", which is how a step with neither column behaves.
+   */
+  requestId: fk('request_id'),
+  /**
+   * A fact the platform can observe on its own, by name.
+   *
+   * Today the only value is `instagram_connected`. The verifiers live in
+   * `lib/verificacao.ts`; a string rather than an enum so adding one is code
+   * plus a seed line, not a migration.
+   */
+  verifyKey: varchar('verify_key', { length: 40 }),
   code: varchar({ length: 12 }).notNull(),
   title: varchar({ length: 200 }).notNull(),
   summary: text(),
@@ -170,7 +196,8 @@ export const step = mysqlTable('step', {
   updatedAt: updatedAt()
 }, t => [
   uniqueIndex('uq_step_delivery_code').on(t.deliveryId, t.code),
-  index('ix_step_client').on(t.clientId)
+  index('ix_step_client').on(t.clientId),
+  index('ix_step_request').on(t.requestId)
 ])
 
 /**
@@ -303,6 +330,85 @@ export const file = mysqlTable('file', {
   index('ix_file_client').on(t.clientId, t.createdAt),
   index('ix_file_request').on(t.requestId),
   index('ix_file_sha').on(t.clientId, t.sha256)
+])
+
+// -------------------------------------------------------------------- pautas
+
+/**
+ * A pauta with a date, a script and a state.
+ *
+ * The cycle's finding is that ONE kind of video converts — long, her opinion,
+ * her subject — and that is the one that needs a script. The other five or six
+ * Reels of her week are the spontaneous distribution engine, and scripting them
+ * would break exactly what works. So this table is deliberately small per week.
+ *
+ * `hook` is written out and never described, the lesson `step.copyValue`
+ * already paid for.
+ */
+export const idea = mysqlTable('idea', {
+  id: id(),
+  publicCode: char('public_code', { length: 26 }).notNull(),
+  clientId: fk('client_id').notNull(),
+  cycleId: fk('cycle_id'),
+  /** By `pillar.pillarKey`, like `pillar.metricKey` — the seed writes both together. */
+  pillarKey: varchar('pillar_key', { length: 40 }),
+  title: varchar({ length: 200 }).notNull(),
+  hook: text(),
+  format: mysqlEnum(['reel', 'carrossel', 'story', 'foto']).notNull().default('reel'),
+  targetSeconds: smallint('target_seconds', { unsigned: true }),
+  why: text(),
+  caption: text(),
+  cta: varchar({ length: 200 }),
+  /** The cronograma. Null means it is in the bank rather than on a day. */
+  scheduledFor: date('scheduled_for', { mode: 'string' }),
+  state: mysqlEnum(['proposed', 'scheduled', 'recorded', 'published', 'dropped'])
+    .notNull().default('proposed'),
+  /** The shortcode of the post it became, typed in when it goes out. */
+  publishedCode: varchar('published_code', { length: 40 }),
+  position: smallint({ unsigned: true }).notNull().default(0),
+  createdAt: createdAt(),
+  updatedAt: updatedAt()
+}, t => [
+  uniqueIndex('uq_idea_code').on(t.publicCode),
+  uniqueIndex('uq_idea_client_title').on(t.clientId, t.title),
+  index('ix_idea_agenda').on(t.clientId, t.state, t.scheduledFor)
+])
+
+/**
+ * The script, beat by beat.
+ *
+ * Rows and not one block of prose: she holds the phone and reads the next line.
+ * `says` and `shows` are separate because they are instructions to different
+ * people — the assistant behind the camera is not the one talking.
+ */
+export const ideaBeat = mysqlTable('idea_beat', {
+  id: id(),
+  ideaId: fk('idea_id').notNull(),
+  position: smallint({ unsigned: true }).notNull().default(0),
+  timeLabel: varchar('time_label', { length: 20 }),
+  says: text().notNull(),
+  shows: text(),
+  note: varchar({ length: 255 })
+}, t => [
+  uniqueIndex('uq_beat_position').on(t.ideaId, t.position),
+  index('ix_beat_idea').on(t.ideaId, t.position)
+])
+
+/**
+ * What they write back about a pauta, from either side.
+ *
+ * Its own table for the reason `step_status` is one: `db/seed.ts` re-authors
+ * every idea on every run, and a feedback column on `idea` would be erased by
+ * the next `npm run db:seed` with no trace.
+ */
+export const ideaNote = mysqlTable('idea_note', {
+  id: id(),
+  ideaId: fk('idea_id').notNull(),
+  userId: fk('user_id').notNull(),
+  body: text().notNull(),
+  createdAt: createdAt()
+}, t => [
+  index('ix_note_idea').on(t.ideaId, t.createdAt)
 ])
 
 // ------------------------------------------------------------------- numbers

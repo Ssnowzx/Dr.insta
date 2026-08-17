@@ -15,6 +15,18 @@ import type { StepState } from '@/lib/step-actions'
  * cheap as a complete one, or she only answers when everything is done, which
  * means never.
  *
+ * WHOSE ANSWER THIS IS
+ *
+ * The state shown is the TEAM's, not the reader's own. With Bianca and her
+ * assistant both on the client side, a control that showed each of them their
+ * private answer would have them doing the same chore twice — so `quem` names
+ * whoever last answered, and the caption says it out loud rather than leaving
+ * the two of them to work out why the toggle moved on its own.
+ *
+ * `somenteLeitura` is the consultant's view: he sees what they answered and
+ * cannot overwrite it by tapping. He used to get a separate block of markup for
+ * exactly this, which is how the two views drifted apart.
+ *
  * Every visible string is pt-BR.
  */
 
@@ -27,11 +39,18 @@ const OPCOES: Array<{ estado: StepState; rotulo: string; descricao: string }> = 
 export function StepControl ({
   stepId,
   estado,
-  comentario
+  comentario,
+  quem,
+  quando,
+  somenteLeitura = false
 }: {
   stepId: number
   estado: StepState
   comentario: string | null
+  /** Who last answered, when someone has. */
+  quem?: string
+  quando?: string
+  somenteLeitura?: boolean
 }) {
   const [pendente, iniciar] = useTransition()
   const [otimista, definirOtimista] = useOptimistic(estado)
@@ -62,6 +81,33 @@ export function StepControl ({
     })
   }
 
+  /* His view. Read-only, same shape, so the two sides cannot describe the same
+     row differently — which they did, for weeks, in two blocks of markup. */
+  if (somenteLeitura) {
+    return (
+      <div className="controle">
+        <div className="segmentos" role="group" aria-label="Como está este item">
+          {OPCOES.map(o => (
+            <span
+              key={o.estado}
+              className={otimista === o.estado
+                ? `segmento segmento-${o.estado} segmento-ativo segmento-leitura`
+                : 'segmento segmento-leitura'}
+            >
+              {o.rotulo}
+            </span>
+          ))}
+        </div>
+        <p className="resposta-quem">
+          {quem === undefined
+            ? 'Ninguém da equipe dela marcou este ainda.'
+            : `${quem} marcou${quando === undefined ? '' : ` em ${quando}`}.`}
+        </p>
+        {comentario !== null && <p className="resposta-nota">{comentario}</p>}
+      </div>
+    )
+  }
+
   return (
     <div className="controle">
       <div className="segmentos" role="group" aria-label="Como está este item">
@@ -82,6 +128,16 @@ export function StepControl ({
           )
         })}
       </div>
+
+      {/* Who answered, on her side too. Without it, the assistant marking
+          something makes the state change under Bianca with no explanation —
+          which reads as the app deciding things by itself. */}
+      {quem !== undefined && (
+        <p className="resposta-quem">
+          {quem} marcou{quando === undefined ? '' : ` em ${quando}`}. Se mudou, é
+          só tocar de novo.
+        </p>
+      )}
 
       {!notaAberta && (
         <button type="button" className="link-nota" onClick={() => setNotaAberta(true)}>

@@ -1,10 +1,15 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { CopyValue } from '@/components/copy-value'
 import { StepControl } from '@/components/step-control'
-import { activeCycle, clientStepAnswers, deliveries, experiments, pillars } from '@/lib/dashboard'
+import {
+  activeCycle, deliveries, experiments, observedFacts, pillars, teamStepAnswers
+} from '@/lib/dashboard'
 import type { PillarRow } from '@/lib/dashboard'
 import { clientScope, requireSession } from '@/lib/dal'
 import { longDate, shortDate } from '@/lib/format'
+import { newestPerStep, resolveStep, stillPending } from '@/lib/verificacao'
+import type { Resolved } from '@/lib/verificacao'
 
 export const metadata: Metadata = { title: 'Plano' }
 export const dynamic = 'force-dynamic'
@@ -63,13 +68,27 @@ function MixBarra ({ pilares }: { pilares: PillarRow[] }) {
   )
 }
 
+/** The three words the interface uses for a state, and the badge that goes with it. */
+const SELO: Record<string, { rot: string; classe: string }> = {
+  done: { rot: 'feito', classe: 'ok' },
+  blocked: { rot: 'travou', classe: 'critico' },
+  pending: { rot: 'a fazer', classe: 'neutro' }
+}
+
 /**
- * The plan: what she does, with the number that motivated each item.
+ * The plan: what the two of them do, with the number that motivated each item.
  *
- * The client marks; the consultant reads what she marked. Two views of the same
- * rows, because `step_status` is keyed by user — the consultant never marked
- * anything, so reading it through their own id would show an empty plan and
- * suggest she had not started.
+ * ONE STATE, FOR EVERYONE
+ *
+ * This screen used to compute the state twice — hers from `step_status` joined
+ * on her id, his from a separate query — and the two disagreed on screen. With
+ * an assistant on the client side it would have got worse rather than stayed
+ * even: whatever Bianca marked would read "a fazer" to Cris, and the plan would
+ * ask two people for the same chore.
+ *
+ * The state is now the team's, resolved once in `lib/verificacao.ts`, with the
+ * name of whoever answered next to it. Both roles read the same rows, and a
+ * chore the platform can see was done stops being asked for at all.
  */
 export default async function Plano () {
   const identity = await requireSession()
@@ -79,9 +98,10 @@ export default async function Plano () {
 
   const ciclo = await activeCycle(clientId)
 
-  const [todasEntregas, respostas, ensaios, mix] = await Promise.all([
-    deliveries(clientId, identity.userId),
-    ehConsultor ? clientStepAnswers(clientId) : Promise.resolve([]),
+  const [todasEntregas, respostas, fatos, ensaios, mix] = await Promise.all([
+    deliveries(clientId),
+    teamStepAnswers(clientId),
+    observedFacts(clientId),
     ciclo === null ? Promise.resolve([]) : experiments(clientId, ciclo.id),
     ciclo === null ? Promise.resolve([]) : pillars(clientId, ciclo.id)
   ])
@@ -92,35 +112,30 @@ export default async function Plano () {
      under it. They live in /analise. */
   const lista = todasEntregas.filter(e => e.steps.length > 0)
 
-  /* First entry wins, not last. `clientStepAnswers` orders by `updatedAt`
-     descending, and `new Map(pairs)` keeps the LAST pair for a repeated key —
-     so building it straight from the list handed the consultant the OLDEST
-     answer for any step two client users had both touched. */
-  const porEtapa = new Map<number, typeof respostas[number]>()
-  for (const r of respostas) if (!porEtapa.has(r.stepId)) porEtapa.set(r.stepId, r)
+  const porEtapa = newestPerStep(respostas)
 
-  /**
-   * The state of a step, from the right person's point of view.
-   *
-   * `deliveries()` joins `step_status` on the id of whoever is reading, and the
-   * consultant has never marked anything — so every step reads `pending` for
-   * him. The headline then said "Faltam 3" and every score said "0 de 3" while
-   * the blocks right below listed, correctly, what she had already marked done.
-   * One screen contradicting itself.
-   *
-   * For him the answer is hers, which is what `clientStepAnswers` loaded. For
-   * her it is her own row, which is what the join already resolved.
-   */
-  const estadoDe = (etapa: { id: number; state: string }): string =>
-    ehConsultor ? porEtapa.get(etapa.id)?.state ?? 'pending' : etapa.state
+  /* Resolved once, into a map, rather than recomputed at each of the six places
+     that ask. The old version called `estadoDe` inside the headline, the score,
+     the badge and the row class, and the day one of those was left reading the
+     raw column the consultant's plan painted every step as untouched. */
+  const estado = new Map<number, Resolved>(
+    lista.flatMap(e => e.steps).map(s => [
+      s.id,
+      resolveStep(s, porEtapa, fatos, ehConsultor ? 'consultor' : 'cliente')
+    ])
+  )
 
-  /* Blocked does NOT count as pending. It is not waiting on her — she already
-     told me it stopped, and the next move is mine. Counting it here would keep
-     the headline asking her for something she has finished asking me about. */
-  const pendentes = lista
-    .flatMap(e => e.steps)
-    .filter(s => estadoDe(s) !== 'done' && estadoDe(s) !== 'blocked')
-    .length
+  const de = (id: number): Resolved =>
+    estado.get(id) ?? { state: 'pending', by: null, at: null, comment: null, proof: null }
+
+  /* Blocked does NOT count as pending. It is not waiting on them — they already
+     said it stopped, and the next move is mine. */
+  const pendentes = stillPending([...estado.values()])
+
+  /* Chores that stopped being chores because the platform watched them happen.
+     Counted so the screen can say so once, at the top, instead of leaving her to
+     notice that three items look different. */
+  const provados = [...estado.values()].filter(r => r.proof !== null).length
 
   if (lista.length === 0) {
     return (
@@ -147,16 +162,36 @@ export default async function Plano () {
               ? 'Falta um.'
               : `Faltam ${pendentes}.`}
         </h1>
+        {/* Two voices, like the requests screen and the digest. The lead used to
+            be written entirely in hers and served unchanged to him — an
+            instruction to mark things, on a screen where he cannot mark. */}
         <p className="lead">
-          {pendentes === 0
-            ? 'Nada pendente aqui. Quando eu publicar o próximo passo, ele aparece nesta tela.'
-            : 'Marque conforme for fazendo — não precisa terminar tudo. E se algum travar, me conta o que travou: isso é tão útil quanto o que deu certo.'}
+          {ehConsultor
+            ? pendentes === 0
+              ? 'Nada pendente com elas. O que você publicar em seguida aparece aqui.'
+              : 'O que elas marcaram, como marcaram, e o que a plataforma conferiu sozinha.'
+            : pendentes === 0
+              ? 'Nada pendente aqui. Quando eu publicar o próximo passo, ele aparece nesta tela.'
+              : 'Marque conforme for fazendo — não precisa terminar tudo. E se algum travar, me conta o que travou: isso é tão útil quanto o que deu certo.'}
         </p>
+        {/* Said once, at the top, rather than left for her to infer from three
+            rows that look different. The complaint this answers was literally
+            "coisas que eu já fiz continuam aqui e me confundem" — so the screen
+            has to state that it now checks, not just behave as if it does. */}
+        {provados > 0 && (
+          <p className="rodape-nota">
+            {ehConsultor
+              ? `${provados === 1 ? 'Um item' : `${provados} itens`} a plataforma conferiu sozinha, sem elas precisarem marcar.`
+              : provados === 1
+                ? 'Um item aqui eu já conferi sozinho e marquei como feito — você não precisa marcar de novo.'
+                : `${provados} itens aqui eu já conferi sozinho e marquei como feitos — vocês não precisam marcar de novo.`}
+          </p>
+        )}
       </header>
 
       {lista.map(entrega => {
-        const feitos = entrega.steps.filter(s => estadoDe(s) === 'done').length
-        const travados = entrega.steps.filter(s => estadoDe(s) === 'blocked').length
+        const feitos = entrega.steps.filter(s => de(s.id).state === 'done').length
+        const travados = entrega.steps.filter(s => de(s.id).state === 'blocked').length
         const total = entrega.steps.length
         const parte = total === 0 ? 0 : (feitos / total) * 100
 
@@ -195,21 +230,21 @@ export default async function Plano () {
 
             <ol className="etapas">
               {entrega.steps.map(etapa => {
-                const resposta = porEtapa.get(etapa.id)
-                /* `estadoDe` and not `etapa.state`: the row's own styling is the
-                   one thing rendered outside the two branches below, so on the
-                   consultant's side it was the last place still painting every
-                   step as untouched. */
-                const estado = estadoDe(etapa)
-                const selo = estado === 'done'
-                  ? 'ok'
-                  : estado === 'blocked' ? 'critico' : 'neutro'
+                const r = de(etapa.id)
+                const selo = SELO[r.state] ?? SELO.pending
 
                 return (
-                  <li className={`etapa etapa-${estado}`} key={etapa.id}>
+                  <li className={`etapa etapa-${r.state}`} key={etapa.id}>
                     <div className="etapa-cab">
                       <span className="etapa-prazo">
-                        {etapa.deadlineLabel ?? URGENCIA[etapa.urgency]}
+                        {/* A deadline on something already done is a deadline
+                            that has stopped being information. */}
+                        {r.state === 'done'
+                          ? 'concluído'
+                          : etapa.deadlineLabel ?? URGENCIA[etapa.urgency]}
+                      </span>
+                      <span className={`selo selo-${selo?.classe} etapa-selo`}>
+                        {selo?.rot}
                       </span>
                     </div>
 
@@ -225,8 +260,13 @@ export default async function Plano () {
 
                     {/* The step hands over what it asks her to paste. It used to
                         name the thing and let her build it, and she built the
-                        wrong one — see `components/copy-value.tsx`. */}
-                    {etapa.copyValue !== null && etapa.copyLabel !== null && (
+                        wrong one — see `components/copy-value.tsx`.
+
+                        Hidden once the chore is done: a link to paste into a bio
+                        that already carries it is an instruction to redo work,
+                        and it is the second half of the complaint that opened
+                        this change — "ainda está lá no app os links e a tarefa". */}
+                    {r.state !== 'done' && etapa.copyValue !== null && etapa.copyLabel !== null && (
                       <CopyValue
                         valor={etapa.copyValue}
                         rotulo={etapa.copyLabel}
@@ -234,49 +274,41 @@ export default async function Plano () {
                       />
                     )}
 
-                    {ehConsultor
+                    {/* The platform proved it. No control, because there is
+                        nothing to answer — and offering one would invite her to
+                        contradict a fact, which the action then has to refuse. */}
+                    {r.proof !== null
                       ? (
-                        <div className="resposta">
-                          {resposta === undefined
-                            ? <p className="resposta-vazia">Ela ainda não marcou este.</p>
-                            : (
-                              <>
-                                <p className="resposta-linha">
-                                  <span className={`selo selo-${
-                                    resposta.state === 'done'
-                                      ? 'ok'
-                                      : resposta.state === 'blocked' ? 'critico' : 'neutro'
-                                  }`}
-                                  >
-                                    {resposta.state === 'done'
-                                      ? 'feito'
-                                      : resposta.state === 'blocked' ? 'travou' : 'a fazer'}
-                                  </span>
-                                  <span className="resposta-quem">
-                                    {resposta.userName} · {shortDate(resposta.updatedAt)}
-                                  </span>
-                                </p>
-                                {resposta.comment !== null && (
-                                  <p className="resposta-nota">{resposta.comment}</p>
-                                )}
-                              </>
-                              )}
-                        </div>
+                        <p className="prova">
+                          <span className="prova-marca" aria-hidden="true">✓</span>
+                          <span className="prova-texto">
+                            {r.by === null
+                              ? <>{ehConsultor ? 'Conferido pela plataforma' : 'Conferido por aqui'}: {r.proof.label}.</>
+                              : <>{r.by} marcou, e {ehConsultor ? 'a plataforma conferiu' : 'conferi por aqui'}: {r.proof.label}.</>}
+                            {r.proof.at !== null && <> {shortDate(r.proof.at)}.</>}
+                            {r.proof.href !== null && (
+                              <> <Link href={r.proof.href}>ver</Link></>
+                            )}
+                          </span>
+                        </p>
                         )
                       : (
-                        <>
-                          <span className={`selo selo-${selo} etapa-selo`}>
-                            {etapa.state === 'done'
-                              ? 'feito'
-                              : etapa.state === 'blocked' ? 'travou' : 'a fazer'}
-                          </span>
-                          <StepControl
-                            stepId={etapa.id}
-                            estado={etapa.state}
-                            comentario={etapa.comment}
-                          />
-                        </>
+                        <StepControl
+                          stepId={etapa.id}
+                          estado={r.state}
+                          comentario={r.comment}
+                          {...(r.by === null ? {} : { quem: r.by })}
+                          {...(r.at === null ? {} : { quando: shortDate(r.at) })}
+                          somenteLeitura={ehConsultor}
+                        />
                         )}
+
+                    {/* Kept even under a proof: what she wrote when it blocked is
+                        the most useful sentence on this screen, and it does not
+                        stop being true because the chore later got done. */}
+                    {r.proof !== null && r.comment !== null && (
+                      <p className="resposta-nota">{r.comment}</p>
+                    )}
                   </li>
                 )
               })}
