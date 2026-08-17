@@ -3024,3 +3024,15 @@ a.btn-acesso:hover { border-color: var(--dado); text-decoration: none; }
    `test/layout-estreito.test.ts` accepts as the escape for a nowrap, and it is
    the right one here: the LABEL beside it is what should wrap. */
 .etapa-dado-valor { flex-shrink: 0; white-space: nowrap; }
+
+/* The footnote under the duration chips. It only renders when the two chips no
+   longer add up to the total — a post collected from the API has no duration,
+   so it belongs to neither side of the cut. Set apart from the chips so it does
+   not read as a third option. */
+.filtro-nota {
+  margin: .5rem 0 0;
+  font-size: .75rem;
+  line-height: 1.45;
+  color: var(--suave);
+  max-width: 46ch;
+}

@@ -151,6 +151,20 @@ export default async function Conteudo ({
             {chip('duracao', 'curto', duracao === 'curto', 'até 20s', contas.curtos)}
             {chip('duracao', 'longo', duracao === 'longo', 'mais de 20s', contas.longos)}
           </div>
+          {/* The two chips stop adding up to the total the moment a post arrives
+              from the API, which brings no duration — no endpoint reports a
+              Reel's length. Said here rather than left as a subtraction the
+              reader has to notice, because a post missing from BOTH sides of the
+              cut this cycle is decided by is the kind of gap that goes unseen
+              for a week. */}
+          {contas.semDuracao > 0 && (
+            <p className="filtro-nota">
+              <span className="numero">{contas.semDuracao}</span>{' '}
+              {contas.semDuracao === 1 ? 'post entrou' : 'posts entraram'} sem
+              duração e {contas.semDuracao === 1 ? 'fica' : 'ficam'} fora dos dois
+              — o Instagram não informa o tempo do vídeo. Aparecem na lista abaixo.
+            </p>
+          )}
         </div>
 
         <div className="filtro-eixo">

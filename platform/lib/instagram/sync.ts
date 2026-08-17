@@ -34,6 +34,15 @@ export interface SyncResult {
   stored: number
   /** Posts whose measured numbers were updated. */
   posts: number
+  /**
+   * Posts that did not exist in the archive and now do.
+   *
+   * Reported apart from `posts` because they answer different questions. "12
+   * updated" every day is the routine working; "3 created" is content that was
+   * invisible until this run — and a run that quietly created 40 of them means
+   * something upstream had been broken for a month.
+   */
+  created: number
   refreshed: boolean
   calls: number
   /** Present only on failure. */
@@ -52,7 +61,7 @@ export async function syncClient (
   period: string,
   now: Date = new Date()
 ): Promise<SyncResult> {
-  const stored0 = { ok: false, stored: 0, posts: 0, refreshed: false, calls: 0 }
+  const stored0 = { ok: false, stored: 0, posts: 0, created: 0, refreshed: false, calls: 0 }
 
   const credential = await tokenFor(clientId)
   if (credential === null) {
@@ -87,10 +96,17 @@ export async function syncClient (
   try {
     const collected = await collectAccountMonth(client, credential.igUserId, period)
     const stored = await storeCollected(clientId, period, collected, now)
-    const posts = await collectMedia(client, clientId, credential.igUserId, now)
+    const media = await collectMedia(client, clientId, credential.igUserId, now)
 
     await markSynced(clientId, now)
-    return { ok: true, stored, posts, refreshed, calls: client.calls }
+    return {
+      ok: true,
+      stored,
+      posts: media.updated,
+      created: media.created,
+      refreshed,
+      calls: client.calls
+    }
   } catch (error) {
     const reason = message(error)
     const isAuth = error instanceof IgAuthError
@@ -176,23 +192,47 @@ async function storeCollected (
 /**
  * Per-post insights for the recent window, written onto `post`.
  *
- * Only posts already in the archive are updated. Creating rows from here would
- * mean a post existing with measured numbers and no caption or duration, and
- * the archive screen reads all four — the public import is what creates them.
+ * IT CREATES WHAT IT DOES NOT FIND — changed 17/08/2026
+ *
+ * It used to update only posts already in the archive, on the argument that a
+ * row created here would have measured numbers and no duration. The argument was
+ * sound and the conclusion was wrong, because it left a hole nobody could see:
+ * the archive grows ONLY through the public browser export, so between 9 and 17
+ * August she published and the product showed nothing. The screens read fine,
+ * the collection reported success, and eight days of content did not exist.
+ *
+ * Worse, the hole is self-sealing. The insight window is 30 days: a post absent
+ * from the archive when its window closes never gets reach at all, from any
+ * route. Waiting for the next manual export does not recover it.
+ *
+ * So a missing post is created from what the media edge does give — timestamp,
+ * permalink, caption, likes, comments and type — with `duration_sec` NULL,
+ * because no endpoint reports a Reel's length. That absence is carried honestly
+ * rather than guessed: `/conteudo` counts those posts and says so, since the
+ * cycle's cut is <=20s against 90s+ and a post with no duration belongs to
+ * neither side of it. Importing a public export later FILLS the duration —
+ * `db/import-reels.ts` keys on the same shortcode — so the export stops being
+ * required and becomes enriching.
  *
  * `reach` comes from its own field and is never derived from `views`; see
- * `lib/instagram/media.ts`. Provenance moves to `mixed` because the row now
- * holds both public counts and measured insights.
+ * `lib/instagram/media.ts`. A row that already carried public counts becomes
+ * `mixed`; one born here is `insights`, because that is all it has ever held.
  */
+export interface MediaResult {
+  updated: number
+  created: number
+}
+
 async function collectMedia (
   client: IgClient,
   clientId: number,
   igUserId: string,
   now: Date
-): Promise<number> {
+): Promise<MediaResult> {
+  const nada: MediaResult = { updated: 0, created: 0 }
   const since = new Date(now.getTime() - WINDOW_DAYS * 24 * 60 * 60 * 1000)
   const recentes = await listRecentMedia(client, igUserId, since)
-  if (recentes.length === 0) return 0
+  if (recentes.length === 0) return nada
 
   /* Matched on the shortcode, NOT on `igCode`.
 
@@ -209,7 +249,7 @@ async function collectMedia (
   const codigos = recentes
     .map(m => m.shortcode)
     .filter((c): c is string => c !== null)
-  if (codigos.length === 0) return 0
+  if (codigos.length === 0) return nada
 
   const existentes = await orm()
     .select({ igCode: post.igCode, durationSec: post.durationSec })
@@ -220,36 +260,76 @@ async function collectMedia (
     ))
 
   const duracao = new Map(existentes.map(p => [p.igCode, p.durationSec]))
-  let atualizados = 0
+  const resultado: MediaResult = { updated: 0, created: 0 }
 
   for (const media of recentes) {
     const codigo = media.shortcode
-    if (codigo === null || !duracao.has(codigo)) continue
+    /* No permalink, no shortcode, no way to address the archive — and no way for
+       a later public import to meet this row either. Skipped rather than filed
+       under the API's numeric id, which would create the exact mismatch that
+       made this whole routine report "0 posts updated" for a week. */
+    if (codigo === null) continue
+
+    const novo = !duracao.has(codigo)
 
     /* Insights are still fetched by the API id — that is the only identifier
        `/{media}/insights` accepts. Only the archive is addressed by shortcode. */
     const insights = await mediaInsights(client, media)
 
+    /* Each column from its own source field. Only written when the API
+       answered — a null here means "not measured", which is the truth, and
+       overwriting a previous measurement with it would lose data. */
+    const medido = {
+      ...(insights.reach === null ? {} : { reach: insights.reach }),
+      ...(insights.saves === null ? {} : { saves: insights.saves }),
+      ...(insights.sends === null ? {} : { sends: insights.sends }),
+      ...(insights.views === null ? {} : { views: insights.views }),
+      ...(retencao(insights.avgWatchMs, duracao.get(codigo) ?? null))
+    }
+
+    if (novo) {
+      await orm().insert(post).values({
+        clientId,
+        igCode: codigo,
+        kind: media.kind,
+        publishedAt: media.publishedAt,
+        url: media.permalink,
+        caption: media.caption,
+        /* NULL, and left that way. No endpoint reports a Reel's length, and a
+           guessed duration would land the post on one side of the <=20s cut
+           this cycle is decided by. */
+        durationSec: null,
+        likes: media.likes,
+        comments: media.comments,
+        ...medido,
+        /* `insights` and not `mixed`: this row has never held a public count,
+           and claiming otherwise would say the public export had been seen. */
+        provenance: 'insights',
+        createdAt: now,
+        updatedAt: now
+      })
+        /* The unique key is (client_id, ig_code). Two runs overlapping — a cron
+           and a hand-run backfill — must not race into a duplicate key error
+           that fails the whole collection over a post already stored. */
+        .onDuplicateKeyUpdate({ set: { ...medido, updatedAt: now } })
+
+      resultado.created += 1
+      continue
+    }
+
     await orm()
       .update(post)
       .set({
-        /* Each column from its own source field. Only written when the API
-           answered — a null here means "not measured", which is the truth, and
-           overwriting a previous measurement with it would lose data. */
-        ...(insights.reach === null ? {} : { reach: insights.reach }),
-        ...(insights.saves === null ? {} : { saves: insights.saves }),
-        ...(insights.sends === null ? {} : { sends: insights.sends }),
-        ...(insights.views === null ? {} : { views: insights.views }),
-        ...(retencao(insights.avgWatchMs, duracao.get(codigo) ?? null)),
+        ...medido,
         provenance: 'mixed',
         updatedAt: now
       })
       .where(and(eq(post.clientId, clientId), eq(post.igCode, codigo)))
 
-    atualizados += 1
+    resultado.updated += 1
   }
 
-  return atualizados
+  return resultado
 }
 
 /** Retention as a stored decimal, or nothing at all. */

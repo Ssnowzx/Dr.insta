@@ -30,6 +30,26 @@ const MEDIA_FIELDS = [
 ].join(',')
 
 /**
+ * WHAT THIS LIST DOES NOT CARRY, AND WHY IT MATTERS
+ *
+ * There is no duration. The media edge has no length field for a Reel, and no
+ * insight metric reports one either — `ig_reels_avg_watch_time` is how long
+ * people watched, which is a different number and the one that needs duration
+ * as its denominator.
+ *
+ * That absence is the reason this file used to refuse to create a post at all.
+ * It is a real cost: the cycle's whole cut is <=20s against 90s+, so a post with
+ * no duration falls outside BOTH sides of that question. But an incomplete post
+ * beats an absent one — the absent post also never gets reach, because the
+ * insight window is 30 days and closes on it — so the row is created with
+ * `duration_sec` NULL and the screen says how many are in that state.
+ *
+ * The public export still carries duration, and `db/import-reels.ts` keys on the
+ * same shortcode. So importing one later FILLS the gap rather than duplicating
+ * the row: the export stops being required and becomes enriching.
+ */
+
+/**
  * Insight metrics per post.
  *
  * `views` is here alongside `reach` precisely so the difference is visible at
@@ -54,10 +74,33 @@ export interface MediaSummary {
   shortcode: string | null
   publishedAt: Date
   isReel: boolean
+  /** What `post.kind` should hold. Derived from the two type fields — see `kindOf`. */
+  kind: PostKind
   permalink: string | null
   caption: string | null
   likes: number | null
   comments: number | null
+}
+
+export type PostKind = 'reel' | 'carousel' | 'image' | 'story'
+
+/**
+ * The archive's `kind`, from the API's two type fields.
+ *
+ * They answer different questions and both are needed: `media_product_type`
+ * says where it lives (REELS, FEED, STORY) and `media_type` says what it is
+ * (IMAGE, VIDEO, CAROUSEL_ALBUM). A Reel is a VIDEO on the REELS surface, and a
+ * plain feed video is a VIDEO on FEED — reading only `media_type` would file
+ * every video as a Reel and quietly inflate the one format this cycle is about.
+ *
+ * Falls back to `image`, the only value that claims nothing: an unknown future
+ * type filed as `reel` would enter the very count the strategy is read from.
+ */
+export function kindOf (mediaType: unknown, productType: unknown): PostKind {
+  if (productType === 'REELS') return 'reel'
+  if (productType === 'STORY') return 'story'
+  if (mediaType === 'CAROUSEL_ALBUM') return 'carousel'
+  return 'image'
 }
 
 /**
@@ -195,6 +238,7 @@ function readMediaPage (payload: unknown): { items: MediaSummary[]; next: string
         shortcode: shortcodeOf(permalink),
         publishedAt,
         isReel: raw.media_product_type === 'REELS',
+        kind: kindOf(raw.media_type, raw.media_product_type),
         permalink,
         caption: typeof raw.caption === 'string' ? raw.caption : null,
         likes: typeof raw.like_count === 'number' ? raw.like_count : null,

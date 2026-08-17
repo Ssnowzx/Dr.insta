@@ -74,10 +74,20 @@ async function main (): Promise<void> {
   if (result.ok) {
     console.log(
       `${found.name}: ${result.stored} metric(s) stored for ${period}, ` +
-      `${result.posts} post(s) updated` +
+      `${result.posts} post(s) updated, ${result.created} created` +
       `${result.refreshed ? ', credential refreshed' : ''}` +
       ` (${result.calls} API call${result.calls === 1 ? '' : 's'}).`
     )
+    /* Loud on the log, because the number carries a diagnosis. Steady-state is
+       a handful a week; a run that creates dozens means the archive had been
+       standing still and nobody noticed — which is precisely what happened
+       between 9 and 17 August 2026. */
+    if (result.created >= 10) {
+      console.log(
+        `  NOTE: ${result.created} posts were missing from the archive. ` +
+        'That is more than a week of publishing — check whether collection had stopped.'
+      )
+    }
     return
   }
 

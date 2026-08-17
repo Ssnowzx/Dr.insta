@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createClient } from '../lib/instagram/client.ts'
 import {
-  listRecentMedia, mediaInsights, retentionPct, shortcodeOf
+  kindOf, listRecentMedia, mediaInsights, retentionPct, shortcodeOf
 } from '../lib/instagram/media.ts'
+import type { PostKind } from '../lib/instagram/media.ts'
 
 /**
  * Per-post collection.
@@ -26,15 +27,47 @@ function fake (respostas: unknown[]): { client: ReturnType<typeof createClient>;
   return { client, asked }
 }
 
-const media = (over: Partial<{ igCode: string; publishedAt: Date; isReel: boolean }> = {}) => ({
+const media = (
+  over: Partial<{ igCode: string; publishedAt: Date; isReel: boolean; kind: PostKind }> = {}
+) => ({
   igCode: over.igCode ?? '1',
   shortcode: null,
   publishedAt: over.publishedAt ?? new Date('2026-08-01T12:00:00Z'),
   isReel: over.isReel ?? true,
+  kind: over.kind ?? 'reel',
   permalink: null,
   caption: null,
   likes: null,
   comments: null
+})
+
+describe('kindOf', () => {
+  it('should call a video on the reels surface a reel', () => {
+    // ARRANGE / ACT / ASSERT
+    expect(kindOf('VIDEO', 'REELS')).toBe('reel')
+  })
+
+  it('should NOT call a plain feed video a reel', () => {
+    // ARRANGE — this is the whole reason both fields are read. `media_type`
+    // alone says VIDEO for both, and filing every video as a Reel would inflate
+    // the exact count the cycle's strategy is read from.
+    // ACT / ASSERT
+    expect(kindOf('VIDEO', 'FEED')).toBe('image')
+  })
+
+  it('should recognise a carousel and a story', () => {
+    // ARRANGE / ACT / ASSERT
+    expect(kindOf('CAROUSEL_ALBUM', 'FEED')).toBe('carousel')
+    expect(kindOf('IMAGE', 'STORY')).toBe('story')
+  })
+
+  it('should fall back to the value that claims nothing', () => {
+    // ARRANGE — an unknown future type filed as `reel` would enter the count the
+    // strategy is decided on. `image` is the only value that asserts nothing.
+    // ACT / ASSERT
+    expect(kindOf('SOMETHING_NEW', 'ALSO_NEW')).toBe('image')
+    expect(kindOf(undefined, undefined)).toBe('image')
+  })
 })
 
 describe('mediaInsights', () => {

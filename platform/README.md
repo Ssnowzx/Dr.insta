@@ -286,9 +286,25 @@ Three routes, and which one a number came in by is recorded on it as `source`.
 
 | Route | What it gives |
 |---|---|
-| **Official API** (`api`) | reach, views, saves, shares, likes, comments, replies, follows, **bio link clicks** |
-| **Public export** (`public`) | views, likes, comments, caption, duration, date — per Reel |
+| **Official API** (`api`) | reach, views, saves, shares, likes, comments, replies, follows, **bio link clicks**, and **the post itself** — caption, permalink, date, type |
+| **Public export** (`public`) | views, likes, comments, caption, **duration**, date — per Reel |
 | **By hand** (`insights`) | profile visits, video retention curve, Stories older than a day |
+
+**The archive grows on its own now** — that changed on 17/08/2026. Until then the
+`post` table was fed only by the public export, and the collector merely updated
+rows it already found: she published between 9 and 17 August and the product
+showed nothing, while every screen read fine and the routine reported success.
+Worse, the hole sealed itself — the insight window is 30 days, so a post absent
+when its window closes never gets reach from any route.
+
+**Duration is the one thing only the export has.** No API field reports a Reel's
+length, and none is derivable: `ig_reels_avg_watch_time` is how long people
+watched, which is the numerator, not the denominator. A post born from the API
+therefore has `duration_sec` NULL and belongs to neither side of the cycle's
+`<=20s` cut — so `/conteudo` counts those separately and says so on the screen
+rather than letting the chips quietly stop adding up. Importing an export later
+FILLS the duration instead of duplicating the row: both routes key on the same
+shortcode. The export is no longer required; it enriches.
 
 The middle row cannot give reach, saves or shares — they do not exist in public
 data. That was the whole constraint until the account was connected, and the
@@ -362,12 +378,36 @@ which would die on every restart and keep no log anyone can read:
 
 ```cron
 # /etc/cron.d/myfavorite-sync — host clock is UTC; the comments give São Paulo.
-# 06:00 UTC = 03:00 in Brazil — the current month, every day.
-0 6 * * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts >> /var/log/myfavorite-sync.log 2>&1
+# 06,10,14,18,22 UTC = 03,07,11,15,19 in Brazil.
+0 6,10,14,18,22 * * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts >> /var/log/myfavorite-sync.log 2>&1
 
 # 06:20 UTC on the 1st — close the month that just ended, in full.
 20 6 1 * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts --period $(date -u -d 'last month' +\%Y-\%m-01) >> /var/log/myfavorite-sync.log 2>&1
 ```
+
+**Five runs a day, not one — and none of them between 00:00 and 05:00 UTC.**
+
+The frequency is about the archive, not the metrics. The collector now creates
+posts it does not find, so how often it runs decides how long something she
+published is invisible. Once a day meant a Reel posted at her 18:00 peak
+appeared the next morning; this catches it about an hour later.
+
+The gap in the small hours is deliberate and is the trap named below: from 21:00
+in Brazil the UTC date has already turned, so a run there on the last night of a
+month collects the NEXT month while Brazil is still finishing the current one.
+Skipping those hours means no run ever sees a month boundary the wrong way
+round.
+
+Frequency is cheap here and worth stating so nobody guesses: a run costs about
+forty API calls — the account metrics plus one insights call per post inside the
+30-day window — so five runs is roughly two hundred a day.
+
+**What this does NOT make real-time, on purpose.** A post's numbers keep moving
+for weeks, which is why the insight window is 30 days at all. Reach at hour one
+is a figure that will be wrong at hour two, and this project's own rule is that
+nothing is concluded under 7 posts or 14 days. Collecting often so the post
+EXISTS is worth it; presenting its numbers as live would invite reading noise as
+signal, which is how two cycles here already died without a reading.
 
 Three decisions in those two lines.
 

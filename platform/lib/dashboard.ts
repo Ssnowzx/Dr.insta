@@ -1249,6 +1249,17 @@ export interface PostCounts {
   pessoal: number
   /** Both cuts at once — how many posts the list is actually about. */
   noRecorte: number
+  /**
+   * Posts whose length nobody knows.
+   *
+   * They belong to NEITHER side of the duration cut, so the two chips no longer
+   * add up to the total — and that is exactly why this has to be counted and
+   * said. A post collected from the API arrives without a duration (no endpoint
+   * reports a Reel's length), so silently dropping it from both chips would let
+   * the archive quietly stop covering the newest content, which is the failure
+   * that produced this whole change.
+   */
+  semDuracao: number
   /* Absolute, both of them: the callout is a claim about the whole archive
      ("none of the 18 brand Reels…"), and a claim that changed as she filtered
      would be a different claim every click. */
@@ -1312,6 +1323,9 @@ export async function postCounts (
       marca: sql<number>`SUM(${post.mentionsBrand} = 1 AND ${durationCut})`,
       pessoal: sql<number>`SUM(${post.mentionsBrand} = 0 AND ${durationCut})`,
       noRecorte: sql<number>`SUM(${durationCut} AND ${brandCut})`,
+      /* Counted inside the brand cut, like the two duration chips, so the three
+         of them always describe the same slice of the archive. */
+      semDuracao: sql<number>`SUM(${post.durationSec} IS NULL AND ${brandCut})`,
       marcaTotal: sql<number>`SUM(${post.mentionsBrand} = 1)`,
       /* The empty cell the Reels analysis found: brand content never shipped in
          20 seconds or less. Counted here so the screen can state it. */
@@ -1332,6 +1346,7 @@ export async function postCounts (
     marca: n(row?.marca),
     pessoal: n(row?.pessoal),
     noRecorte: n(row?.noRecorte),
+    semDuracao: n(row?.semDuracao),
     marcaTotal: n(row?.marcaTotal),
     marcaCurto: n(row?.marcaCurto)
   }
