@@ -8,7 +8,7 @@ import {
   monthlySeries, requests
 } from '@/lib/dashboard'
 import { clientScope, requireSession } from '@/lib/dal'
-import { turnOf } from '@/lib/pedido'
+import { KIND_LABEL, turnOf } from '@/lib/pedido'
 import { connectionFor } from '@/lib/instagram/connection'
 import { format, longDate, monthLabel } from '@/lib/format'
 
@@ -119,12 +119,21 @@ export default async function Painel () {
   return (
     <>
       <header className="pagina-cab">
+        {/* The deadline, not the start date. "Desde 13 de agosto" tells her
+            where the cycle came from; "até 31 de dezembro" is the fact the
+            whole cycle is negotiated against, and it was nowhere on screen. */}
         <p className="sobrancelha">
-          Ciclo desde {longDate(cycle.startsOn)} · números de {monthLabel(period)}
+          {cycle.endsOn === null
+            ? `Ciclo desde ${longDate(cycle.startsOn)}`
+            : `Ciclo até ${longDate(cycle.endsOn)}`} · números de {monthLabel(period)}
         </p>
         <h1 className="display">{cycle.title}</h1>
         {cycle.goal !== null && <p className="lead">{cycle.goal}</p>}
-        <DataAge period={period} syncedAt={conexao?.state === 'active' ? conexao.lastSyncAt : null} />
+        <DataAge
+          period={period}
+          syncedAt={conexao?.state === 'active' ? conexao.lastSyncAt : null}
+          conectada={conexao?.state === 'active'}
+        />
       </header>
 
       {vistas !== undefined && seguiram !== undefined && (
@@ -177,9 +186,7 @@ export default async function Painel () {
               <li key={p.id}>
                 <Link href="/pedidos" className="lista-item">
                   <span className="lista-titulo">{p.title}</span>
-                  <span className="lista-meta">
-                    {p.kind === 'data' ? 'me mandar um dado' : p.kind === 'question' ? 'só responder' : 'uma ação'}
-                  </span>
+                  <span className="lista-meta">{KIND_LABEL[p.kind]}</span>
                 </Link>
               </li>
             ))}
@@ -266,10 +273,9 @@ export default async function Painel () {
           {acompanhar.map(m => <MetricStat key={m.key} metric={m} />)}
         </div>
         <p className="rodape-nota">
-          Estes entram para dar contexto e para detectar queda. Não são alvo — e
-          quando um deles tem referência de nicho, ela aparece no próprio cartão. Eles entram
-          aqui para dar contexto e para a gente perceber se caírem — não para
-          serem melhorados neste ciclo.
+          Estes não são alvo deste ciclo. Ficam aqui para dar contexto — e para
+          a gente perceber na hora se algum começar a cair. Quando um deles tem
+          referência de nicho, ela aparece no próprio cartão.
         </p>
       </section>
     </>

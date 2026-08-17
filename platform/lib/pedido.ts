@@ -14,6 +14,8 @@
 
 export type RequestState = 'open' | 'answered' | 'analyzing' | 'concluded' | 'dropped'
 
+export type RequestKind = 'data' | 'action' | 'question' | 'material'
+
 export type Side = 'consultant' | 'client'
 
 export const STATES: readonly RequestState[] =
@@ -61,6 +63,21 @@ export function diasParados (desde: Date, agora: Date): number {
  * the truth. Typed by `RequestState` so the next state added has to be labelled
  * here or the build stops.
  */
+/**
+ * What each kind of request asks of the person, in her words.
+ *
+ * It lived three times — the panel, the list and the detail — and the panel's
+ * copy had no `material` case, so a material request wore "uma ação" there.
+ * "me mandar um dado" also read as analyst vocabulary; "informação" is the word
+ * she would use, and it stays true for a number, a print or a file alike.
+ */
+export const KIND_LABEL: Record<RequestKind, string> = {
+  data: 'me mandar uma informação',
+  action: 'uma ação',
+  question: 'só responder',
+  material: 'um material'
+}
+
 export const LABEL: Record<RequestState, { rot: string; classe: string }> = {
   open: { rot: 'em aberto', classe: 'selo-atencao' },
   answered: { rot: 'respondido', classe: 'selo-neutro' },

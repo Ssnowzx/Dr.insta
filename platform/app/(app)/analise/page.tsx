@@ -163,8 +163,8 @@ function Progressao ({ p }: { p: Progresso }) {
         ? (
           <p className="rodape-nota">
             Ainda não dá para desenhar: não há nenhum mês medido desta conta.
-            Assim que o Instagram estiver conectado — ou assim que você me mandar
-            o print de um mês — esta linha começa.
+            Assim que a conexão com o Instagram trouxer o primeiro mês fechado,
+            esta linha começa.
           </p>
           )
         : (

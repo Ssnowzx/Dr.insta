@@ -295,6 +295,8 @@ export interface CycleSummary {
   tradeOff: string | null
   northStarMetric: string | null
   startsOn: string
+  /** The cycle's deadline — for this cycle, the 1M-by-December date. */
+  endsOn: string | null
 }
 
 export async function activeCycle (clientId: number): Promise<CycleSummary | null> {
@@ -302,7 +304,8 @@ export async function activeCycle (clientId: number): Promise<CycleSummary | nul
     .select({
       id: cycle.id, title: cycle.title, goal: cycle.goal,
       tradeOff: cycle.tradeOff,
-      northStarMetric: cycle.northStarMetric, startsOn: cycle.startsOn
+      northStarMetric: cycle.northStarMetric, startsOn: cycle.startsOn,
+      endsOn: cycle.endsOn
     })
     .from(cycle)
     .where(and(eq(cycle.clientId, clientId), eq(cycle.state, 'active')))

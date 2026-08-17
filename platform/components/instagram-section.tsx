@@ -79,8 +79,11 @@ export function InstagramSection ({
     <section className="secao">
       <div className="secao-cab">
         <h2 className="titulo-secao">Seu Instagram</h2>
+        {/* "hoje os números vêm por print" until 17/08/2026 — the print era is
+            over, so a dropped connection means the numbers STOP, and saying
+            otherwise would send her back to a workflow that no longer exists. */}
         <p className="secao-nota">
-          {conectada ? 'os números chegam sozinhos' : 'hoje os números vêm por print'}
+          {conectada ? 'os números chegam sozinhos' : 'sem a conexão, os números param'}
         </p>
       </div>
 
@@ -186,7 +189,7 @@ export function InstagramSection ({
               <p className="grupo-item">
                 {ehCliente
                   ? 'Quebrou do lado do Instagram, depois de você sair daqui — não é você fazendo errado. Pode tentar de novo quando quiser; se aparecer alguma tela antes do erro, me manda o print dela, que é o que mostra onde travou.'
-                  : 'Falhou dentro do Instagram, sem criar conexão. Enquanto isso os números entram pelos prints que ela manda.'}
+                  : 'Falhou dentro do Instagram, sem criar conexão. Enquanto isso, nenhum número entra sozinho.'}
               </p>
               {falhas.lastAt !== null && (
                 <p className="grupo-quem">última tentativa em {longDate(falhas.lastAt)}</p>
@@ -201,11 +204,16 @@ export function InstagramSection ({
               scope names: "instagram_business_manage_insights" tells her
               nothing, and the authorisation screen she lands on is written in
               Meta's words, not ours. */}
+          {/* The list promises only what the API delivers. It used to include
+              "quantas abriram seu perfil" — the one number the API does NOT
+              give per month, which she goes on typing into a pedido. A pitch
+              that promises it is a pitch the first monthly ask contradicts. */}
           <p className="rodape-nota" style={{ marginTop: 0 }}>
-            Conectando sua conta, eu passo a ler sozinho os números que hoje você
-            precisa exportar e me mandar: quantas pessoas passaram a te seguir,
-            quantas abriram seu perfil, o alcance, e salvamentos e
-            compartilhamentos por post.
+            Conectando sua conta, os números passam a entrar sozinhos, várias
+            vezes por dia: quantas pessoas passaram a te seguir, o alcance, e
+            salvamentos e compartilhamentos de cada post. Só as visitas ao perfil
+            do mês o Instagram não me entrega — esse número eu continuo te
+            pedindo, uma vez por mês.
           </p>
           <p className="rodape-nota">
             <strong>Só leitura.</strong> Não publico nada, não comento, não

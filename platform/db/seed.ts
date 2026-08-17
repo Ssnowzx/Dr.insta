@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { orm } from './client.ts'
 import { db, waitForDatabase } from './connection.ts'
 import {
@@ -18,11 +18,12 @@ import { ulid } from '../lib/ulid.ts'
  *   · Editorial mix                            -> perfil/pilares.md
  *   · Niche reference                          -> src/dominio/benchmarks.ts
  *
- * Two cycles live here since 12 Aug 2026. "Caminho até a compra" is CLOSED —
- * the client redirected the work to her personal profile and the store side
- * went to the brand's own team. Its pillars, targets and experiments stay
- * frozen under it, which is what lets "did the bet pay off?" keep an object.
- * "O perfil que conversa" is the active cycle.
+ * Three cycles live here since 13 Aug 2026. "Caminho até a compra" and
+ * "O perfil que conversa" are CLOSED — the first when the store side went to
+ * the brand's own team (12/08), the second a day later when the client ranked
+ * followers first and set 1M by December. Their pillars, targets and
+ * experiments stay frozen under them, which is what lets "did the bet pay
+ * off?" keep an object. "Quem te vê, te segue" is the active cycle.
  *
  * Idempotent: every insert carries ON DUPLICATE KEY UPDATE against a unique
  * key, so running it twice changes nothing. A seed that duplicates on the
@@ -311,9 +312,12 @@ const OLD_TARGETS: TargetSeed[] = [
 /* The cycle in force. Followers decide; the two conversion rates are how the
    work is steered; conversation and distribution are floors, not targets. */
 const THIRD_TARGETS: TargetSeed[] = [
+  /* Dated at the start of the cycle, so the sentence stays true as the days
+     burn down. It used to say "Faltam 286.162... em 140 dias" in the present
+     tense — a count that was 4 days stale by the first deploy and aged daily. */
   {
     key: 'followers_net', baseline: '20824', target: '62200', northStar: true,
-    note: 'Faltam 286.162 para 1M. Em 140 dias isso é 62.200 por mês — três vezes o ritmo de hoje. No ritmo atual, 1M chega por volta de outubro de 2027.'
+    note: 'Na largada do ciclo (13/08) faltavam 286.162 para 1M até 31/12 — 62.200 por mês, três vezes o ritmo de então. Conversão sozinha não fecha essa conta: é conversão mais um evento de escala por mês.'
   },
   {
     key: 'follows_reach', baseline: '0.000600', target: '0.002000',
@@ -334,9 +338,13 @@ const THIRD_TARGETS: TargetSeed[] = [
     key: 'follows_per_nonfollower_reach',
     note: 'Só existe depois do número acima. É a taxa que realmente decide, e ela ainda não foi medida.'
   },
+  /* This is the ONE targetNote that renders (contaminated → metric-bar shows
+     it). It used to assert "o diagnóstico de 12/08 continua verdadeiro" in the
+     present tense — a claim the API now remeasures monthly and can contradict.
+     Dated measurement instead: true forever, however the number moves. */
   {
     key: 'comments_reach', baseline: '0.002100', target: '0.002100', contaminated: true,
-    note: 'Guard-rail, não alvo. O diagnóstico de 12/08 continua verdadeiro — comentários por alcance está em 0,21% contra 0,50% do nicho — mas mudou de prioridade por decisão da cliente. O piso é o próprio ponto de partida: se cair, o ciclo está comprando audiência que não conversa.'
+    note: 'Guard-rail, não alvo — medido em 12/08 em 0,21% contra 0,50% do nicho, e rebaixado de alvo por decisão da cliente. O piso é o próprio ponto de partida: se cair, o ciclo está comprando audiência que não conversa.'
   },
   {
     key: 'saves_reach', baseline: '0.002300', target: '0.002300', contaminated: true,
@@ -1038,9 +1046,13 @@ interface IdeaSeed {
  * half of her week IS the distribution engine; scripting it would break the one
  * thing that is not broken, and Espelho is the cycle's declared control.
  *
- * So the scripts are exactly the mix `perfil/pilares.md` asks for: two Opinião a
- * week, plus one alternating between Personagens and Vale guardar. Espelho
- * carries no pauta here on purpose.
+ * The weekly shape: Personagens is FIXED on Sundays — a named quadro lives on
+ * regularity, and a quadro that alternates fortnightly is an event, not a
+ * quadro. The other two slots alternate instead: two Opinião one week, Opinião
+ * plus Vale guardar the next. (The first draft said "two Opinião + one
+ * alternating", which a weekly Sunday quadro under a three-script cap cannot
+ * satisfy — the data was right and the sentence was wrong.) Espelho carries no
+ * pauta here on purpose.
  *
  * THE DATES ARE FIXED, AND THAT IS DELIBERATE
  *
@@ -1434,6 +1446,11 @@ async function main (): Promise<void> {
     'trouxeram 45 seguidores, contra 3.131 de um vídeo de opinião do mesmo tamanho. ' +
     'Não é julgamento do conteúdo, é conta de espaço.'
 
+  /* The deadline the client set — "1M até dezembro", read as 31/12. Until
+     17/08 it existed only inside a prose note: the product carried a goal with
+     a deadline and no date anywhere in the data. The panel reads it now. */
+  const CYCLE3_END = '2026-12-31'
+
   await o.insert(cycle).values({
     publicCode: ulid(),
     clientId,
@@ -1442,6 +1459,7 @@ async function main (): Promise<void> {
     tradeOff: THIRD_TRADE_OFF,
     northStarMetric: 'Seguidores novos por mês',
     startsOn: CYCLE3_START,
+    endsOn: CYCLE3_END,
     state: 'active',
     createdAt: now,
     updatedAt: now
@@ -1451,6 +1469,7 @@ async function main (): Promise<void> {
       tradeOff: THIRD_TRADE_OFF,
       northStarMetric: 'Seguidores novos por mês',
       startsOn: CYCLE3_START,
+      endsOn: CYCLE3_END,
       state: 'active',
       updatedAt: now
     }
@@ -2070,7 +2089,7 @@ async function main (): Promise<void> {
 
   /* ------------------------------------------------- request fields
    *
-   * Keyed by (request, label) so editing the wording here updates the field
+   * Keyed by (request, slug) since 012, so rewording a label updates the field
    * rather than adding a second one.
    *
    * `value`, `answered_at` and `answered_by` are NOT in the `set`. They are
@@ -2131,6 +2150,18 @@ async function main (): Promise<void> {
       })
       campos += 1
     }
+
+    /* Prune what this file no longer authors — UNANSWERED rows only. 012's own
+       cleanup ran after its backfill had already slugged every row, so it
+       deleted nothing; a label-derived slug left by that pass would sit beside
+       the authored field for ever, asking her the same number twice. A field
+       with a typed value is hers and stays, whatever its slug. */
+    const autorais = r.fields.map(f => f.slug)
+    await o.delete(requestField).where(and(
+      eq(requestField.requestId, alvo.id),
+      isNull(requestField.value),
+      or(isNull(requestField.slug), notInArray(requestField.slug, autorais))
+    ))
   }
 
   /* ------------------------------------------------- steps ↔ requests

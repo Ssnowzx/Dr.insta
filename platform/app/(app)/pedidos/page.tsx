@@ -6,17 +6,10 @@ import { requests, workQueue } from '@/lib/dashboard'
 import type { RequestRow } from '@/lib/dashboard'
 import { clientScope, requireSession } from '@/lib/dal'
 import { shortDate } from '@/lib/format'
-import { diasParados, DIAS_ATE_COBRAR, LABEL, turnOf } from '@/lib/pedido'
+import { diasParados, DIAS_ATE_COBRAR, KIND_LABEL, LABEL, turnOf } from '@/lib/pedido'
 
 export const metadata: Metadata = { title: 'Pedidos' }
 export const dynamic = 'force-dynamic'
-
-const TIPO: Record<string, string> = {
-  data: 'me mandar um dado',
-  action: 'uma ação',
-  question: 'só responder',
-  material: 'um material'
-}
 
 /** How long a request has been sitting, in whole days. See `diasParados`. */
 function diasParado (row: RequestRow): number {
@@ -62,8 +55,10 @@ async function Dela ({ clientId }: { clientId: number }) {
           {minhaVez.length === 0
             ? 'Nada pendente. Quando eu precisar de alguma coisa, aparece aqui.'
             : soDado === minhaVez.length
-              ? `São ${minhaVez.length} pedidos, e todos são só me mandar um dado — nada de gravar ou produzir.`
-              : `São ${minhaVez.length} pedidos, e ${soDado} deles são só me mandar um dado.`}
+              ? minhaVez.length === 1
+                ? 'É um pedido só, e ele se responde aqui mesmo, em minutos — nada de gravar nem produzir.'
+                : `São ${minhaVez.length} pedidos, e todos se respondem aqui mesmo, em minutos — nada de gravar nem produzir.`
+              : `São ${minhaVez.length} pedidos, e ${soDado} ${soDado === 1 ? 'deles se responde' : 'deles se respondem'} aqui mesmo, em minutos.`}
         </p>
       </header>
 
@@ -73,7 +68,7 @@ async function Dela ({ clientId }: { clientId: number }) {
           return (
             <li className="pedido" key={p.id}>
               <div className="pedido-cab">
-                <span className="pedido-tipo">{TIPO[p.kind]}</span>
+                <span className="pedido-tipo">{KIND_LABEL[p.kind]}</span>
                 <span className={`selo ${estado.classe}`}>esperando você</span>
               </div>
 

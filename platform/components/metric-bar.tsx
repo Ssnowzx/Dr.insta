@@ -20,9 +20,21 @@ import { format } from '@/lib/format'
 
 type Status = 'ok' | 'atencao' | 'critico' | 'neutro'
 
-function statusOf (m: MetricCard): { status: Status; label: string } {
+/**
+ * A floor is judged in floor words. The panel's "O que não pode cair" section
+ * already says "piso, não alvo" — and then every card inside it said "alvo do
+ * ciclo" and "no alvo", which is the exact misreading the section exists to
+ * prevent: a number the cycle only asks not to fall, presented as an
+ * achievement.
+ */
+function statusOf (m: MetricCard, piso: boolean): { status: Status; label: string } {
   if (m.value === null) return { status: 'neutro', label: 'sem dado' }
   if (m.target === null) return { status: 'neutro', label: 'sem alvo ainda' }
+  if (piso) {
+    if (m.value >= m.target) return { status: 'ok', label: 'não caiu' }
+    if (m.value >= m.target * 0.9) return { status: 'atencao', label: 'raspando o piso' }
+    return { status: 'critico', label: 'abaixo do piso' }
+  }
   if (m.value >= m.target) return { status: 'ok', label: 'no alvo' }
   if (m.value >= m.target * 0.6) return { status: 'atencao', label: 'perto do alvo' }
   return { status: 'critico', label: 'longe do alvo' }
@@ -46,7 +58,13 @@ export function MetricStat ({ metric }: { metric: MetricCard }) {
  *   as a rank and not only as a position in a list.
  */
 export function MetricBar ({ metric, destaque = false }: { metric: MetricCard; destaque?: boolean }) {
-  const { status, label } = statusOf(metric)
+  /* The same rule the panel groups by: a target that IS the baseline is a
+     floor. Derived from the numbers, so a new floor in the seed lands here
+     without a code change. */
+  const piso = metric.target !== null && metric.baseline !== null &&
+    metric.target === metric.baseline
+
+  const { status, label } = statusOf(metric, piso)
 
   /* A track needs something to compare against. With no target and no niche
      reference the ceiling is the value itself, so the bar fills to the same
@@ -92,7 +110,7 @@ export function MetricBar ({ metric, destaque = false }: { metric: MetricCard; d
       {hasReference && (
       <div className="metrica-trilho" role="img" aria-label={
         `${metric.label}: ${format(metric.value, metric.unit, metric.decimals)}` +
-        (metric.target === null ? '' : `, alvo ${format(metric.target, metric.unit, metric.decimals)}`) +
+        (metric.target === null ? '' : `, ${piso ? 'piso' : 'alvo'} ${format(metric.target, metric.unit, metric.decimals)}`) +
         (metric.benchmark === null ? '' : `, referência do nicho ${format(metric.benchmark, metric.unit, metric.decimals)}`)
       }>
         <div className="metrica-barra" style={{ width: `${pct(metric.value).toFixed(2)}%` }} />
@@ -109,7 +127,7 @@ export function MetricBar ({ metric, destaque = false }: { metric: MetricCard; d
       <dl className="metrica-refs">
         {metric.target !== null && (
           <div>
-            <dt>alvo do ciclo</dt>
+            <dt>{piso ? 'piso — não pode cair de' : 'alvo do ciclo'}</dt>
             <dd className="numero">{format(metric.target, metric.unit, metric.decimals)}</dd>
           </div>
         )}

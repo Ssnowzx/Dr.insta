@@ -9,17 +9,10 @@ import { requireSession } from '@/lib/dal'
 import { canReach } from '@/lib/scope'
 import { escreverNumero } from '@/lib/numero'
 import { longDate, shortDate } from '@/lib/format'
-import { LABEL, narrate, turnOf } from '@/lib/pedido'
+import { KIND_LABEL, LABEL, narrate, turnOf } from '@/lib/pedido'
 
 export const metadata: Metadata = { title: 'Pedido' }
 export const dynamic = 'force-dynamic'
-
-const TIPO: Record<string, string> = {
-  data: 'me mandar um dado',
-  action: 'uma ação',
-  question: 'só responder',
-  material: 'um material'
-}
 
 
 /**
@@ -54,7 +47,7 @@ export default async function Pedido ({
       </p>
 
       <header className="pagina-cab">
-        <p className="sobrancelha">{TIPO[pedido.kind]}</p>
+        <p className="sobrancelha">{KIND_LABEL[pedido.kind]}</p>
         <h1 className="display">{pedido.title}</h1>
       </header>
 

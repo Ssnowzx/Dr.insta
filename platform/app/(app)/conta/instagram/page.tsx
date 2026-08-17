@@ -39,9 +39,9 @@ export default async function ConectarInstagram () {
         <p className="sobrancelha">antes de conectar</p>
         <h1 className="display">O que eu vou poder ver.</h1>
         <p className="lead">
-          Leia sem pressa. Depois de conectar, os números que hoje você exporta e
-          me manda passam a chegar sozinhos — e você desliga quando quiser, na
-          tela da sua conta.
+          Leia sem pressa. Depois de conectar, os números chegam sozinhos, sem
+          você exportar nem mandar nada — e você desliga quando quiser, na tela
+          da sua conta.
         </p>
       </header>
 

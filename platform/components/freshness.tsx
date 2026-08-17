@@ -13,7 +13,8 @@ import { longDate, monthLabel } from '@/lib/format'
  */
 export function DataAge ({
   period,
-  syncedAt
+  syncedAt,
+  conectada = false
 }: {
   period: string
   /**
@@ -26,6 +27,13 @@ export function DataAge ({
    * for work the platform already did.
    */
   syncedAt?: Date | null
+  /**
+   * Whether the Instagram connection is up, independent of whether it has ever
+   * synced. `syncedAt` alone cannot tell "connection dropped" apart from
+   * "connected minutes ago, first read still coming" — and the two need
+   * opposite sentences: one sends her to Conta, the other asks for nothing.
+   */
+  conectada?: boolean
 }) {
   const age = ageOf(endOfMonth(period))
   const automatico = syncedAt !== undefined && syncedAt !== null
@@ -47,9 +55,13 @@ export function DataAge ({
            a different problem from her not having sent a file, and asking her
            for one would send her chasing the wrong thing. */
         ? `A última leitura automática foi ${ageOf(syncedAt).label}, então alguma coisa travou do meu lado. Já estou vendo isso.`
-        : age.level === 'stale'
-          ? 'Já passou mais de um mês fechado desde então, então eles não descrevem o momento. Me mande o Insights do período novo e eu atualizo.'
-          : 'Eles não entram sozinhos: eu atualizo quando você me manda o Insights do mês.'}
+        : conectada
+          ? 'A conexão está ativa e a primeira leitura automática ainda não veio — ela entra sozinha, ao longo do dia.'
+          /* No connection. The old fallback asked for the Insights export —
+             the print-era flow this product retired. What actually restarts
+             the numbers is reconnecting, so that is where the sentence
+             points. */
+          : 'A conexão com o Instagram está desligada, então nada entra sozinho. Reconectar fica em Conta.'}
     </p>
   )
 }

@@ -58,7 +58,7 @@ export function lerNumero (bruto: string, unidade: Unidade = 'count'): Lido {
 
   const virgulas = (limpo.match(/,/g) ?? []).length
   if (virgulas > 1) {
-    return { ok: false, erro: 'Tem mais de uma vírgula. A vírgula separa os centavos, e só entra uma vez.' }
+    return { ok: false, erro: 'Tem mais de uma vírgula. A vírgula marca a casa decimal, e só entra uma vez.' }
   }
 
   const [inteira = '', decimal = ''] = limpo.split(',')
