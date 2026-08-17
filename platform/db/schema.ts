@@ -299,6 +299,53 @@ export const request = mysqlTable('request', {
   index('ix_request_delivery').on(t.deliveryId)
 ])
 
+/**
+ * A number a request asks for, and where the answer lands.
+ *
+ * This is what stops an integer travelling as a screenshot. `metric_value` is
+ * written by three things and none of them reads an upload, so before this a
+ * figure she could type in four seconds waited for someone to open a PNG.
+ *
+ * `target` is an enum and not a column name: a stored column name is an
+ * injection surface and a magic value nobody validates, and the day one said
+ * `reach` the archive would hold a reach that was typed instead of measured.
+ */
+export const requestField = mysqlTable('request_field', {
+  id: id(),
+  requestId: fk('request_id').notNull(),
+  /**
+   * What this field ASKS FOR, stable across every rewording of the label.
+   *
+   * The identity used to be the label, and rewriting five of them turned five
+   * fields into nine — the screen would have asked for the same number twice,
+   * in two sentences. Not keyed on `(metricKey, postCode)`, which is what the
+   * field really is, because both are nullable and MySQL lets a UNIQUE index
+   * repeat rows containing NULL: the constraint would be absent for exactly
+   * the rows most likely to collide.
+   */
+  slug: varchar({ length: 60 }),
+  position: smallint({ unsigned: true }).notNull().default(0),
+  label: varchar({ length: 160 }).notNull(),
+  /** The path inside Instagram, handed over rather than described. */
+  hint: varchar({ length: 255 }),
+  unit: mysqlEnum(['count', 'ratio']).notNull().default('count'),
+  target: mysqlEnum(['metric', 'post_share']).notNull().default('metric'),
+  metricKey: varchar('metric_key', { length: 60 }),
+  /** `YYYY-MM-01`. Null means the month it is answered in. */
+  period: date({ mode: 'string' }),
+  /** The shortcode, for `post_share`. */
+  postCode: varchar('post_code', { length: 40 }),
+  /** What she typed, in stored form. Null means unanswered. */
+  value: decimal({ precision: 16, scale: 6 }),
+  answeredAt: datetime('answered_at'),
+  answeredBy: fk('answered_by'),
+  createdAt: createdAt(),
+  updatedAt: updatedAt()
+}, t => [
+  uniqueIndex('uq_field_request_slug').on(t.requestId, t.slug),
+  index('ix_field_request').on(t.requestId, t.position)
+])
+
 export const requestEvent = mysqlTable('request_event', {
   id: id(),
   requestId: fk('request_id').notNull(),
@@ -548,6 +595,16 @@ export const post = mysqlTable('post', {
   saves: bigint({ mode: 'number', unsigned: true }),
   sends: bigint({ mode: 'number', unsigned: true }),
   retentionPct: decimal('retention_pct', { precision: 6, scale: 3 }),
+  /**
+   * The share of this post's reach that was NOT already following her.
+   *
+   * The honest denominator for follower conversion — someone who already
+   * follows cannot follow again — and the number the cycle's 41× finding rests
+   * on. Neither the API nor the public export has it: it exists only on the
+   * Público tab of each Reel, which is why a request asks for it and
+   * `request_field` can write it.
+   */
+  nonFollowerPct: decimal('non_follower_pct', { precision: 6, scale: 5 }),
   avgWatchSec: decimal('avg_watch_sec', { precision: 8, scale: 2 }),
 
   provenance: mysqlEnum(['public', 'insights', 'mixed']).notNull().default('public'),

@@ -1,11 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { CamposDoPedido } from '@/components/campo-numero'
 import { FileSize, RequestActions } from '@/components/request-detail'
 import { RequestText } from '@/components/request-text'
 import { requestDetail } from '@/lib/dashboard'
 import { requireSession } from '@/lib/dal'
 import { canReach } from '@/lib/scope'
+import { escreverNumero } from '@/lib/numero'
 import { longDate, shortDate } from '@/lib/format'
 import { LABEL, narrate, turnOf } from '@/lib/pedido'
 
@@ -73,6 +75,21 @@ export default async function Pedido ({
           {pedido.whyItMatters}
         </p>
       )}
+
+      {/* Before the uploads and before the timeline: this is the fastest way to
+          answer the request, and a person who scrolls past it sends a
+          screenshot instead. */}
+      <CamposDoPedido
+        ehCliente={identity.role !== 'consultant'}
+        campos={pedido.fields.map(f => ({
+          id: f.id,
+          label: f.label,
+          hint: f.hint,
+          unit: f.unit,
+          eco: f.value === null ? null : escreverNumero(f.value, f.unit),
+          answeredAt: f.answeredAt === null ? null : shortDate(f.answeredAt)
+        }))}
+      />
 
       {arquivos.length > 0 && (
         <section className="secao">

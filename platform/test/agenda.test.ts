@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { agendar, diaDaSemana, diasDeAtraso, grupoDe, hojeEm, somarDias } from '../lib/agenda.ts'
+import {
+  agendar, diaDaSemana, diasDeAtraso, grupoDe, hojeEm, manchete, somarDias
+} from '../lib/agenda.ts'
 import type { Agendavel } from '../lib/agenda.ts'
 
 /**
@@ -177,5 +179,113 @@ describe('diaDaSemana', () => {
     // ASSERT
     expect(rotulo).toContain('seg')
     expect(rotulo).toContain('17')
+  })
+})
+
+/**
+ * The two lines she reads first.
+ *
+ * Pure because they are prose with five branches, and the version written
+ * inline in the page had two of them wrong: a headline of "6 na fila" — a
+ * number with no noun, counting today's shoot and one due in twelve days as
+ * the same thing — and a lead that explained the feature on the one screen
+ * where she already knows what it is.
+ */
+const pauta2 = (over: Partial<Agendavel & { title: string }> = {}) => ({
+  scheduledFor: null,
+  state: 'scheduled' as const,
+  title: 'Uma pauta',
+  ...over
+})
+
+describe('manchete', () => {
+  it('should lead with what passed its date, and with the decision', () => {
+    // ARRANGE — a missed script is the only group that needs a decision, so it
+    // outranks everything even when today also has one
+    const agenda = agendar([
+      pauta2({ scheduledFor: '2026-08-16', title: 'Perfumes' }),
+      pauta2({ scheduledFor: HOJE, title: 'Casamento' })
+    ], HOJE)
+
+    // ACT
+    const m = manchete(agenda, HOJE)
+
+    // ASSERT
+    expect(m.titulo).toBe('Uma passou da data.')
+    expect(m.lead).toContain('Perfumes')
+    expect(m.lead).toContain('descarte')
+  })
+
+  it('should name the one to record today', () => {
+    // ARRANGE
+    const agenda = agendar([pauta2({ scheduledFor: HOJE, title: 'Perfumes' })], HOJE)
+
+    // ACT
+    const m = manchete(agenda, HOJE)
+
+    // ASSERT
+    expect(m.titulo).toBe('Uma para gravar hoje.')
+    expect(m.lead).toContain('Perfumes')
+  })
+
+  it('should count the WEEK, not everything with a date', () => {
+    // ARRANGE — this is the defect the old headline had. Two this week and two
+    // a fortnight out is "2 nos próximos sete dias", never "4".
+    const agenda = agendar([
+      pauta2({ scheduledFor: '2026-08-19', title: 'A' }),
+      pauta2({ scheduledFor: '2026-08-21', title: 'B' }),
+      pauta2({ scheduledFor: '2026-09-01', title: 'C' }),
+      pauta2({ scheduledFor: '2026-09-03', title: 'D' })
+    ], HOJE)
+
+    // ACT
+    const m = manchete(agenda, HOJE)
+
+    // ASSERT
+    expect(m.titulo).toBe('2 nos próximos sete dias.')
+    expect(m.lead).toContain('A')
+  })
+
+  it('should say the week is clear rather than invent a number', () => {
+    // ARRANGE — only dated far out
+    const agenda = agendar([pauta2({ scheduledFor: '2026-09-01', title: 'Setembro' })], HOJE)
+
+    // ACT
+    const m = manchete(agenda, HOJE)
+
+    // ASSERT
+    expect(m.titulo).toBe('Nada para esta semana.')
+    expect(m.lead).toContain('Setembro')
+  })
+
+  it('should never put the bank in the headline count', () => {
+    // ARRANGE — the bank has no date and is owed on no day. A headline that
+    // counted it would never drop, and a number that never drops stops being
+    // read.
+    const agenda = agendar([
+      pauta2({ title: 'Sem data 1' }),
+      pauta2({ title: 'Sem data 2' })
+    ], HOJE)
+
+    // ACT
+    const m = manchete(agenda, HOJE)
+
+    // ASSERT
+    expect(m.titulo).toBe('Sem data marcada.')
+    expect(m.titulo).not.toContain('fila')
+  })
+
+  it('should say nothing is queued when nothing is', () => {
+    // ARRANGE — published and dropped are not queued
+    const agenda = agendar([
+      pauta2({ scheduledFor: '2026-08-10', state: 'published' }),
+      pauta2({ scheduledFor: '2026-08-11', state: 'dropped', title: 'Outra' })
+    ], HOJE)
+
+    // ACT
+    const m = manchete(agenda, HOJE)
+
+    // ASSERT
+    expect(m.titulo).toBe('Nada na fila.')
   })
 })

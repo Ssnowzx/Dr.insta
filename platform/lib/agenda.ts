@@ -101,6 +101,97 @@ export function agendar<T extends Agendavel> (itens: T[], hoje: string): Agenda<
   return agenda
 }
 
+/**
+ * The headline and the line under it, as one decision.
+ *
+ * Pure and tested, because it is five branches of prose and each one is a
+ * sentence she reads on the screen she opens on a filming day. It was written
+ * inline in the page and two of the branches were wrong:
+ *
+ *   · "6 na fila" — a number with no noun, and the WRONG number. It counted
+ *     everything with a date, so today's shoot and one due in twelve days were
+ *     the same "6". A count she cannot act on is a count she stops reading.
+ *   · the lead explained the FEATURE ("cada uma tem gancho, blocos e legenda"),
+ *     on the one screen where she already knows what the feature is and wants
+ *     to know what to do next.
+ *
+ * So the headline now names the nearest thing that needs her, in the unit she
+ * acts in, and the lead names WHICH one. The bank is never in the headline: it
+ * has no date, is owed on no day, and a number that never drops is a number
+ * nobody reads.
+ */
+export interface Manchete {
+  titulo: string
+  lead: string
+}
+
+export function manchete<T extends Agendavel & { title: string }> (
+  agenda: Agenda<T>,
+  hoje: string
+): Manchete {
+  const nome = (item: T | undefined): string =>
+    item === undefined ? '' : `“${item.title}”`
+
+  if (agenda.atrasada.length > 0) {
+    const n = agenda.atrasada.length
+    const primeira = agenda.atrasada[0]
+    const dias = primeira?.scheduledFor === undefined || primeira.scheduledFor === null
+      ? 0
+      : diasDeAtraso(primeira.scheduledFor, hoje)
+
+    return {
+      titulo: n === 1 ? 'Uma passou da data.' : `${n} passaram da data.`,
+      lead: n === 1
+        ? `${nome(primeira)} era para ${dias === 1 ? 'ontem' : `${dias} dias atrás`}. Grave assim mesmo ou descarte — as duas servem. Só não deixe parado.`
+        : 'Grave assim mesmo ou descarte — as duas servem. Só não deixe parado.'
+    }
+  }
+
+  if (agenda.hoje.length > 0) {
+    const n = agenda.hoje.length
+    return {
+      titulo: n === 1 ? 'Uma para gravar hoje.' : `${n} para gravar hoje.`,
+      lead: n === 1
+        ? `É ${nome(agenda.hoje[0])}. O roteiro está pronto — abra, leia o gancho e grave.`
+        : 'Os roteiros estão prontos. Abra, leia o gancho e grave.'
+    }
+  }
+
+  if (agenda.semana.length > 0) {
+    const n = agenda.semana.length
+    const proxima = agenda.semana[0]
+    const quando = proxima?.scheduledFor == null ? '' : diaDaSemana(proxima.scheduledFor)
+
+    return {
+      titulo: n === 1 ? 'Uma nos próximos dias.' : `${n} nos próximos sete dias.`,
+      lead: `A próxima é ${quando}: ${nome(proxima)}.`
+    }
+  }
+
+  if (agenda.depois.length > 0) {
+    const proxima = agenda.depois[0]
+    const quando = proxima?.scheduledFor == null ? '' : diaDaSemana(proxima.scheduledFor)
+
+    return {
+      titulo: 'Nada para esta semana.',
+      lead: `A próxima com data é ${quando}: ${nome(proxima)}. Se quiser puxar alguma para antes, o banco está aqui embaixo.`
+    }
+  }
+
+  if (agenda.banco.length > 0) {
+    const n = agenda.banco.length
+    return {
+      titulo: 'Sem data marcada.',
+      lead: `${n === 1 ? 'Uma pauta' : `${n} pautas`} no banco, esperando você escolher. Elas ganham roteiro quando ganham dia.`
+    }
+  }
+
+  return {
+    titulo: 'Nada na fila.',
+    lead: 'Tudo o que estava aqui já saiu ou foi descartado. O próximo lote entra nesta tela.'
+  }
+}
+
 /** "seg, 18 ago" — the day a pauta is due, in the shape a schedule is read in. */
 export function diaDaSemana (iso: string, timeZone = 'America/Sao_Paulo'): string {
   return new Intl.DateTimeFormat('pt-BR', {

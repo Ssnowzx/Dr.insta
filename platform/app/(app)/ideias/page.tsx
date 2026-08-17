@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { agendar, diaDaSemana, diasDeAtraso, hojeEm } from '@/lib/agenda'
+import { agendar, diaDaSemana, diasDeAtraso, hojeEm, manchete } from '@/lib/agenda'
 import { clientScope } from '@/lib/dal'
 import { format } from '@/lib/format'
 import { ideas } from '@/lib/pautas'
@@ -144,6 +144,7 @@ export default async function Ideias () {
      be tested without waiting for Sunday. */
   const hoje = hojeEm(new Date())
   const agenda = agendar(lista, hoje)
+  const { titulo, lead } = manchete(agenda, hoje)
 
   if (lista.length === 0) {
     return (
@@ -160,29 +161,23 @@ export default async function Ideias () {
 
   return (
     <>
+      {/* Both lines come from `manchete`, in `lib/agenda.ts`, so five branches of
+          prose have a test. This screen is opened on a filming day and its job
+          is to answer "o que eu gravo agora" in the first two lines. */}
       <header className="pagina-cab">
         <p className="sobrancelha">O que gravar</p>
-        <h1 className="display">
-          {agenda.aFazer === 0
-            ? 'Nada na fila.'
-            : agenda.atrasada.length > 0
-              ? `${agenda.atrasada.length} ${agenda.atrasada.length === 1 ? 'atrasada' : 'atrasadas'}.`
-              : agenda.hoje.length > 0
-                ? `${agenda.hoje.length} ${agenda.hoje.length === 1 ? 'pauta' : 'pautas'} para hoje.`
-                : `${agenda.aFazer} na fila.`}
-        </h1>
-        <p className="lead">
-          {agenda.aFazer === 0
-            ? 'Tudo o que estava aqui já saiu ou foi descartado. O próximo lote entra nesta tela.'
-            : 'Cada uma tem gancho, blocos e legenda sugerida. Não é para seguir palavra por palavra — é para você não parar no meio pensando no que vem depois.'}
-        </p>
-        {/* Said here rather than left to be inferred from a short list. Someone
-            who publishes eight Reels a week and finds three scripts concludes
-            the product is incomplete unless the product says otherwise. */}
-        <p className="rodape-nota">
-          São três roteiros por semana, não oito. Os outros vídeos da sua semana
-          são o que já funciona sozinho — o roteiro existe só para o vídeo de
-          opinião, que é o que traz seguidor.
+        <h1 className="display">{titulo}</h1>
+        <p className="lead">{lead}</p>
+        {/* Rewritten 17/08/2026. It said "São três roteiros por semana, não
+            oito" — my decision, defended on her screen. Read from her side that
+            is "ele só me deu três, então eu paro de fazer os outros?", which is
+            the opposite of the instruction. The note now starts by telling her
+            what NOT to change, and only then what is here. */}
+        <p className="achado">
+          <strong>Continue postando como você já posta.</strong> Aqui ficam só
+          os 3 vídeos da semana que têm roteiro pronto — os de opinião, que são
+          os que fazem gente nova te seguir. Os outros continuam do seu jeito,
+          sem roteiro.
         </p>
       </header>
 

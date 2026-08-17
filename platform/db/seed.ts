@@ -4,7 +4,7 @@ import { db, waitForDatabase } from './connection.ts'
 import {
   benchmark, client, cycle, delivery, deliverySection, experiment, metricDef,
   idea, ideaBeat, metricTarget, metricValue, pillar, request, requestEvent,
-  step, user
+  post, requestField, step, user
 } from './schema.ts'
 import { ulid } from '../lib/ulid.ts'
 
@@ -770,6 +770,27 @@ const NEW_EXPERIMENTS: ExperimentSeed[] = [
   }
 ]
 
+/**
+ * A number the request asks for, typed instead of sent as a screenshot.
+ *
+ * `hint` says WHERE to look before the label says what to write — the order is
+ * the instruction. It hands over the path inside Instagram rather than naming
+ * it, the lesson `step.copy_value` already paid for.
+ */
+interface FieldSeed {
+  /** Stable identity. Rewriting `label` must never create a second field. */
+  slug: string
+  label: string
+  hint: string
+  unit?: 'count' | 'ratio'
+  /** `metric` -> metric_value by key; `post_share` -> post.non_follower_pct. */
+  target?: 'metric' | 'post_share'
+  metricKey?: string
+  /** `YYYY-MM-01`. Absent on a monthly ask: it lands in the month it is answered. */
+  period?: string
+  postCode?: string
+}
+
 interface RequestSeed {
   title: string
   /** Titles this request carried before — how a renamed request is found again. */
@@ -779,6 +800,7 @@ interface RequestSeed {
   description: string
   whyItMatters: string
   position: number
+  fields?: FieldSeed[]
 }
 
 /**
@@ -795,10 +817,53 @@ const MEASURE_REQUESTS: RequestSeed[] = [
     title: 'A aba Público de cinco Reels',
     kind: 'data', priority: 'high', position: 1,
     description:
-      'Em cada Reel: toque em Ver insights e depois na aba Público, no alto. Tem um número dizendo quantas das pessoas que viram já te seguiam. Um print por vídeo.\n\n' +
-      'Escolha estes cinco: dois curtos (até 10s), dois longos (mais de 90s) e o "meus top 5 perfumes".\n\n' +
-      'Como mandar: pelo botão Anexar arquivo, aqui embaixo. Pode mandar os cinco de uma vez.',
-    whyItMatters: 'Eu deduzi essa divisão de onde vieram as visualizações, em oito vídeos — é indício, não medida. Este número existe pronto no Instagram e é o que decide todo o ciclo: quem já te segue não pode te seguir de novo, então é a fatia de gente nova que diz se um vídeo funcionou.'
+      'Não precisa mais mandar print. Agora é só escrever o número, aqui embaixo.\n\n' +
+      'Em cada um dos cinco vídeos da lista, o caminho é o mesmo:\n' +
+      '1. Abra o Reel e toque em Ver insights.\n' +
+      '2. Toque na aba Público, no alto.\n' +
+      '3. Ali aparece a divisão entre seguidores e não seguidores. Escreva a porcentagem de NÃO SEGUIDORES.\n\n' +
+      'Se um deles não abrir, deixe em branco e mande os outros. Cada número salva sozinho.',
+    whyItMatters: 'Quem já te segue não pode te seguir de novo. Então, para saber se um vídeo funcionou, o que conta é a fatia de gente nova que viu — e esse número só existe nessa aba. Hoje eu deduzo por outro caminho, e deduzir não é medir.',
+    /* The five the analysis needs: the converter, two short, two long.
+     *
+     * EVERY SHORTCODE HERE IS READ OFF THE ARCHIVE, never written from memory.
+     * The first version of this list invented one for the perfumes Reel and the
+     * number would have been accepted, stored on the field, and landed nowhere
+     * — `gravarPost` reported it and nobody was reading the audit log. The seed
+     * now refuses to write a field whose post is not in the archive, so a
+     * fabricated code fails loudly at seed time instead of quietly at hers. */
+    fields: [
+      {
+        slug: 'publico-perfumes',
+        label: 'meus top 5 perfumes favoritos (21/05, 1min39)',
+        hint: 'https://instagram.com/reel/DYnqOYCBfAw — Ver insights → Público → escreva a % de NÃO seguidores',
+        unit: 'ratio', target: 'post_share', postCode: 'DYnqOYCBfAw'
+      },
+      {
+        slug: 'publico-longo-1',
+        label: 'Em breve, a nossa pequena Isabel (18/07, 3min)',
+        hint: 'https://instagram.com/reel/Da72VM-Ro07 — Ver insights → Público → escreva a % de NÃO seguidores',
+        unit: 'ratio', target: 'post_share', postCode: 'Da72VM-Ro07'
+      },
+      {
+        slug: 'publico-longo-2',
+        label: 'diretora criativa (09/03, 1min56)',
+        hint: 'https://instagram.com/reel/DVpOJEeDVYo — Ver insights → Público → escreva a % de NÃO seguidores',
+        unit: 'ratio', target: 'post_share', postCode: 'DVpOJEeDVYo'
+      },
+      {
+        slug: 'publico-curto-1',
+        label: 'oq eu perdi? (28/05, 8s)',
+        hint: 'https://instagram.com/reel/DY3KqCzMeNQ — Ver insights → Público → escreva a % de NÃO seguidores',
+        unit: 'ratio', target: 'post_share', postCode: 'DY3KqCzMeNQ'
+      },
+      {
+        slug: 'publico-curto-2',
+        label: 'haaland fobia (05/07, 6s)',
+        hint: 'https://instagram.com/reel/DaMRWJeshlz — Ver insights → Público → escreva a % de NÃO seguidores',
+        unit: 'ratio', target: 'post_share', postCode: 'DaMRWJeshlz'
+      }
+    ]
   },
   {
     title: 'Uma vez por mês: o número de visitas ao perfil',
@@ -815,9 +880,21 @@ const MEASURE_REQUESTS: RequestSeed[] = [
     description:
       /* No markdown here: `RequestText` renders plain text and turns URLs into
          links, and nothing else. Asterisks would print as asterisks. */
-      'Insights → Visão geral, período de 30 dias. Só um número: visitas ao perfil.\n\n' +
-      'Um print da tela resolve, uma vez por mês. Alcance e seguidores eu já pego sozinho desde que você conectou a conta — não precisa mandar mais.',
-    whyItMatters: 'É o único número do funil que a API do Instagram não entrega: ela só tem visitas por post, não por perfil. É o degrau entre "viram você" e "decidiram te seguir", e sem ele eu vejo o começo e o fim do caminho e não vejo o meio.'
+      'Não precisa mandar print. É só escrever o número, aqui embaixo.\n\n' +
+      'Onde achar, no seu celular:\n' +
+      '1. Abra o Instagram e toque em Painel profissional.\n' +
+      '2. Toque em Ver todos os insights e deixe o período em Últimos 30 dias.\n' +
+      '3. Procure "Visitas ao perfil". É esse número.\n\n' +
+      'Uma vez por mês já basta. Alcance e seguidores eu pego sozinho desde que você conectou a conta — esses dois você não precisa mandar mais.',
+    whyItMatters: 'É o único número do caminho que o Instagram não me deixa pegar sozinho. Ele é o degrau do meio: quantas pessoas viram você e abriram seu perfil. Sem ele eu enxergo quem te viu e quem te seguiu, e não enxergo o que acontece entre os dois.',
+    fields: [
+      {
+        slug: 'visitas-perfil-mes',
+        label: 'Visitas ao perfil nos últimos 30 dias',
+        hint: 'Instagram → Painel profissional → Ver todos os insights → Últimos 30 dias → Visitas ao perfil',
+        unit: 'count', target: 'metric', metricKey: 'profile_visits'
+      }
+    ]
   }
 ]
 
@@ -1991,6 +2068,71 @@ async function main (): Promise<void> {
     }
   }
 
+  /* ------------------------------------------------- request fields
+   *
+   * Keyed by (request, label) so editing the wording here updates the field
+   * rather than adding a second one.
+   *
+   * `value`, `answered_at` and `answered_by` are NOT in the `set`. They are
+   * hers: correcting a typo in a hint must never erase the number she typed —
+   * the same rule that keeps `step_status` in its own table and `idea.state`
+   * out of the idea upsert.
+   */
+  let campos = 0
+  for (const r of ALL_REQUESTS) {
+    if (r.fields === undefined) continue
+    const alvo = await requestByTitle([r.title, ...(r.legacyTitles ?? [])])
+    if (alvo === undefined) {
+      console.warn(`  ! fields for "${r.title}": request not found`)
+      continue
+    }
+
+    for (const [i, f] of r.fields.entries()) {
+      /* A shortcode that is not in the archive is a typo or an invention, and
+         both fail SILENTLY at her end: the number is accepted, stored on the
+         field, and lands on no post. It happened on the first pass of this very
+         list. Loud here, where it costs a re-run, instead of loud never. */
+      if (f.postCode !== undefined) {
+        const [existe] = await o.select({ id: post.id }).from(post)
+          .where(and(eq(post.clientId, clientId), eq(post.igCode, f.postCode))).limit(1)
+        if (existe === undefined) {
+          console.warn(`  ! field "${f.label}": post ${f.postCode} is not in the archive — skipped`)
+          continue
+        }
+      }
+
+      await o.insert(requestField).values({
+        requestId: alvo.id,
+        slug: f.slug,
+        position: i + 1,
+        label: f.label,
+        hint: f.hint,
+        unit: f.unit ?? 'count',
+        target: f.target ?? 'metric',
+        metricKey: f.metricKey ?? null,
+        period: f.period ?? null,
+        postCode: f.postCode ?? null,
+        createdAt: now,
+        updatedAt: now
+      }).onDuplicateKeyUpdate({
+        set: {
+          /* The label IS in the set now — it is a sentence, not an identity,
+             and improving the wording has to reach her screen. */
+          label: f.label,
+          position: i + 1,
+          hint: f.hint,
+          unit: f.unit ?? 'count',
+          target: f.target ?? 'metric',
+          metricKey: f.metricKey ?? null,
+          period: f.period ?? null,
+          postCode: f.postCode ?? null,
+          updatedAt: now
+        }
+      })
+      campos += 1
+    }
+  }
+
   /* ------------------------------------------------- steps ↔ requests
    *
    * Run here, after both exist, because the two are seeded in an order this
@@ -2091,6 +2233,7 @@ async function main (): Promise<void> {
     `${IDEAS.reduce((n, p) => n + (p.script?.length ?? 0), 0)} blocos de roteiro`
   )
   console.log(`  Steps linked to a request: ${ligados}`)
+  console.log(`  Request fields (numbers she types): ${campos}`)
 }
 
 main()

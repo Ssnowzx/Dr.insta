@@ -560,6 +560,45 @@ Three rules shape it:
   separate column from `last_seen_at`, which advances on every sign-in and would
   mark everything read just for opening the app.
 
+### A number she types instead of a screenshot she sends
+
+`request_field` lets a request ask for one or more labelled numbers, and the
+answer lands where it belongs without anyone opening a file.
+
+That gap was traced on 17/08/2026 by following the path: `metric_value` is
+written by exactly three things — the seed, the Reels importer and the Instagram
+sync — and the `file` table is read by exactly one route, the download. Nothing
+parses an upload and there is no OCR. So a single integer travelled as a PNG and
+waited for a person to read it.
+
+**Not OCR, deliberately.** A misread digit that enters the panel on its own is
+worse than one that waits a day, because nobody distrusts it. A typed number is
+checked by the person looking at the screen it came from, parsed by a rule that
+refuses what it cannot read, and echoed back for confirmation.
+
+Two destinations, as an enum and never a column name in a string:
+
+| `target` | Lands on | Used by |
+|---|---|---|
+| `metric` | `metric_value`, source `insights` | visitas ao perfil, monthly |
+| `post_share` | `post.non_follower_pct` | the Público tab, one per Reel |
+
+`post.non_follower_pct` is new and is the honest denominator for follower
+conversion — someone who already follows cannot follow again. Neither the API
+nor the public export has it; it exists only on the Público tab of each Reel,
+which is why a request asks for it at all.
+
+**`lib/numero.ts` is the most dangerous parse in this product**, and it is pure
+and tested to the point of tedium. "347.482" is 347 thousand in pt-BR and
+347,482 to `Number()` — a thousand-fold error in the second step of the funnel,
+entering the database looking entirely plausible. The rules are stated rather
+than inferred: comma is always the decimal, dot is always thousands, and "1.5"
+is REFUSED rather than guessed at. A parser that guesses is right for one person
+and silently wrong for the next.
+
+`slug` is the field's identity, not `label` — see `db/migrations/012`. Keying on
+the wording turned five fields into nine the first time the copy improved.
+
 ### Access, without email
 
 There is no password-reset email, so a client who cannot get in has no

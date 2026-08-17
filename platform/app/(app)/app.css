@@ -3175,3 +3175,101 @@ a.btn-acesso:hover { border-color: var(--dado); text-decoration: none; }
   color: var(--suave);
   margin-bottom: .25rem;
 }
+
+/* =============================================================================
+   A NUMBER SHE TYPES INSTEAD OF A SCREENSHOT SHE SENDS
+
+   One card per number, saved on its own. A single form with five inputs and one
+   button is a form abandoned when only three of the numbers are to hand; here
+   the third saves and the other two go on waiting, visibly.
+   ============================================================================= */
+
+.campos-num {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .875rem;
+}
+
+.campo-num {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1rem 1.125rem;
+}
+
+/* Answered, and it should look answered from across the room — the same
+   healthy pair the proof block uses. */
+.campo-num-ok { border-color: var(--ok); }
+
+.campo-num-rot {
+  display: block;
+  font-size: .9375rem;
+  font-weight: 600;
+  color: var(--tinta);
+  margin-bottom: .25rem;
+}
+
+/* WHERE to look, before WHAT to type. The order is the instruction. */
+.campo-num-onde {
+  margin: 0 0 .75rem;
+  font-size: .8125rem;
+  line-height: 1.5;
+  color: var(--tinta2);
+  max-width: 52ch;
+}
+
+.campo-num-linha {
+  display: flex;
+  align-items: stretch;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.campo-num-linha input {
+  flex: 1 1 8rem;
+  min-width: 0;
+  /* 16px exactly, or iOS Safari zooms the page on focus and never zooms back. */
+  font: inherit;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta);
+  background: var(--campo-fundo);
+  border: 1px solid var(--linha-campo);
+  border-radius: var(--raio);
+  padding: .75rem .875rem;
+  /* 44px, like every other target in this product. */
+  min-height: 2.75rem;
+}
+
+.campo-num-linha input:focus-visible {
+  outline: none;
+  border-color: var(--caramelo);
+  box-shadow: 0 0 0 3px var(--foco);
+}
+
+.campo-num-linha input::placeholder { color: var(--suave); }
+
+.campo-num-linha .btn-nota { flex: 0 0 auto; min-height: 2.75rem; }
+
+/* The echo. She may type "347482" or "347.482" and both are accepted, so the
+   confirmation shows what actually landed — otherwise a thousand-fold typo is
+   invisible at the one moment it could be caught. */
+.campo-num-eco {
+  margin: .75rem 0 0;
+  font-size: .8125rem;
+  line-height: 1.5;
+  color: var(--ok);
+}
+
+/* The Reel's address inside a hint. Same treatment a request description gives
+   a link — she taps it and lands in the app, instead of retyping a shortcode. */
+.campo-num-onde .desc-link {
+  color: var(--caramelo);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}

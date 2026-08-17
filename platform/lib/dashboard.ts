@@ -5,7 +5,7 @@ import { orm } from '@/db/client'
 import {
   benchmark, client, cycle, delivery, deliverySection, experiment,
   instagramConnection, metricDef, metricTarget, metricValue, file, pillar, post,
-  request, requestEvent, step, stepStatus, user
+  request, requestEvent, requestField, step, stepStatus, user
 } from '@/db/schema'
 import { mediana } from './acervo.ts'
 import { ORIGENS_MEDIDAS, resolverPorChave } from './precedencia.ts'
@@ -1051,9 +1051,21 @@ export interface RequestEventRow {
   fileBytes: number | null
 }
 
+export interface RequestFieldRow {
+  id: number
+  label: string
+  hint: string | null
+  unit: 'count' | 'ratio'
+  /** Null means unanswered — what the screen reads to know what is left. */
+  value: number | null
+  answeredAt: Date | null
+}
+
 export interface RequestDetail extends RequestRow {
   clientId: number
   events: RequestEventRow[]
+  /** Numbers this request asks for, so an integer stops travelling as a PNG. */
+  fields: RequestFieldRow[]
 }
 
 /**
@@ -1094,6 +1106,19 @@ export async function requestDetail (
   const found = rows[0]
   if (found === undefined || !reachable(found.clientId)) return null
 
+  const fields = await orm()
+    .select({
+      id: requestField.id,
+      label: requestField.label,
+      hint: requestField.hint,
+      unit: requestField.unit,
+      value: requestField.value,
+      answeredAt: requestField.answeredAt
+    })
+    .from(requestField)
+    .where(eq(requestField.requestId, found.id))
+    .orderBy(requestField.position)
+
   const events = await orm()
     .select({
       id: requestEvent.id,
@@ -1113,7 +1138,16 @@ export async function requestDetail (
     .where(eq(requestEvent.requestId, found.id))
     .orderBy(requestEvent.createdAt, requestEvent.id)
 
-  return { ...found, events }
+  return {
+    ...found,
+    events,
+    /* DECIMAL comes back as a string on purpose — see `db/connection.ts`. The
+       parse happens here, at the edge, once. */
+    fields: fields.map(f => ({
+      ...f,
+      value: f.value === null ? null : Number.parseFloat(f.value)
+    }))
+  }
 }
 
 export interface Series {
