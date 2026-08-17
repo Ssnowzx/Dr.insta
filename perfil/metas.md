@@ -96,8 +96,9 @@ medição. Alvo em cima de indício é ficção, e coletar a aba Público é o p
 > 5.584.671 = **6,22%**, onde antes se lia 6,42%. Mesma realidade, denominador
 > melhor.
 >
-> **Visitas ao perfil continua sendo print.** Não existe como métrica de conta na
-> API. É o único número do pedido mensal que sobrou.
+> **Visitas ao perfil ela digita no pedido, uma vez por mês.** Não existe como
+> métrica de conta na API — é o único número mensal que continua vindo dela.
+> Desde 17/08/2026 é campo de número na plataforma; até então era print.
 
 ## Experimentos do ciclo
 
@@ -173,7 +174,7 @@ guiar decisão:
 Se alguma cair de forma acentuada e sustentada (>25% por 3 semanas), vira assunto — pode
 indicar problema de distribuição causado pela mudança de mix.
 
-## Experimentos do ciclo
+## Experimentos do ciclo de engajamento — HISTÓRICO (encerrado em 13/08/2026 sem leitura)
 
 | # | Experimento | Hipótese | Variável isolada | Critério de sucesso | Prazo |
 |---|---|---|---|---|---|
@@ -200,11 +201,12 @@ Referência para essa conversa: mantido o ritmo de 20.824/mês, 31/12 fecha em ~
 - **Amostra mínima:** 7 posts ou 14 dias. Abaixo disso não existe tendência, existe ruído.
 - **Um experimento por vez.**
 - **Pré-requisito de medição:** comentários/alcance e saves/alcance precisam de Insights.
-  Enquanto a Bianca não conectar a conta na aba Conta, a leitura fica em proxy público
-  (comentários por mil views) — rotulado como proxy, nunca como a métrica.
+  Resolvido em 14/08/2026 — a conta está conectada e a coleta roda sozinha, várias vezes ao
+  dia. O proxy público (comentários por mil views) segue no acervo como contexto, rotulado
+  como proxy, nunca como a métrica.
 - **Revisão do painel:** semanal (leve) e mensal (relatório completo via `instagram-report`).
 
 ---
 
 **Início do ciclo:** 13/08/2026
-**Última atualização:** 13/08/2026
+**Última atualização:** 17/08/2026

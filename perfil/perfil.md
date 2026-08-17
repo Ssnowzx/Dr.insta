@@ -82,7 +82,9 @@ assessoria@biancaolivo.com.br
   pode ser parâmetro do redirecionador `l.instagram.com`. **Conferir no GA4 antes de tratar
   como fato.**
 
-  Correção, que a plataforma agora entrega pronta para copiar em `/plano` (`step.copy_value`):
+  Correção, que a plataforma entregou pronta para copiar via `step.copy_value` (na entrega
+  "cinco ajustes", arquivada em 12/08/2026 com o handoff da loja — o link não está mais no
+  plano ativo):
   `https://www.myfavorite.com.br/?utm_source=influencer&utm_medium=bianca.olivo&utm_campaign=bio`
 
   **Ela reclamou que fica comprido e feio no perfil.** Metade da objeção não procede — o
@@ -120,7 +122,7 @@ Fonte: respostas 2 e 7. Faixa de preço não foi perguntada.
 | Horas/semana disponíveis para conteúdo | `[FALTA]` — não perguntado. **Sem isso, calendário é ficção.** |
 | Consegue gravar vídeo? | Sim, com folga — 45 Reels publicados entre 25/06 e 04/08/2026 |
 | Tem banco de conteúdo para repurpose? | Sim — 8.598 posts e 48 destaques |
-| Quem executa | Só ela: grava, edita e escreve as próprias legendas (respostas 10 e 11). A assessora atua **apenas no direct**, junto com ela, todos os dias (resposta 15) |
+| Quem executa | Ela grava, edita e escreve as próprias legendas (respostas 10 e 11). A assessora — **Cris** — atua no direct todos os dias (resposta 15), fica **atrás da câmera** nas gravações com roteiro e tem **acesso próprio à plataforma** desde 17/08/2026: marca tarefa, responde pedido e conversa nas pautas |
 | Assuntos proibidos | Nenhum. Declara que todos os temas podem ser abordados e que mostrar bastidor é diferencial (resposta 8) |
 
 ## Histórico relevante

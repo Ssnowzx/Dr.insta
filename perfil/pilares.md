@@ -1,6 +1,7 @@
 # Pilares editoriais
 
-> **Revisto em 13/08/2026** para o ciclo de seguidores. O mix em vigor é
+> **Revisto em 13/08/2026** para o ciclo de seguidores; **detalhamento reescrito em
+> 17/08/2026**, junto com o primeiro lote de pautas. O mix em vigor é
 > **Espelho 45% · Opinião 30% · Vale guardar 15% · Personagens 10%**, sem aumento de
 > volume — ela já publica cerca de 8 Reels por semana.
 >
@@ -12,98 +13,105 @@
 > **Pauta cujo sujeito é a marca sai do perfil pessoal** enquanto seguidores forem o norte.
 > Não é julgamento de qualidade: 179 mil pessoas alcançadas por 45 seguidores não paga o
 > espaço. É assunto da equipe da My Favorite.
->
-> O detalhamento abaixo é do ciclo anterior e será reescrito na próxima revisão de pauta.
 
 > 3 a 5 pilares. Menos que 3, o perfil fica raso. Mais que 5, fica sem identidade
 > e o algoritmo tem dificuldade de entender para quem recomendar a conta.
 
-## Mix para o objetivo atual (engajamento do perfil dela)
+## Mix para o objetivo atual (seguidores)
 
-O objetivo dos 90 dias é **conversa pública e recorrente** — comentários/alcance de 0,21%
-para ≥ 0,50% — com salvamento como segundo alvo (0,23% → 0,8%). O alcance já existe e é
-guard-rail: 5,4M de contas em julho/2026, 284 mil compartilhamentos. **Nenhum pilar existe
-para servir a My Favorite** — a relação com a loja é da equipe da marca desde 12/08/2026.
-A marca pode aparecer, mas como escolha dela, na voz dela, nunca como pauta obrigatória.
+O objetivo dos 90 dias é **fazer quem ainda não a segue virar seguidor** — norte em
+seguidores líquidos/mês (20.824 → 62.200), com `follows/reach` e `visitas ao
+perfil/reach` como taxas de direção. Comentários, saves e sends viram **guard-rail com
+piso no próprio baseline**. O alcance já existe e também é guard-rail: 5,4M de contas em
+julho/2026. **Nenhum pilar existe para servir a My Favorite** — a relação com a loja é da
+equipe da marca desde 12/08/2026. A marca pode aparecer, mas como escolha dela, na voz
+dela, nunca como pauta obrigatória.
 
 | Pilar | % | Papel estratégico | Métrica que ele move |
 |---|---|---|---|
-| **Espelho** | 45% | Motor de distribuição. É o que traz não-seguidor e sustenta o alcance. Não se mexe | sends/reach |
-| **Conversa** | 20% | Converte reconhecimento em comentário: pauta que termina em pergunta na voz dela | **comentários/reach** |
-| **Vale guardar** | 20% | Conserta o salvamento com utilidade no formato dela — qualquer marca | **saves/reach** |
-| **Personagens** | 10% | Recorrência: a mesma pessoa voltando para ver o próximo episódio | retorno + comentários |
+| **Espelho** | 45% | Motor de distribuição: alcança quem ainda não segue. Controle — não se mexe | sends/reach (piso) |
+| **Opinião** | 30% | O único formato medido que faz estranho decidir seguir. Centro do ciclo | **follows/reach** |
+| **Vale guardar** | 15% | Utilidade que se salva; quem salva volta. Guard-rail, não alvo | saves/reach (piso) |
+| **Personagens** | 10% | Quadro nomeado, mesmo dia da semana: dá motivo para voltar, e quem volta segue | follows/reach + retorno |
 
 Ajuste os percentuais depois de 30 dias com dados reais — não antes.
 
 ## Detalhamento
 
-### Pilar 1 — Espelho (50%)
+### Pilar 1 — Espelho (45%)
 
-- **Tese central:** cenas de cotidiano, casal, família e humor em que a pessoa se reconhece
-  ou reconhece alguém. É o que ela já faz e o que a distribui.
+- **Tese central:** cotidiano, casal, família e humor em que a pessoa se reconhece.
+  Curto, do jeito que ela já faz.
 - **Formatos:** Reels de 9 a 15 segundos, sem edição pesada. Stories de rotina.
-- **Evidência:** "diálogos de todo casal" (11/07, 0:13) — 1,44M views, **48 mil
-  compartilhamentos, 5,38% sends/reach**, mais de 3× a referência do nicho, retenção 77%.
-  "oxi 🍹" (08/07, 0:09) — 2,37M views, retenção **89%**.
-- **Cuidado:** este pilar é **controle, não experimento**. Se ele cair, o problema não é o
-  pilar — é sinal de que a realocação foi longe demais.
+- **Evidência:** de fevereiro a agosto, os vídeos de até 10 segundos somaram 33 milhões
+  de alcance — 39% de tudo que ela alcançou. ~80% das views dos curtos vêm de quem não
+  segue. "diálogos de todo casal" (11/07, 0:13) — 1,44M views, 48 mil compartilhamentos,
+  5,38% sends/reach. "oxi 🍹" (08/07, 0:09) — 2,37M views, retenção 89%.
+- **Cuidado:** este pilar é **controle, não experimento** — e não recebe roteiro. Se ele
+  cair, o problema não é o pilar: é sinal de que a realocação foi longe demais.
 
-### Pilar 2 — Conversa (20%)
+### Pilar 2 — Opinião (30%)
 
-- **Tese central:** o mesmo cotidiano do Espelho, mas com opinião ou pergunta embutida — o
-  post não termina em piada, termina em espaço para a pessoa responder.
-- **Formatos:** Reels de ≤20s com pergunta curta na legenda (na voz dela: "vocês também?"),
-  carrossel de opinião ("thinking out loud"), tema que divide ("pinterest + stardoll").
-- **Evidência:** o Reel do DOJI (05/08) alcançou 35% da mediana e fez **3,0 comentários por
-  mil views — quase o triplo dos vizinhos**. Alcançou pouco e conversou muito: é o formato
-  certo para a métrica-norte, mesmo quando não viraliza.
-- **Regra de execução:** comentário respondido na primeira hora (ela + assessora — que já
-  atua no direct todos os dias). Conversa que ninguém responde morre na primeira rodada.
-- **Cuidado:** pergunta genérica de coach ("e você, o que acha?") não é a voz dela. A
-  pergunta precisa caber em 2 a 5 palavras, como as legendas dela.
+- **Tese central:** ela falando o que acha — perfume, make, tendência, o que usar em cada
+  ocasião. Longo (90–110s), sem pressa, do jeito que ela já fala nos Stories.
+- **Formatos:** Reel longo falado de frente, comparação lado a lado, lista com veredito.
+  Abre com frase dita de cara, nunca explicando o que o vídeo vai ser.
+- **Evidência:** "meus top 5 perfumes favoritos" (21/05, 99s): 305 mil alcançados e
+  **3.131 seguidores** — 41× a série sobre a coleção com quase a mesma duração. E é o
+  tipo de pergunta que ela mesma diz que mais chega no direct ("o que usar pra certa
+  ocasião").
+- **Regra de execução:** posição clara, sem meio-termo — "as duas são ótimas" não faz
+  ninguém seguir. Uma chamada só no fim, nunca empilhada.
+- **Cuidado:** opinião sem posição vira vitrine. O que converte é ela dizendo o que uma
+  publi não diria.
 
-### Pilar 3 — Vale guardar (20%)
+### Pilar 3 — Vale guardar (15%)
 
 - **Promessa:** depois de ver, a pessoa tem algo para usar depois — e salva.
-- **Formatos:** Reels curtos de utilidade na voz dela, carrossel de referência, receita.
-  Qualquer marca, qualquer assunto do universo dela: moda, beleza, casa, viagem.
-- **De onde vem:** ela **já começou sozinha** — "produtos baratos que valem a pena" (05/08,
-  Vult, Nivea, Mascavo) é exatamente este pilar. E os Stories provam que utilidade nomeada
-  com contexto puxa ação: "esse body é em malha pesada" (487 cliques).
-- **Teste de qualidade:** se a pessoa não tem razão para voltar no post amanhã, não é deste
-  pilar. Salvamento é intenção de reuso, não aplauso.
-- **Cuidado:** aqui NÃO existe obrigação de citar a My Favorite. Se uma peça dela entrar, é
-  porque ela usaria de qualquer jeito — e a legenda continua na voz dela.
+- **Formatos:** Reels de utilidade na voz dela, carrossel de referência. Qualquer marca,
+  qualquer assunto do universo dela: moda, beleza, casa, viagem.
+- **De onde vem:** ela **já começou sozinha** — "produtos baratos que valem a pena"
+  (05/08) é exatamente este pilar. E os Stories provam que utilidade nomeada com contexto
+  puxa ação: "esse body é em malha pesada" (487 cliques).
+- **Papel no ciclo:** guard-rail, não alvo — salvamento está em 0,23% contra 1,40% do
+  nicho e não pode cair; é o único pilar em que pedir salvamento cabe.
+- **Cuidado:** aqui NÃO existe obrigação de citar a My Favorite. Se uma peça dela entrar,
+  é porque ela usaria de qualquer jeito — e a legenda continua na voz dela.
 
 ### Pilar 4 — Personagens (10%)
 
-- **O que mostra:** os personagens que a audiência já conhece — José, Pipo, Velma, "renata
-  dramática" — em quadro nomeado e recorrente, mesmo formato, ritmo de série.
-- **Formatos:** Reel curto em série com nome fixo; caixinha ritual em Stories no mesmo dia e
-  hora (domingo, 18h — o pico medido dela).
-- **De onde vem:** ela nomeia personagens "como se todos já conhecessem" (voz medida em 45
-  legendas) e a dor nº 3 do público é literalmente "quero acompanhar o teu dia".
-- **Cuidado:** série sem regularidade não cria retorno. Melhor um quadro por semana que
-  sempre sai do que três que às vezes saem.
+- **O que mostra:** as pessoas em volta dela em **quadro nomeado e recorrente, mesmo dia
+  da semana** — a família e a sucessão na empresa ("a minha chefe é a minha mãe"), o
+  mozão respondendo. Os personagens que a audiência já conhece (José, Pipo, Velma,
+  "renata dramática") seguem sendo material da voz dela nos Stories e no Espelho.
+- **Formatos:** Reel em série com nome fixo, domingo 18h — o pico medido dela; caixinha
+  ritual em Stories no mesmo horário.
+- **De onde vem:** palavras dela em 13/08: "sucessão familiar é um tópico que sempre traz
+  bastante conversa, e o vídeo que fiz falando disso deu bastante engajamento". E a dor
+  nº 3 do público é literalmente "quero acompanhar o teu dia".
+- **Cuidado:** série sem regularidade é evento, e evento não cria retorno. Melhor um
+  quadro por semana que sempre sai do que três que às vezes saem.
 
 ## O que sai
 
-**Pauta obrigatória de marca.** Os pilares Padrão e Bastidor do ciclo anterior — construídos
-para posicionar a My Favorite — saem do mix. Não porque falharam (nunca foram testados):
-porque a cliente decidiu que essa função não pertence ao perfil pessoal. O achado de que
-apresentação de produto em vídeo longo não funciona (8% de retenção no Reel de 1:37)
-continua válido e vai no handoff para o time da marca.
+**Pauta obrigatória de marca.** Os pilares Padrão e Bastidor do primeiro ciclo —
+construídos para posicionar a My Favorite — estão fora do mix. Não porque falharam
+(nunca foram testados): porque a cliente decidiu que essa função não pertence ao perfil
+pessoal. O achado de que apresentação de produto em vídeo longo não funciona (8% de
+retenção no Reel de 1:37) continua válido e foi no handoff para o time da marca. O pilar
+**Conversa** do ciclo de engajamento também sai como pilar próprio: pergunta embutida
+vira regra de execução dentro de Opinião e Personagens, não cota separada.
 
 ## Volume: realocação, não acréscimo
 
-Ela produz e escreve tudo sozinha e publicou ~8 Reels por semana entre 25/06 e 04/08/2026.
-**O mix não pede nada a mais.**
+Ela produz e escreve tudo sozinha e publicou ~8 Reels por semana entre 25/06 e
+04/08/2026. **O mix não pede nada a mais.**
 
 | Pilar | Reels/semana |
 |---|---|
-| Espelho | 4 |
-| Conversa | 1 a 2 |
-| Vale guardar | 1 a 2 |
+| Espelho | 3 a 4 |
+| Opinião | 2 a 3 |
+| Vale guardar | 1 |
 | Personagens | 1 |
 
 Hoje quase 100% do volume é Espelho. Enquanto as horas/semana dela não estiverem em
@@ -115,18 +123,21 @@ Hoje quase 100% do volume é Espelho. Enquanto as horas/semana dela não estiver
   regularidade é evento, e evento não cria hábito de resposta.
 - **Story pessoal e de família continua sem link** — é o que puxa resposta (312, 244, 170
   respostas nos três primeiros de julho) e sustenta o vínculo.
-- Link em Story é assunto do time da marca agora; a regra "peça leva nome + contexto" segue
-  valendo quando **ela** quiser mostrar algo, porque é a voz dela funcionando.
+- Link em Story é assunto do time da marca agora; a regra "peça leva nome + contexto"
+  segue valendo quando **ela** quiser mostrar algo, porque é a voz dela funcionando.
 
 ## O trade-off — combinado com a Bianca
 
-**Este ciclo abre mão de medir venda.** Receita, sessões e conversão saem do painel — são da
-equipe da My Favorite. O que o perfil ganha em troca: pauta escolhida só pelo que gera
-conversa e retorno, sem post "para cumprir tabela".
+**Este ciclo abre mão de perseguir comentário como alvo** — ele vira guard-rail, com piso
+no que já existe (comentários 0,21%, saves 0,23%, sends 1,32% por alcance, alcance
+5,4M/mês). E **pauta cujo assunto é a marca sai do perfil pessoal**: 179 mil pessoas
+alcançadas por 45 seguidores, contra 3.131 de um vídeo de opinião do mesmo tamanho, não é
+julgamento de conteúdo — é conta de espaço.
 
-E vale o aviso de sempre: Conversa e Vale guardar não fazem 2 milhões de views como o humor
-faz. As views médias podem cair um pouco — o guard-rail (alcance ≥ 5,4M/mês, Espelho
-intocado em 50%) existe para isso não virar queda de verdade.
+E vale o aviso de sempre: Opinião longa não faz 2 milhões de views como o humor curto
+faz. As views médias podem cair um pouco — views são o terceiro item da ordem de
+prioridade que ela mesma declarou, e o guard-rail (alcance ≥ 5,4M/mês, Espelho intocado
+em 45%) existe para queda de mix não virar queda de verdade.
 
 ## Critério de sucesso
 
@@ -134,18 +145,20 @@ Leitura em **14 dias e no mínimo 7 posts por pilar**. Abaixo disso é ruído, n
 
 | Pilar | Critério |
 |---|---|
-| Conversa | comentários/alcance de 0,21% para **≥ 0,35%** na fase 1; ≥ 0,50% no ciclo |
-| Vale guardar | saves/alcance de 0,23% para **≥ 0,8%** |
+| Opinião | follows/alcance de 0,060% para **≥ 0,30%** no pilar, com no mínimo 7 posts |
+| Vale guardar | saves/alcance **não cair** de 0,23% |
 | Personagens | quadro saindo **toda semana** + respostas em Stories não caindo |
 | Espelho | **não piorar** — é controle |
 
-> **Método:** um experimento por vez, na ordem de `perfil/metas.md`. A medição fina
-> depende de a Bianca conectar a conta na aba Conta — até lá, proxy público rotulado.
+> **Método:** um experimento por vez, na ordem de `perfil/metas.md`. A conta está
+> conectada desde 14/08 — alcance, views e interações entram sozinhos; a divisão
+> seguidor/não-seguidor e as visitas ao perfil ela digita no pedido.
 
 ## Rotação
 
-Nunca dois posts do mesmo pilar seguidos. O perfil precisa parecer variado para quem entra
-pelo grid.
+Nunca dois posts do mesmo pilar seguidos **no feed**. Duas pautas de Opinião na mesma
+semana (18 e 20/08, por exemplo) convivem com isso porque os Espelhos espontâneos
+preenchem os dias entre elas.
 
 ## Quantos roteiros por semana — e por que não oito
 
@@ -160,8 +173,10 @@ motor de distribuição, e Espelho é o controle declarado do ciclo. Roteirizar 
 Reel de 9 segundos que faz 2,3M de views é quebrar a única coisa que não está
 quebrada.
 
-Os 3 seguem o mix: **2 de Opinião + 1 alternando entre Personagens e Vale
-guardar.** Espelho não recebe pauta escrita, de propósito.
+A forma da semana: **Personagens é fixo no domingo** — quadro nomeado vive de
+regularidade, e quadro que alterna quinzena é evento, não quadro. As outras duas
+vagas é que alternam: **2 de Opinião numa semana, Opinião + Vale guardar na
+outra**. Espelho não recebe pauta escrita, de propósito.
 
 Cada roteiro carrega gancho escrito por extenso (nunca descrito), blocos com
 tempo, o que ela **fala** separado do que aparece **na tela** — são instruções
@@ -185,10 +200,11 @@ roda — inclusive por baixo de uma semana que ela já planejou. Se um lote atra
 o grupo "Passou da data" existe justamente para pedir uma decisão: grava atrasado
 ou descarta.
 
-O ciclo anterior (Caminho até a compra) fica **fechado e congelado** no banco com os
-pilares dele — é assim que dá para perguntar depois "a aposta pagou?". `post.pillar`
-segue NULL no acervo; a classificação por pilar recomeça com os pilares novos.
+Os ciclos anteriores (Caminho até a compra; O perfil que conversa) ficam **fechados e
+congelados** no banco com os pilares deles — é assim que dá para perguntar depois "a
+aposta pagou?". `post.pillar` segue NULL no acervo; a classificação por pilar recomeça
+com os pilares novos.
 
 ---
 
-**Última atualização:** 12/08/2026
+**Última atualização:** 17/08/2026
