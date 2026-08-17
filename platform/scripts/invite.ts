@@ -14,12 +14,21 @@ import { ulid } from '../lib/ulid.ts'
  *
  * Usage:
  *   npm run invite -- --email x@y.com --name "Bianca Olivo"
+ *   npm run invite -- --email c@y.com --name "Cris" --job "assessora de conteúdo"
  *   npm run invite -- --email eu@y.com --name "Rodrigo" --consultant
  *
  * `--client` takes the client slug and defaults to `TENANT_SLUG`, the one client
  * this instance serves. Passing it is only useful for seeding a database that
  * holds more than one. With `--consultant` the user is created with no client
  * scope — which is what makes them a consultant.
+ *
+ * `--job` is what this person does, shown next to their name. It is never a
+ * permission: the access rule is `client_id` and nothing else.
+ *
+ * This is the way to create the FIRST account, before any screen can be reached.
+ * From the second one onwards, Conta → Quem tem acesso does the same thing
+ * without an SSH session — which matters, because the account that owns the site
+ * is deliberately kept out of the docker group.
  */
 
 function arg (flag: string): string | undefined {
@@ -37,6 +46,7 @@ function fail (message: string): never {
 async function main (): Promise<void> {
   const email = arg('--email')?.trim().toLowerCase()
   const name = arg('--name')?.trim()
+  const jobTitle = arg('--job')?.trim().slice(0, 80)
   const explicitSlug = arg('--client')?.trim()
   const isConsultant = process.argv.includes('--consultant')
 
@@ -103,7 +113,8 @@ async function main (): Promise<void> {
       role: isConsultant ? 'consultant' : 'client',
       createdAt: now,
       updatedAt: now,
-      ...(clientId === null ? {} : { clientId })
+      ...(clientId === null ? {} : { clientId }),
+      ...(jobTitle === undefined || jobTitle === '' ? {} : { jobTitle })
     }).$returningId()
 
     userId = created?.id ?? 0

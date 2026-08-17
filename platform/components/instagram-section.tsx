@@ -51,7 +51,8 @@ export function InstagramSection ({
   falhas,
   resultado,
   configurado,
-  ehCliente
+  ehCliente,
+  usuarioId
 }: {
   conexao: ConnectionView | null
   falhas: FailedAttempts
@@ -59,10 +60,20 @@ export function InstagramSection ({
   /** False when the app credentials are absent — the button would lead nowhere. */
   configurado: boolean
   ehCliente: boolean
+  /** Who is reading, to decide whether the disconnect button is theirs to press. */
+  usuarioId: number
 }) {
   const aviso = resultado === undefined ? undefined : RESULTADOS[resultado]
   const conectada = conexao !== null && conexao.state === 'active'
   const precisaReconectar = conexao !== null && (conexao.state === 'expired' || conexao.state === 'revoked')
+
+  /* Only the person who authorised it. With an assistant on the same account,
+     offering the button to everyone and refusing the click would be worse than
+     not offering it — she would press it, get told no, and learn that the screen
+     does not know what it is showing. `connectedBy` null is a row from before
+     the column meant anything, and falls back to the old rule. */
+  const podeDesconectar = ehCliente &&
+    (conexao?.connectedBy === null || conexao?.connectedBy === usuarioId)
 
   return (
     <section className="secao">
@@ -86,12 +97,22 @@ export function InstagramSection ({
             <span className="selo selo-ok">conectada</span>
           </div>
           <p className="pessoa-meta">
-            {conexao.connectedAt !== null && <>Conectada em {shortDate(conexao.connectedAt)}. </>}
+            {conexao.connectedAt !== null && <>Conectada em {shortDate(conexao.connectedAt)}</>}
+            {conexao.connectedByName !== null && <> por {conexao.connectedByName}</>}
+            {conexao.connectedAt !== null && '. '}
             {conexao.lastSyncAt === null
               ? 'Ainda não busquei os números — a primeira leitura é a próxima.'
               : `Números atualizados ${ageOf(conexao.lastSyncAt).label}.`}
           </p>
-          <DesconectarInstagram />
+          {podeDesconectar
+            ? <DesconectarInstagram />
+            : ehCliente && (
+              <p className="pessoa-meta">
+                Quem autorizou foi{' '}
+                {conexao.connectedByName ?? 'outra pessoa da equipe'}, e só ela
+                desliga — a autorização passou pelo Instagram dela.
+              </p>
+              )}
         </div>
       )}
 

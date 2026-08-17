@@ -1,7 +1,7 @@
 import 'server-only'
 import { and, desc, eq } from 'drizzle-orm'
 import { orm } from '@/db/client'
-import { auditLog, instagramConnection } from '@/db/schema'
+import { auditLog, instagramConnection, user } from '@/db/schema'
 import { open, seal } from '../crypto-box.ts'
 import { ulid } from '../ulid.ts'
 import { SCOPES } from './oauth.ts'
@@ -24,6 +24,13 @@ export interface ConnectionView {
   connectedAt: Date | null
   lastSyncAt: Date | null
   tokenExpiresAt: Date | null
+  /**
+   * Who authorised it. The screen needs it to decide whether to offer the
+   * disconnect button at all: with two people on the client side, showing it to
+   * the assistant and refusing the click is worse than not showing it.
+   */
+  connectedBy: number | null
+  connectedByName: string | null
   /** Present only for the consultant — she gets consequence, not diagnostics. */
   lastError: string | null
 }
@@ -36,9 +43,15 @@ export async function connectionFor (clientId: number): Promise<ConnectionView |
       connectedAt: instagramConnection.connectedAt,
       lastSyncAt: instagramConnection.lastSyncAt,
       tokenExpiresAt: instagramConnection.tokenExpiresAt,
+      connectedBy: instagramConnection.connectedBy,
+      connectedByName: user.name,
       lastError: instagramConnection.lastError
     })
     .from(instagramConnection)
+    /* Left, not inner: a connection whose author was deactivated must still
+       render. An inner join here would make the whole section disappear, which
+       looks exactly like never having connected. */
+    .leftJoin(user, eq(user.id, instagramConnection.connectedBy))
     .where(eq(instagramConnection.clientId, clientId))
     .limit(1)
 

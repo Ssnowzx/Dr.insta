@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { FormTrocarSenha } from '@/components/auth-forms'
 import { InstagramSection } from '@/components/instagram-section'
-import { AccessLink } from '@/components/news'
+import { AccessLink, AddPerson } from '@/components/news'
 import { signOut } from '@/lib/auth-actions'
 import { clientProfile, clientUsers } from '@/lib/dashboard'
 import { clientScope, requireSession } from '@/lib/dal'
@@ -75,7 +75,10 @@ export default async function Conta ({
       {consultor && (
         <section className="secao">
           <div className="secao-cab">
-            <h2 className="titulo-secao">Acesso dela</h2>
+            {/* "Acesso dela" while there was exactly one person. The profile is
+                run by two now, and a heading in the singular is the first place
+                a product stops matching what it holds. */}
+            <h2 className="titulo-secao">Quem tem acesso</h2>
             <p className="secao-nota">nenhum e-mail sai daqui</p>
           </div>
           {pessoas.length === 0
@@ -100,10 +103,21 @@ export default async function Conta ({
                 <ul className="pessoas">
                   {pessoas.map(u => (
                     <li className="pessoa" key={u.id}>
+                      {/* The two badges are one group, not two siblings. As
+                          siblings, `.selo` carries `flex-shrink: 0` and
+                          `nowrap`, so at 390px the row could not shrink: the
+                          name wrapped onto two lines AND the second badge still
+                          burst past the card's right edge. Grouped, they wrap
+                          together onto a second line when they have to. */}
                       <div className="pessoa-cab">
                         <span className="pessoa-nome">{u.name}</span>
-                        <span className={u.hasPassword ? 'selo selo-ok' : 'selo selo-atencao'}>
-                          {u.hasPassword ? 'já entrou' : 'ainda não entrou'}
+                        <span className="pessoa-selos">
+                          {u.jobTitle !== null && (
+                            <span className="selo selo-neutro">{u.jobTitle}</span>
+                          )}
+                          <span className={u.hasPassword ? 'selo selo-ok' : 'selo selo-atencao'}>
+                            {u.hasPassword ? 'já entrou' : 'ainda não entrou'}
+                          </span>
                         </span>
                       </div>
                       <p className="pessoa-meta">
@@ -116,6 +130,18 @@ export default async function Conta ({
                 </ul>
               </>
               )}
+
+          <AddPerson />
+
+          {/* The one thing that is not shared. Said on the screen where someone
+              is being given access, not discovered later by whoever presses the
+              button and gets refused. */}
+          <p className="rodape-nota">
+            Quem entra por aqui vê tudo o que ela vê e pode marcar tarefa,
+            responder pedido e anexar arquivo. <strong>Só a dona da conta
+            desconecta o Instagram</strong> — a autorização é dela e ninguém mais
+            desfaz.
+          </p>
         </section>
       )}
 
@@ -124,6 +150,7 @@ export default async function Conta ({
         falhas={falhas}
         configurado={credentialsFromEnv(process.env.APP_URL ?? '') !== null}
         ehCliente={!consultor}
+        usuarioId={identity.userId}
         {...(instagram === undefined ? {} : { resultado: instagram })}
       />
 
