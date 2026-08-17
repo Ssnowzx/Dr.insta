@@ -66,8 +66,11 @@ export function ArchiveAge ({ importedAt, lastPostAt }: { importedAt: Date; last
 
   return (
     <p className={age.level === 'fresh' ? 'idade idade-fresca' : `idade idade-${age.level}`}>
+      {/* "Reel" until 17/08/2026. The archive was fed by the Reels export and
+          held nothing else; the collector creates whatever the API returns, so
+          the newest row here is often a carousel or a photo. */}
       Acervo atualizado {age.label === 'de hoje' ? 'hoje' : age.label}, e o último
-      Reel aqui é de <strong>{longDate(lastPostAt)}</strong>.
+      post aqui é de <strong>{longDate(lastPostAt)}</strong>.
       {age.level !== 'fresh' && ' O que você postou depois disso ainda não entrou.'}
     </p>
   )

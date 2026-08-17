@@ -24,12 +24,17 @@
   border-bottom: 1px solid var(--linha2);
 }
 
+/* The same name, same face, on the phone — see `.rail-marca-nome`. Smaller
+   because it shares a 44px row with a bell, an account pill and a toggle. */
 .topo-marca {
-  font-family: var(--mono);
-  font-size: .6875rem;
-  letter-spacing: .12em;
-  text-transform: uppercase;
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.125rem;
+  letter-spacing: -0.01em;
   color: var(--tinta);
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
  /* A name in a corner does not read as a control. It became the way into Conta
@@ -159,18 +164,42 @@
   padding: 0 .75rem;
 }
 
+/* The name of the person this whole instance is about.
+ *
+ * It was tracked uppercase mono, and that was right while it read "MY
+ * FAVORITE": a wordmark is a logotype, and letterspaced caps is how a logotype
+ * is set. It became wrong the moment the same slot started carrying a PERSON's
+ * name — "BIANCA OLIVO" in a monospace reads as a system label, a database
+ * value, an identifier. It is a name.
+ *
+ * Instrument Serif, which is this product's display face and the store's own:
+ * myfavorite.com.br sets its hero in an italic serif. So the name now reads in
+ * the same voice as the page titles under it, in sentence case, with no
+ * tracking to fight.
+ *
+ * `-webkit-font-smoothing: auto` for the same reason `.display` carries it: the
+ * global `antialiased` thins light-on-dark text, and a serif's hairlines are
+ * where that shows first. Instrument Serif was chosen over Italiana precisely
+ * because it holds weight in the thins — see the type note in `app/base.css`. */
 .rail-marca-nome {
-  font-family: var(--mono);
-  font-size: .6875rem;
-  letter-spacing: .12em;
-  text-transform: uppercase;
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.375rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   color: var(--tinta);
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
+/* Who is signed in, under the name of the account. Sans against the serif above
+   it, and smaller: two names stacked in the same face would read as one wrapped
+   title rather than as two different facts. */
 .rail-marca-conta {
-  font-size: .9375rem;
-  font-weight: 600;
-  color: var(--tinta2);
+  font-size: .8125rem;
+  font-weight: 500;
+  color: var(--suave);
 }
 
 .rail-lista {
@@ -247,10 +276,22 @@
 
 /* On the phone the button lives in the top bar, where the label would eat the
    room the account name needs. The icon carries it; `aria-label` still says
-   the state in full. */
+   the state in full.
+
+   44px square, and that number is not decoration. Measured on 17/08/2026 it was
+   31×31 — the smallest control in the product, on the device they use most, and
+   the only one in the top bar that was never re-checked after the row gained a
+   third item. The negative margin is the same trick the bell and the account
+   pill use: a full-size target that still occupies a 20px row, so the bar does
+   not grow. */
 .topo .btn-tema {
-  padding: .375rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
   gap: 0;
+  justify-content: center;
+  margin: -.75rem -.5rem -.75rem 0;
+  flex-shrink: 0;
 }
 
 .topo .btn-tema-rot { display: none; }
@@ -3035,4 +3076,89 @@ a.btn-acesso:hover { border-color: var(--dado); text-decoration: none; }
   line-height: 1.45;
   color: var(--suave);
   max-width: 46ch;
+}
+
+/* =============================================================================
+   THE TOP BAR CARRIES TWO CONTROLS NOW
+
+   Novidades came back to the corner on 17/08/2026 so the bottom bar could hold
+   all six real destinations and nothing would be desktop-only. That put a bell,
+   an account pill and a theme toggle in a row that had been sized for two.
+   ============================================================================= */
+
+/* Centred, not baseline-aligned. With three controls and a brand that wraps to
+   two lines at 320px, baseline alignment pins everything to the FIRST line and
+   the controls float away from the block they belong to. Both controls carry
+   negative vertical margins so a 44px target still occupies a 20px row —
+   dropping those would add 24px of permanent chrome to the one device she
+   actually uses. */
+.topo { align-items: center; }
+
+/* The badge sits at the icon's TOP-RIGHT CORNER, not on top of it.
+
+   It was `top: .3125rem; right: .1875rem` inside a 44px box whose icon is 20px
+   and centred — so a two-digit count, which is wider than the icon itself,
+   landed square over the bell. Measured at 320px with 26 unread: the bell was
+   unrecognisable, which is the one thing an icon has to be.
+
+   Anchored to the icon rather than to the target: the badge overhangs the box
+   on the right, the way every notification badge does, and overlaps only the
+   corner. The bar's own 20px padding is what it overhangs into. */
+.contador-topo {
+  top: .0625rem;
+  right: -.125rem;
+  font-size: .625rem;
+  padding: .125rem .3125rem;
+  min-width: 1rem;
+}
+
+/* Below 400px the account NAME gives way and the icon stays.
+
+   At 320px the row is brand + bell + pill + toggle. With the name in, "MY
+   FAVORITE" wrapped to two lines and the bar grew by 16px of pure chrome. The
+   name is not lost — `aria-label` on the link still carries it, and the icon is
+   the affordance. The brand is what must not shrink: it is the only thing on
+   screen that says whose product this is. */
+/* Three tiers, because the row has a brand, a bell, a name and a toggle, and at
+   320px they do not all fit. Never an ellipsis on the name: a truncated person
+   reads as a bug, and telling two people apart is this control's whole job.
+
+     >= 400px   full name       "Bianca Olivo"
+     360-399px  first name      "Bianca"
+     <  360px   icon only
+   
+   Measured, not assumed: at 320px with the first name the row came to 323 and
+   pushed the theme toggle 3px off the screen — and only for Bianca, because
+   "Cris" is four characters shorter. A layout that fits one user's name and not
+   the other's is a layout that was checked with one user. */
+.topo-conta-curto { display: none; }
+
+@media (max-width: 400px) {
+  .topo-conta-longo { display: none; }
+  .topo-conta-curto { display: inline; }
+}
+
+@media (max-width: 359px) {
+  .topo-conta-curto { display: none; }
+  /* Square, so it stays a 44px target with nothing in it but the icon. */
+  .topo-conta { width: 2.75rem; padding-left: 0; padding-right: 0; justify-content: center; }
+  .topo-direita { gap: .625rem; }
+}
+
+/* 44px tall, like every other target in the top bar. It measured 42 — close
+   enough to look right and not close enough to be right, which is the worst
+   kind of near-miss: nobody ever notices, and the miss rate is real. */
+.topo-conta {
+  min-height: 2.75rem;
+  flex-shrink: 0;
+}
+
+/* The brand never shrinks below one legible line, and never wraps. It is the
+   only thing on the screen that says whose product this is. The controls to its
+   right are all fixed-width, so this is the element that must hold. */
+.topo-marca {
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

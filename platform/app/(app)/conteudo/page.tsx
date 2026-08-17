@@ -10,6 +10,13 @@ import { format, shortDate } from '@/lib/format'
 export const metadata: Metadata = { title: 'Conteúdo' }
 export const dynamic = 'force-dynamic'
 
+/** What each archive row is, in her words. `reel` is deliberately absent. */
+const TIPO: Record<string, string> = {
+  carousel: 'carrossel',
+  image: 'foto',
+  story: 'story'
+}
+
 /**
  * The archive.
  *
@@ -27,9 +34,17 @@ export const dynamic = 'force-dynamic'
  * computed inside the current cut, so with "até 20s" on, "fala da marca" reads
  * a plain 0. The empty cell is on the control, not only in the sentence.
  *
- * Every number here is from the public export, and the screen says so. Views
- * count loops, so they are not distinct people — presenting them next to
+ * Views count loops, so they are not distinct people — presenting them next to
  * Insights figures without that label would invite exactly the wrong comparison.
+ *
+ * THE ARCHIVE IS NO LONGER REELS-ONLY — 17/08/2026
+ *
+ * It was fed by the public Reels export, so every row was a Reel and the copy
+ * said so throughout. The collector now creates the posts it finds, and the API
+ * returns everything she publishes: the first production run created 24 rows,
+ * more than her Reel rate for the period, because carousels and photos came with
+ * them. A count labelled "Reels" would be a number saying the wrong thing about
+ * itself, so the screen says "posts" and tags the exceptions.
  */
 export default async function Conteudo ({
   searchParams
@@ -94,7 +109,8 @@ export default async function Conteudo ({
         <p className="sobrancelha">Conteúdo</p>
         <h1 className="display">Acervo vazio.</h1>
         <p className="lead">
-          Os posts entram por importação da exportação de Reels.
+          Os posts entram sozinhos pela conexão com o Instagram, algumas vezes
+          por dia.
         </p>
       </header>
     )
@@ -106,7 +122,12 @@ export default async function Conteudo ({
         <p className="sobrancelha">Tudo que você publicou</p>
         <h1 className="display">Seu conteúdo</h1>
         <p className="lead">
-          {contas.total} Reels de janeiro para cá. Os números aqui são os
+          {/* "Reels" until 17/08/2026, when the collector started creating
+              posts from the API — which returns everything she publishes, not
+              just Reels. The archive holds carousels and photos now, and a
+              count labelled "Reels" would be a number that says the wrong
+              thing about itself. */}
+          {contas.total} posts de janeiro para cá. Os números aqui são os
           públicos — visualização conta quando o vídeo roda de novo, então não é
           o mesmo que gente diferente.
         </p>
@@ -184,12 +205,12 @@ export default async function Conteudo ({
           ? (
             <>
               <span className="numero">{contas.noRecorte}</span>{' '}
-              {contas.noRecorte === 1 ? 'Reel neste recorte' : 'Reels neste recorte'}
+              {contas.noRecorte === 1 ? 'post neste recorte' : 'posts neste recorte'}
               {' · '}
               <Link href="/conteudo">ver os {contas.total}</Link>
             </>
             )
-          : <>Todos os <span className="numero">{contas.total}</span> Reels.</>}
+          : <>Todos os <span className="numero">{contas.total}</span> posts.</>}
       </p>
 
       {/* The empty-cut text used to say "uma casa vazia... nunca foi testado",
@@ -200,7 +221,7 @@ export default async function Conteudo ({
           from the top of this screen on 13/08 and had survived two clicks
           below it. */}
       {lista.length === 0
-        ? <p className="achado">Nenhum Reel com esse recorte.</p>
+        ? <p className="achado">Nenhum post com esse recorte.</p>
         : (
           <ul className="acervo">
             {lista.map(p => (
@@ -208,6 +229,13 @@ export default async function Conteudo ({
                 <div className="peca-cab">
                   <span className="peca-data">{shortDate(p.publishedAt)}</span>
                   <span className="peca-tags">
+                    {/* Only when it is NOT a Reel. Reels are the overwhelming
+                        majority and the format the whole cycle is about, so
+                        tagging them would be noise on every card; a carousel or
+                        a photo is the exception worth naming. */}
+                    {p.kind !== 'reel' && (
+                      <span className="tag">{TIPO[p.kind] ?? p.kind}</span>
+                    )}
                     {/* Seconds below a minute, minutes above. The 20-second
                         line is the cycle's rule for product content, so it has
                         to be legible at a glance — "0min09" turns that into

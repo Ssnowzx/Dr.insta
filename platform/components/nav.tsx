@@ -11,26 +11,34 @@ import { BotaoTema } from './tema'
  * Bottom bar and not a hamburger: she opens this on a phone, one-handed, and a
  * menu hidden behind a tap is a menu nobody uses.
  *
- * "Novidades" IS in the bottom bar, and Conta is what left to make room.
+ * THE RULE THIS FILE NOW ANSWERS TO: NOTHING IS UNREACHABLE ON A PHONE
  *
- * It used to be the other way round, on two premises that both expired.
- * Novidades was consultant-only — it is not: `countUnread` branches for both
- * roles and she has her own digest. And the arithmetic was for five
- * destinations; Análise made six, so keeping Novidades out AND adding it back
- * would have been seven at ~51px per item on a 360px phone.
+ * Set by the client on 17/08/2026, after Ideias made eight destinations and
+ * Conteúdo was dropped from the bar to keep it at six. She and her assistant
+ * work almost entirely from phones, and a screen that exists only on desktop is
+ * a screen that does not exist.
  *
- * A bell in the top-right corner is the worst place on a phone for the thing
- * that carries the news: it is the furthest point from a thumb. Conta is a
- * settings screen visited rarely, and the account name already sits in the top
- * bar — making that the way in is where every other app puts it. So the news
- * moved to the thumb and the settings moved to the corner.
+ * So the two screens that are NOT destinations move into the top bar, and all
+ * six real ones stay in the thumb's reach:
+ *
+ *   top bar     — the bell (Novidades) and the account name (Conta)
+ *   bottom bar  — Painel · Plano · Análise · Pedidos · Ideias · Conteúdo
+ *
+ * Six is the number the bar fits: 60px each on a 360px phone, where seven is 51
+ * and "Conteúdo" stops fitting on one line.
+ *
+ * This overrules an argument that used to live here — that a bell in the corner
+ * is the worst place on a phone, being furthest from a thumb. That is still
+ * true, and it is the right trade: reaching is a small cost paid on the two
+ * screens that are read occasionally, against a whole screen being absent from
+ * the device they actually use. Novidades is also the one destination that
+ * announces itself, through a badge that is visible without being reached.
  *
  * "Pedidos" carries a count for BOTH roles, and that is the one signal she has.
- * Nothing is emailed by decision, and `/novidades` is his screen — so before
- * this, a request opened for her was invisible until she thought to look. The
- * count rides the destination it is about rather than becoming a second bell:
- * a badge on a nav item is read on the way past, which is the only moment she
- * is guaranteed to have.
+ * Nothing is emailed by decision, so before it a request opened for her was
+ * invisible until she thought to look. The count rides the destination it is
+ * about rather than becoming a second bell: a badge on a nav item is read on
+ * the way past, which is the only moment she is guaranteed to have.
  */
 
 interface Destino {
@@ -127,12 +135,16 @@ function contagem (href: string, pedidos: number, novidades: number): number {
 }
 
 export function NavLateral ({
-  marca,
+  titular,
   conta,
   novidades,
   pedidos
 }: {
-  marca: string
+  /* Whose account this is — `client.name`, a person on this instance. Called
+     `marca` until 17/08/2026, when the slot stopped carrying a brand; a prop
+     named after what it no longer holds is the first thing to mislead. */
+  titular: string
+  /** Who is signed in. Different from `titular` exactly when it matters. */
   conta: string
   novidades: number
   pedidos: number
@@ -142,7 +154,7 @@ export function NavLateral ({
   return (
     <nav className="rail" aria-label="Seções">
       <div className="rail-marca">
-        <span className="rail-marca-nome">{marca}</span>
+        <span className="rail-marca-nome">{titular}</span>
         <span className="rail-marca-conta">{conta}</span>
       </div>
 
@@ -184,7 +196,14 @@ export function NavLateral ({
   )
 }
 
-/** The bell in the top bar, which is where "Novidades" lives on a phone. */
+/**
+ * The bell in the top bar, which is where "Novidades" lives on a phone.
+ *
+ * It was orphaned for a while — exported, styled, and rendered by nothing —
+ * during the period when Novidades sat in the bottom bar instead. Wired back on
+ * 17/08/2026 so the bar could hold all six real destinations without any of
+ * them becoming desktop-only.
+ */
 export function SinoTopo ({ novidades }: { novidades: number }) {
   const pathname = usePathname()
 
@@ -203,19 +222,19 @@ export function SinoTopo ({ novidades }: { novidades: number }) {
 /**
  * Six of the eight, and the count is load-bearing.
  *
- * The bottom bar gives each item 360/n pixels on the narrowest phone this
- * product is used on. At six that is 60px; at seven it is 51, which is where
- * "Conteúdo" stops fitting on one line and the labels start truncating. That
- * arithmetic is why Conta left the bar when Análise arrived — it is a settings
- * screen, visited rarely, and the account name in the top bar is the way in.
+ * The bar gives each item 360/n pixels on the narrowest phone this product is
+ * used on. At six that is 60px; at seven it is 51, which is where "Conteúdo"
+ * stops fitting on one line and the labels start truncating.
  *
- * Ideias made eight destinations, so a second one had to leave, and Conteúdo is
- * it. The two are the same subject seen from opposite ends — what to publish and
- * what was published — and only one of them is opened on a filming day. The
- * archive stays one tap away: the rail carries all eight on desktop, and
- * `/ideias` closes with a link to it.
+ * The two that leave are the two that are not destinations. Conta is a settings
+ * screen and the account name in the top bar is where every app puts the way
+ * in. Novidades is a digest, and its badge announces it from the corner without
+ * anyone having to reach it — see the header.
+ *
+ * Both are still ON THE PHONE, in the top bar. Nothing here is desktop-only:
+ * that is the rule this list exists to satisfy, not an accident of the count.
  */
-const NA_BARRA = DESTINOS.filter(d => d.href !== '/conta' && d.href !== '/conteudo')
+const NA_BARRA = DESTINOS.filter(d => d.href !== '/conta' && d.href !== '/novidades')
 
 export function NavInferior ({
   pedidos,

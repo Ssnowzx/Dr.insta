@@ -1182,6 +1182,10 @@ export async function monthlySeries (
 export interface PostRow {
   id: number
   igCode: string
+  /* What it is. The archive held only Reels while it was fed by the public
+     export; the collector returns everything she publishes, so the screen has to
+     be able to say which is which. */
+  kind: 'reel' | 'carousel' | 'image' | 'story'
   publishedAt: Date
   url: string | null
   caption: string | null
@@ -1219,7 +1223,8 @@ export async function posts (
 
   const rows = await orm()
     .select({
-      id: post.id, igCode: post.igCode, publishedAt: post.publishedAt,
+      id: post.id, igCode: post.igCode, kind: post.kind,
+      publishedAt: post.publishedAt,
       url: post.url, caption: post.caption, durationSec: post.durationSec,
       pillar: post.pillar, mentionsBrand: post.mentionsBrand,
       views: post.views, likes: post.likes, comments: post.comments,

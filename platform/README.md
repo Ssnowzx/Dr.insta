@@ -15,12 +15,24 @@ and the discarded alternatives live in `openspec/changes/plataforma-cliente/`.
 > a second instance with a different slug and its own database — not a second
 > row on the same screen. See [Tenancy](#tenancy).
 
-> **Whose brand is this.** The platform is the consultancy's; the brand it
-> displays is the client's. Screens reachable without a session carry **no
-> brand at all** — before anyone signs in there is no client to name. Inside,
-> the brand comes from `client.brand` through `generateMetadata`, never from the
-> source. A brand written into the code is a brand that lies on the second
-> instance.
+> **Whose name is at the top.** The platform is the consultancy's; the name it
+> displays is the client's. Screens reachable without a session carry **none at
+> all** — before anyone signs in there is no client to name. Inside, it comes
+> from the database through `generateMetadata`, never from the source. A name
+> written into the code is a name that lies on the second instance.
+>
+> It is **`client.name`, not `client.brand`** — changed 17/08/2026. The client
+> of this instance is Bianca Olivo, a person; My Favorite is her company, and
+> the profile→store relationship left this product's scope on 12/08 when the
+> brand's own team took it over. Every screen here is about her personal
+> profile, so naming the brand above all of them was the product contradicting
+> the cycle it exists to run. `brand` stays in the schema and stays the
+> fallback: a future client may be a company, where the brand IS the name of the
+> thing being worked on.
+>
+> The name is set in the display serif, in sentence case. Tracked uppercase mono
+> is how a **logotype** is set, and it was right while the slot read
+> "MY FAVORITE"; a person's name in a monospace reads as a database value.
 
 ---
 
@@ -227,6 +239,45 @@ here.**
 theme you build in, the defects concentrate in the other one. Check both, with
 the toggle, before calling anything finished.
 
+---
+
+## The phone is the device
+
+Set by the client on 17/08/2026: she and her assistant work almost entirely from
+phones, and **a screen that exists only on desktop does not exist.** Two rules
+follow.
+
+**Every destination is reachable on a phone.** The bottom bar carries the six
+real ones — Painel, Plano, Análise, Pedidos, Ideias, Conteúdo — and the two that
+are not destinations live in the top bar: the bell for Novidades and the account
+pill for Conta. Six is what the bar fits: 60px each on a 360px phone, where
+seven is 51 and "Conteúdo" stops fitting on one line. Dropping a destination to
+make room, which is what happened when Ideias arrived, is not a trade that may
+be made again.
+
+**Every tap target is 44px.** Checked by measuring the rendered page, not by
+reading the CSS. On 17/08 the theme toggle measured 31×31 and the account pill
+42 — the toggle had never been re-checked after the top bar gained a third item,
+and 42 is the worse kind of miss: close enough to look right, not close enough
+to be right.
+
+Three defects that only a rendered page shows, all found that day:
+
+- the unread badge sat **on top of** the bell rather than at its corner. A
+  two-digit count is wider than a 20px icon, so at 26 unread the bell was
+  unrecognisable — and an icon that cannot be recognised is not an icon.
+- the top row overflowed by 3px at 320px **for Bianca and not for Cris**, because
+  "Bianca" is four characters longer. A layout that fits one user's name was a
+  layout checked with one user.
+- content passing under the fixed bar. That one was NOT real — `.conteudo` keeps
+  30px of clearance over the bar at every width — and measuring is what said so
+  before anything was changed.
+
+The probe that catches these lives outside the repo, in the session scratchpad;
+the recipe is in the project memory. What it cannot see is a card's own edge: it
+measures against the viewport, and a badge bursting out of a card leaves the page
+perfectly within bounds. Measure **and** look.
+
 Two structural facts worth carrying:
 
 - **In a dark interface, layers are made of light, not tone.** The plate against
@@ -379,10 +430,10 @@ which would die on every restart and keep no log anyone can read:
 ```cron
 # /etc/cron.d/myfavorite-sync — host clock is UTC; the comments give São Paulo.
 # 06,10,14,18,22 UTC = 03,07,11,15,19 in Brazil.
-0 6,10,14,18,22 * * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts >> /var/log/myfavorite-sync.log 2>&1
+0 6,10,14,18,22 * * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server scripts/sync-instagram.ts >> /var/log/myfavorite-sync.log 2>&1
 
 # 06:20 UTC on the 1st — close the month that just ended, in full.
-20 6 1 * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts --period $(date -u -d 'last month' +\%Y-\%m-01) >> /var/log/myfavorite-sync.log 2>&1
+20 6 1 * * root cd /home/drinsta/myfavorite/platform && docker compose exec -T app node_modules/.bin/tsx --conditions=react-server scripts/sync-instagram.ts --period $(date -u -d 'last month' +\%Y-\%m-01) >> /var/log/myfavorite-sync.log 2>&1
 ```
 
 **Five runs a day, not one — and none of them between 00:00 and 05:00 UTC.**
@@ -437,6 +488,11 @@ Three details in that line were each wrong once, and none of them fails loudly:
 - **`tsx` directly, not `npm run`.** The image carries `scripts/`, `lib/` and
   the resolved dependency graph — not a `package.json` whose scripts can be
   invoked.
+- **No `--env-file-if-exists=.env`.** `.env` is not inside the image; the
+  credentials come from the compose `environment:` block. The flag was harmless
+  but it printed `.env not found. Continuing without it.` on every run, which
+  reads like a warning about a missing credential when nothing is missing. A log
+  line that looks like a problem and is not is how a log stops being read.
 - **`--conditions=react-server` belongs to `tsx`, not to `node`.** Placed before
   the binary, tsx respawns without it and `server-only` refuses the import.
 
