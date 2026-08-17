@@ -822,24 +822,40 @@ interface RequestSeed {
    is how the two previous cycles died. */
 const MEASURE_REQUESTS: RequestSeed[] = [
   {
-    title: 'A aba Público de cinco Reels',
+    /* Renamed 17/08/2026, and the rename is the whole story of this request.
+       She answered it the day the typed fields shipped — by screenshot, hours
+       earlier — and she chose SIX Reels of her own rather than the five named
+       here. Five of the six were not on the list at all.
+
+       The list moved to her posts instead of her being asked again. Which of
+       her Reels carries the measurement was never the point; having the
+       measurement was. Asking a second time would have spent the one thing this
+       product exists to protect — her willingness to answer at all — on a
+       bookkeeping preference of mine. */
+    title: 'A aba Público dos Reels que você mediu',
+    legacyTitles: ['A aba Público de cinco Reels'],
     kind: 'data', priority: 'high', position: 1,
     description:
-      'Não precisa mais mandar print. Agora é só escrever o número, aqui embaixo.\n\n' +
-      'Em cada um dos cinco vídeos da lista, o caminho é o mesmo:\n' +
-      '1. Abra o Reel e toque em Ver insights.\n' +
-      '2. Toque na aba Público, no alto.\n' +
-      '3. Ali aparece a divisão entre seguidores e não seguidores. Escreva a porcentagem de NÃO SEGUIDORES.\n\n' +
-      'Se um deles não abrir, deixe em branco e mande os outros. Cada número salva sozinho.',
-    whyItMatters: 'Quem já te segue não pode te seguir de novo. Então, para saber se um vídeo funcionou, o que conta é a fatia de gente nova que viu — e esse número só existe nessa aba. Hoje eu deduzo por outro caminho, e deduzir não é medir.',
-    /* The five the analysis needs: the converter, two short, two long.
+      'Já está tudo aqui — você não precisa fazer nada.\n\n' +
+      'Você mandou os prints da aba Público de seis Reels em 17/08. Eu li os ' +
+      'números deles e passei para cá, um por vídeo, para eles entrarem na conta ' +
+      'do painel.\n\n' +
+      'Se algum estiver errado, é só escrever por cima.',
+    whyItMatters: 'Quem já te segue não pode te seguir de novo. Então, para saber se um vídeo funcionou, o que conta é a fatia de gente nova que viu — e esse número só existe nessa aba. Antes eu deduzia por outro caminho, e deduzir não é medir.',
+    /* The six she actually measured, identified one by one against the archive
+     * and against Instagram itself: caption, date and like count all matching
+     * the screenshot before any code was written down here.
      *
      * EVERY SHORTCODE HERE IS READ OFF THE ARCHIVE, never written from memory.
-     * The first version of this list invented one for the perfumes Reel and the
-     * number would have been accepted, stored on the field, and landed nowhere
-     * — `gravarPost` reported it and nobody was reading the audit log. The seed
-     * now refuses to write a field whose post is not in the archive, so a
-     * fabricated code fails loudly at seed time instead of quietly at hers. */
+     * An earlier version of this list invented one for the perfumes Reel and
+     * the number would have been accepted, stored on the field, and landed
+     * nowhere — `gravarPost` reported it and nobody was reading the audit log.
+     * The seed refuses to write a field whose post is not in the archive, so a
+     * fabricated code fails loudly at seed time instead of quietly at hers.
+     *
+     * `publico-perfumes` keeps its slug because it keeps its answer: the upsert
+     * is keyed by (request, slug) and never touches `value`. The five retired
+     * slugs are unanswered, so the prune below removes them. */
     fields: [
       {
         slug: 'publico-perfumes',
@@ -848,28 +864,34 @@ const MEASURE_REQUESTS: RequestSeed[] = [
         unit: 'ratio', target: 'post_share', postCode: 'DYnqOYCBfAw'
       },
       {
-        slug: 'publico-longo-1',
-        label: 'Em breve, a nossa pequena Isabel (18/07, 3min)',
-        hint: 'https://instagram.com/reel/Da72VM-Ro07 — Ver insights → Público → escreva a % de NÃO seguidores',
-        unit: 'ratio', target: 'post_share', postCode: 'Da72VM-Ro07'
+        slug: 'publico-sucessao',
+        label: 'sucessão familiar da empresa (02/08, 2min37)',
+        hint: 'https://instagram.com/reel/Dbii89ahd-i — Ver insights → Público → escreva a % de NÃO seguidores',
+        unit: 'ratio', target: 'post_share', postCode: 'Dbii89ahd-i'
       },
       {
-        slug: 'publico-longo-2',
-        label: 'diretora criativa (09/03, 1min56)',
-        hint: 'https://instagram.com/reel/DVpOJEeDVYo — Ver insights → Público → escreva a % de NÃO seguidores',
-        unit: 'ratio', target: 'post_share', postCode: 'DVpOJEeDVYo'
+        slug: 'publico-baratos',
+        label: 'vamos inverter: produtos baratos que valem a pena (05/08, 3min33)',
+        hint: 'https://instagram.com/reel/DbredG-MWXy — Ver insights → Público → escreva a % de NÃO seguidores',
+        unit: 'ratio', target: 'post_share', postCode: 'DbredG-MWXy'
       },
       {
-        slug: 'publico-curto-1',
-        label: 'oq eu perdi? (28/05, 8s)',
-        hint: 'https://instagram.com/reel/DY3KqCzMeNQ — Ver insights → Público → escreva a % de NÃO seguidores',
-        unit: 'ratio', target: 'post_share', postCode: 'DY3KqCzMeNQ'
+        slug: 'publico-dedo',
+        label: 'posso soltar o dedo hoje? (07/08, 7s)',
+        hint: 'https://instagram.com/reel/DbvVnJbhLFD — Ver insights → Público → escreva a % de NÃO seguidores',
+        unit: 'ratio', target: 'post_share', postCode: 'DbvVnJbhLFD'
       },
       {
-        slug: 'publico-curto-2',
-        label: 'haaland fobia (05/07, 6s)',
-        hint: 'https://instagram.com/reel/DaMRWJeshlz — Ver insights → Público → escreva a % de NÃO seguidores',
-        unit: 'ratio', target: 'post_share', postCode: 'DaMRWJeshlz'
+        slug: 'publico-amiga',
+        label: 'essa safada é minha amiga mesmo (08/08, 11s)',
+        hint: 'https://instagram.com/reel/DbtDW9WBx7W — Ver insights → Público → escreva a % de NÃO seguidores',
+        unit: 'ratio', target: 'post_share', postCode: 'DbtDW9WBx7W'
+      },
+      {
+        slug: 'publico-amo',
+        label: 'ããmo (09/08, 6s)',
+        hint: 'https://instagram.com/reel/Db1ePDFhpsJ — Ver insights → Público → escreva a % de NÃO seguidores',
+        unit: 'ratio', target: 'post_share', postCode: 'Db1ePDFhpsJ'
       }
     ]
   },
@@ -1885,16 +1907,19 @@ async function main (): Promise<void> {
   const THIRD_STEPS: StepSeed[] = [
     {
       code: 'c1', urgency: 'today', deadlineLabel: 'hoje, se der',
-      title: 'Me mandar a aba Público de cinco Reels',
-      summary: 'Em cada Reel: Ver insights → aba Público. Tem um número dizendo quantos dos que viram já te seguiam. É um print por vídeo.\n\nEscolha cinco: dois curtos, dois longos e o dos perfumes.',
+      title: 'Me mandar a aba Público dos seus Reels',
+      summary: 'Em cada Reel: Ver insights → aba Público. Tem um número dizendo quantos dos que viram já te seguiam.\n\nVocê mandou seis em 17/08 — eles estão em Pedidos, com o número de cada um.',
       evidenceValue: '8',
       evidenceLabel: 'vídeos em que eu deduzi esse número — este pedido transforma dedução em medida',
       copyValue: 'Ver insights → Público → quantos já te seguiam',
       copyLabel: 'o caminho, dentro do Reel',
-      /* The same job as the request of the same name. Without this link she
-         sends the prints in Pedidos and Plano goes on asking — which is the
-         complaint that opened this whole change. */
-      requestTitle: 'A aba Público de cinco Reels'
+      /* The same job as the request of the same name — and the title has to
+         track it. `requestByTitle` here takes ONE title and does not consult
+         `legacyTitles`, so renaming the request without renaming this string
+         unlinks the step: the plan goes back to asking for something already
+         answered, and every screen still looks perfectly fine. That is the
+         complaint that opened this whole change, arriving by the back door. */
+      requestTitle: 'A aba Público dos Reels que você mediu'
     },
     {
       code: 'c2', urgency: 'this_week', deadlineLabel: 'esta semana',
