@@ -511,6 +511,29 @@ count, not a share count. Measured against July's screenshots it read 1,986
 where Insights showed 48,000 shares. It is stored in its own column and never
 treated as the strong signal.
 
+### Rotating those logs
+
+`infra/logrotate-myfavorite` is the rule for every `/var/log/myfavorite-*.log`.
+It is not installed by the deploy — `/etc/logrotate.d` is root's — so it goes on
+once, by hand:
+
+```bash
+install -m 0644 -o root -g root \
+  /home/drinsta/myfavorite/platform/infra/logrotate-myfavorite \
+  /etc/logrotate.d/myfavorite
+logrotate -d /etc/logrotate.d/myfavorite   # dry run — parses, writes nothing
+```
+
+The volume is small: five sync lines a day is a few KB a month. What the rule
+buys is a ceiling, so no file grows without one — and the file lives here, in
+git, rather than only on a host nobody rebuilds from memory.
+
+**It deliberately does not use `copytruncate`.** Every cron line opens its log
+with `>>` and closes it when the run ends, so nothing holds a descriptor between
+runs and a plain rename is safe. `copytruncate` exists for long-lived processes
+that never reopen their log; here it would only add a window where lines written
+during the copy are lost.
+
 ### Collecting
 
 ```bash

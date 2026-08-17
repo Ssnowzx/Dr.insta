@@ -1,0 +1,34 @@
+# Log rotation for everything this project writes on the host.
+#
+# Install as root:
+#   install -m 0644 -o root -g root \
+#     /home/drinsta/myfavorite/platform/infra/logrotate-myfavorite \
+#     /etc/logrotate.d/myfavorite
+#   logrotate -d /etc/logrotate.d/myfavorite   # dry run — parses, writes nothing
+#
+# The glob covers all three:
+#   myfavorite-sync.log         five collections a day + the monthly close
+#   myfavorite-backup.log       the nightly dump
+#   myfavorite-sync-mensal.log  orphaned on 17/08/2026, when the monthly line
+#                               moved into the daily log to match the README.
+#                               Left in the glob so it ages out instead of
+#                               sitting there for ever at its final size.
+#
+# NO `copytruncate`, and that is the one decision here worth stating. Each cron
+# line opens its log with `>>` and closes it when the run ends, so no process
+# holds a descriptor between runs and a plain rename is safe. `copytruncate`
+# copies the file and truncates the original, losing whatever is written in
+# between — it exists for long-lived processes that never reopen their log, and
+# using it here would add a data-loss window to buy nothing.
+#
+# Weekly rather than daily: five sync lines a day is a few KB a month. The point
+# is that the file has a ceiling at all, not that it turns over often.
+/var/log/myfavorite-*.log {
+    weekly
+    rotate 12
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 root root
+}
