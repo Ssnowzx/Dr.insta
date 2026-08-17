@@ -73,6 +73,12 @@ export default async function Novidades () {
             tom="critico"
             acao={{ href: '/pedidos', rotulo: 'ver os pedidos' }}
           />
+          <Grupo
+            titulo="Roteiro novo"
+            itens={dela.ideas}
+            tom="dado"
+            acao={{ href: '/ideias', rotulo: 'abrir as ideias' }}
+          />
           <Grupo titulo="Novo por aqui" itens={dela.published} tom="dado" />
           {/* With a way through: the detail here is only the opening of the
               outcome, and the whole text lives on the request itself. */}
@@ -127,9 +133,25 @@ export default async function Novidades () {
             acao={{ href: '/pedidos', rotulo: 'abrir o pedido' }}
           />
           <Grupo titulo="Travou" itens={digest.blocked} tom="critico" />
+          {/* Above the files and the comments: this is the only group that tells
+              him whether a script worked, and it is what the next batch is
+              written from. Buried under uploads it becomes a thing he reads
+              after having already written them. */}
+          <Grupo
+            titulo="Falou sobre uma pauta"
+            itens={digest.ideaTalk}
+            tom="dado"
+            acao={{ href: '/ideias', rotulo: 'ler nas ideias' }}
+          />
           <Grupo titulo="Mandou arquivo" itens={digest.files} tom="dado" />
           <Grupo titulo="Escreveu" itens={digest.comments} tom="neutro" />
           <Grupo titulo="Marcou como feito" itens={digest.done} tom="ok" />
+          <Grupo
+            titulo="Mexeu numa pauta"
+            itens={digest.ideaMoved}
+            tom="ok"
+            acao={{ href: '/ideias', rotulo: 'ver a fila' }}
+          />
           <Grupo titulo="Fechou pedido" itens={digest.delivered} tom="ok" />
         </section>
       )}

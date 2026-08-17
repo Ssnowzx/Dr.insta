@@ -2720,3 +2720,307 @@ a.btn-acesso:hover { border-color: var(--dado); text-decoration: none; }
 /* The paragraph right after a figure gets the same 20px, so the number belongs
    to the text that explains it rather than to the heading above. */
 .achado-numero + .analise-corpo { margin-top: 1.25rem; }
+
+/* =============================================================================
+   PROOF — a chore the platform watched happen
+
+   The visual argument is that this is NOT a control she failed to press. It is
+   a statement, in the healthy colour, with no affordance anywhere on it: no
+   border-radius that suggests a button, no cursor change, nothing to tap. The
+   moment it looks tappable, someone taps it and learns the screen lies.
+
+   `--ok` on `--ok-bg` is the pair `test/contrast.test.ts` already validates for
+   the success notice, which is why the link inside inherits that colour instead
+   of going to `--caramelo` — a link colour on this ground would be a pair
+   nobody measured.
+   ============================================================================= */
+
+.prova {
+  display: flex;
+  align-items: flex-start;
+  gap: .625rem;
+  margin: 1rem 0 0;
+  padding: .75rem .875rem;
+  border-radius: var(--raio);
+  background: var(--ok-bg);
+  border: 1px solid var(--ok);
+  color: var(--ok);
+  font-size: .875rem;
+  line-height: 1.5;
+}
+
+.prova-marca {
+  font-weight: 700;
+  line-height: 1.5;
+  flex: none;
+}
+
+.prova-texto { flex: 1; }
+
+.prova-texto a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* The consultant's copy of the segmented control: same shape, no affordance.
+   He used to get a separate block of markup for this, which is how the two
+   sides drifted into describing the same row differently. */
+.segmento-leitura { cursor: default; }
+
+.segmentos-quatro { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.segmento-ativo.segmento-scheduled { color: var(--tinta); }
+.segmento-ativo.segmento-recorded { color: var(--atencao); }
+.segmento-ativo.segmento-published { color: var(--ok); }
+.segmento-ativo.segmento-dropped { color: var(--tijolo); }
+
+/* =============================================================================
+   IDEAS AND SCRIPTS
+
+   The schedule reuses the card shape of `.pedido` and `.etapa` deliberately —
+   three screens that all answer "here is one thing, with a state" should not
+   each invent their own rectangle. What is new here is the script itself, which
+   has a shape nothing else in the product has: numbered blocks with the seconds
+   on one side and the words on the other, read while holding a phone.
+   ============================================================================= */
+
+.pautas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pauta {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1.25rem;
+}
+
+.pauta-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .625rem;
+  /* The tags wrap under the day on a narrow phone rather than squeezing the
+     day label into two lines — "seg, 18 ago" must stay on one. */
+  flex-wrap: wrap;
+}
+
+.pauta-quando {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--suave);
+}
+
+.pauta-tags { display: flex; gap: .375rem; flex-wrap: wrap; }
+
+.tag-pilar { color: var(--tinta2); background: var(--papel2); }
+
+.pauta-titulo {
+  margin: 0 0 .625rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.pauta-titulo a { color: var(--tinta); text-decoration: none; }
+.pauta-titulo a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* The hook on the card. Set in the display face because it is the only line on
+   this screen that is meant to be HEARD — everything around it is metadata, and
+   a quotation in body copy reads as more metadata. */
+.pauta-gancho {
+  margin: 0 0 .875rem;
+  padding: .75rem .875rem;
+  border-radius: var(--raio);
+  background: var(--papel2);
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 1.0625rem;
+  line-height: 1.4;
+  color: var(--tinta);
+}
+
+.pauta-gancho-rot {
+  display: block;
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: .625rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin-bottom: .3125rem;
+}
+
+.pauta-pe {
+  margin: 0 0 .875rem;
+  font-size: .75rem;
+  color: var(--suave);
+}
+
+/* Done and refused, dimmed the way a finished step is. Same treatment because
+   it is the same fact: this one is no longer asking anything of anyone. */
+.pauta-published, .pauta-dropped { opacity: .72; }
+
+.pauta-meta {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  flex-wrap: wrap;
+  margin: .875rem 0 0;
+}
+
+.pauta-meta-item { font-size: .8125rem; color: var(--suave); }
+
+.pauta-cta {
+  margin: 1rem 0 0;
+  padding: .875rem;
+  border-radius: var(--raio);
+  background: var(--papel2);
+  font-size: .9375rem;
+  line-height: 1.5;
+  color: var(--tinta2);
+}
+
+.pauta-cta-rot {
+  display: block;
+  font-family: var(--mono);
+  font-size: .625rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin-bottom: .3125rem;
+}
+
+/* The first three seconds, at the size they deserve.
+
+   39% of her reach dies inside content that converts worst, and the opening
+   line is what decides whether a video is watched at all. On a screen full of
+   14px metadata, setting this at body size would be the product saying it is
+   one instruction among nine. */
+.gancho {
+  margin: 0 0 .875rem;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(1.5rem, 1.1rem + 1.8vw, 2rem);
+  line-height: 1.25;
+  color: var(--tinta);
+  max-width: 30ch;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+.roteiro {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  counter-reset: bloco;
+}
+
+.bloco {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 1rem 1.125rem;
+  /* The left rule is the spine of the script: it turns nine cards into one
+     column that is read downwards, which is how a script is read. */
+  border-left: 3px solid var(--dado);
+}
+
+.bloco-cab {
+  display: flex;
+  align-items: baseline;
+  gap: .625rem;
+  margin-bottom: .5rem;
+}
+
+.bloco-n {
+  font-family: var(--mono);
+  font-size: .75rem;
+  color: var(--dado-texto);
+}
+
+.bloco-tempo {
+  font-family: var(--mono);
+  font-size: .6875rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--suave);
+}
+
+/* What she says. The largest text in the block, because it is the only part
+   spoken out loud and the only part she reads while the camera is running. */
+.bloco-fala {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--tinta);
+  max-width: 54ch;
+  white-space: pre-line;
+}
+
+/* What is on screen. A second instruction to a second person — usually the
+   assistant, who is not the one talking — so it is set apart rather than
+   folded into the paragraph above, where each of them reads past the half that
+   is not theirs. */
+.bloco-cena {
+  margin: .625rem 0 0;
+  font-size: .875rem;
+  line-height: 1.5;
+  color: var(--tinta2);
+}
+
+.bloco-rot {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: .625rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin-right: .5rem;
+}
+
+.bloco-nota {
+  margin: .5rem 0 0;
+  font-size: .8125rem;
+  line-height: 1.45;
+  color: var(--suave);
+}
+
+/* A person's row carries two badges now — what she does and whether she has
+   signed in — and `.selo` is `flex-shrink: 0` with `white-space: nowrap`, so
+   the row had no way to give. At 390px the name wrapped to two lines and the
+   second badge still burst past the card's right edge. Found by rendering, not
+   by reading: nothing overflowed the PAGE, so a viewport-level check reports
+   clean while the card is visibly broken. */
+.pessoa-cab { flex-wrap: wrap; }
+
+.pessoa-selos {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  flex-wrap: wrap;
+}
+
+/* Lets the name give before the badges do — it is the one part that can wrap
+   without looking wrong. */
+.pessoa-nome { min-width: 0; overflow-wrap: anywhere; }
+
+/* The evidence figure keeps its line. It is short by construction — "179 mil",
+   "3.131", "18h" — and as a shrinkable flex child it broke as "179" over "mil"
+   on a 390px phone, which reads as two numbers. The `flex-shrink: 0` is what
+   `test/layout-estreito.test.ts` accepts as the escape for a nowrap, and it is
+   the right one here: the LABEL beside it is what should wrap. */
+.etapa-dado-valor { flex-shrink: 0; white-space: nowrap; }

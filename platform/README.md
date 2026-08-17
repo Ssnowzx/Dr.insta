@@ -69,7 +69,7 @@ npm run dev
 | `npm run db:status` | Lists what has been applied, changes nothing |
 | `npm run db:seed` | Initial data |
 | `npm run db:import-reels -- <csv>` | Imports the public Reels export |
-| `npm run invite -- --email … --name …` | Creates a user on `TENANT_SLUG` and prints an invite link (`--consultant` for an unscoped one) |
+| `npm run invite -- --email … --name …` | Creates a user on `TENANT_SLUG` and prints an invite link (`--consultant` for an unscoped one, `--job "assessora"` for what they do) |
 | `npm run link -- --email …` | Prints a fresh access link for someone who already exists — invite or reset, chosen from the account |
 | `npm run sync:instagram` | Collects the current month from the Instagram API (`--period YYYY-MM-01` to backfill) |
 
@@ -85,12 +85,27 @@ migration. If a file fails midway, part of it has been applied and the
 bookkeeping row is *not* written. The migrator stops there rather than moving
 on. A new migration always lands as a new file; never edit one already applied.
 
-### The six schema decisions worth knowing
+### The schema decisions worth knowing
 
 1. **`user.client_id` NULL = consultant.** Set = that client's user. That is the
    whole access rule in one column, with no permission matrix.
+
+   **A client can be more than one person.** Bianca runs the profile with an
+   assistant, and both are `client` users on the same `client_id`. `job_title`
+   says what each one does and is *descriptive only* — it never gates anything,
+   or this column becomes the permission matrix the line above refuses.
+
+   The one thing that is not shared is disconnecting the Instagram: the rule
+   comes from `instagram_connection.connected_by`, a fact that already existed
+   and that nothing read. See [The Instagram connection](#the-instagram-connection).
 2. **`step_status` has three states: `pending`, `done`, `blocked`.** The old HTML
    checkbox threw `blocked` away — which is exactly what you need to know.
+
+   Rows are still one per `(step, user)` — who said what is worth keeping — but
+   the state a SCREEN shows is the team's, resolved in `lib/verificacao.ts`.
+   Joining on the reader's own id was invisible with one client user and a
+   defect on day one with two: Bianca marks it, Cris reads "a fazer", and the
+   chore gets done twice or by neither.
 3. **`UNIQUE (client_id, metric_def_id, period, granularity, source)`.** The same
    metric arrives from Insights and from GA4 with different numbers; overwriting
    one with the other would destroy the disagreement that needs to surface.
@@ -106,9 +121,64 @@ on. A new migration always lands as a new file; never edit one already applied.
    wrong tag pasted into the bio, and nothing looked broken from her side.
    `copy_note` is a separate column from `summary` on purpose: the summary
    answers "why does this matter" and is read before the value appears.
+7. **A step can prove itself.** `step.request_id` says "this chore IS that
+   request"; `step.verify_key` names a fact the platform observes on its own.
+   Both nullable, and a step with neither behaves exactly as it always did.
+8. **`idea` carries the state, `idea_note` carries what they said about it.**
+   Unlike a step there is no private version of "this video is out", so state
+   lives on the row. The notes are a separate table for the reason
+   `step_status` is one — see [Seeding](#seeding).
 
-Full detail in the comments of `db/migrations/001-initial-schema.sql` and
-`003-pillars-and-copy-value.sql`.
+Full detail in the comments of `db/migrations/001-initial-schema.sql`,
+`003-pillars-and-copy-value.sql` and `010-equipe-verificacao-e-pautas.sql`.
+
+### What the plan stops asking for
+
+The complaint that produced this: *"tem coisas que ela já fez e ainda está no
+app, isso confunde"*. Three separate causes, all of them ours.
+
+| Cause | Fix |
+|---|---|
+| The state was private to one reader | It is the team's, resolved once for both roles |
+| The same job lived on two screens with nothing joining them | `step.request_id` — answering it in Pedidos closes it in Plano |
+| The platform could see it happen and asked anyway | `step.verify_key` — today `instagram_connected` |
+
+`lib/verificacao.ts` holds the rule, on its own and free of I/O, because every
+one of its failure modes is silent: a step still asking after she did it looks
+exactly like a step she has not done.
+
+**Proof only ever moves a step TO `done`, never away from it.** If she connects,
+marks it done and later disconnects, the step does not revert — a verifier is
+evidence of completion, not of incompletion, and letting it revert would make
+her plan flicker with the health of an API credential. A broken connection is
+already announced on its own screen and in the digest.
+
+**Proof does outrank `blocked`.** "Travei" plus "the platform watched it happen"
+means the block is stale. The note she wrote stays on screen; the chore stops
+being asked for.
+
+### Pautas and scripts
+
+`/ideias` is the schedule: what to film, on which day, with the hook written out
+and the script in numbered blocks. `/conteudo` is its opposite end — what was
+published, with the numbers.
+
+**Three scripts a week, against the eight Reels she publishes.** That is the
+finding and not a shortfall: across 376 posts the long opinion video converted
+41× the brand pauta at comparable reach, while the 1–10s bucket — 39% of all her
+reach — converts worst of anything she makes. The short, spontaneous half of her
+week IS the distribution engine, and Espelho is the cycle's declared control.
+Scripting it would break the one thing that is not broken.
+
+`idea_beat` splits `says` from `shows` because they are instructions to two
+different people: the assistant behind the camera is usually not the one
+talking, and a merged paragraph makes each of them read past the half that is
+theirs.
+
+`idea_note` is what closes the loop. A batch of scripts that arrives and is
+never argued with is a batch that gets ignored by week three, so what comes back
+— "ficou longo", "essa abertura não é meu jeito de falar" — reaches `/novidades`
+the day it is written, and the next batch is written from it.
 
 ### Seeding
 
@@ -241,6 +311,14 @@ The client authorises her own account from **Conta**: Business Login for
 Instagram, read-only (`instagram_business_basic`,
 `instagram_business_manage_insights`). No Facebook Page, no password shared, and
 she can disconnect from the same screen.
+
+**Only the person who authorised it can disconnect it.** The role check was
+enough while a client meant one person; with an assistant on the same account it
+stops being. `connected_by` already recorded who did it, so the rule needs no new
+column and no permission table. The button is not shown to anyone else — offering
+it and refusing the click teaches her that the screen does not know what it is
+showing. To hand it over, the other person connects the account herself and the
+row moves with her: an authorisation is transferred by granting it again.
 
 Set `IG_APP_ID`, `IG_APP_SECRET` and `ENCRYPTION_KEY` — see `.env.exemplo`. With
 the first two blank the button is simply not offered and everything else works.
@@ -394,10 +472,17 @@ self-service path. Two things close that gap:
 - The sign-in screen records the attempt, and it surfaces on `/novidades` as
   "não conseguiu entrar" — so the consultant learns about it without her having
   to remember to message him.
-- **Conta → Acesso dela** mints a fresh link and copies it, to be
+- **Conta → Quem tem acesso** mints a fresh link and copies it, to be
   relayed over whatever channel they already use. An invite link for someone who
   has never signed in (7 days), a reset link for someone who has (1 hour).
   Generating a new one invalidates the previous.
+
+  The same section **adds a person to the client's team** — name, e-mail and
+  what they do — and hands over their first link. Before this, a second person
+  meant an SSH session: the account that owns the site is deliberately kept out
+  of the `docker` group, so "give the assistant access" was a task one person
+  could do at a computer and nowhere else. `npm run invite` is still the only
+  way to create the FIRST account, since no screen can be reached before it.
 
 The link is displayed as well as copied: `navigator.clipboard` needs a secure
 context and does nothing over plain HTTP, so the copy can fail silently while

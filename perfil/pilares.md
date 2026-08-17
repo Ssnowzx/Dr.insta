@@ -147,10 +147,43 @@ Leitura em **14 dias e no mínimo 7 posts por pilar**. Abaixo disso é ruído, n
 Nunca dois posts do mesmo pilar seguidos. O perfil precisa parecer variado para quem entra
 pelo grid.
 
+## Quantos roteiros por semana — e por que não oito
+
+Decidido em **17/08/2026**: **3 roteiros completos por semana**, na aba Ideias da
+plataforma, mais um banco de pautas sem data.
+
+O mix acima pede 8 Reels por semana e o roteiro cobre 3. Isso não é falta — é o
+achado. O vídeo longo de opinião converteu **41×** a pauta de marca com alcance
+parecido, e a faixa de 1 a 10 segundos (39% de todo o alcance dela) é a que pior
+converte no conjunto de 376 posts. A metade curta e espontânea da semana **é** o
+motor de distribuição, e Espelho é o controle declarado do ciclo. Roteirizar o
+Reel de 9 segundos que faz 2,3M de views é quebrar a única coisa que não está
+quebrada.
+
+Os 3 seguem o mix: **2 de Opinião + 1 alternando entre Personagens e Vale
+guardar.** Espelho não recebe pauta escrita, de propósito.
+
+Cada roteiro carrega gancho escrito por extenso (nunca descrito), blocos com
+tempo, o que ela **fala** separado do que aparece **na tela** — são instruções
+para duas pessoas diferentes, já que a assessora atrás da câmera não é quem
+fala — legenda sugerida na voz dela e uma chamada só, nunca empilhada.
+
+**A volta é obrigatória.** Cada pauta tem um campo de recado, dos dois lados. Um
+lote de roteiros que chega e nunca é discutido é um lote ignorado na terceira
+semana; o que ela escreve ali ("ficou longo", "essa abertura não é meu jeito de
+falar") é de onde sai o lote seguinte.
+
 ## Isto chega até ela pela plataforma
 
 Este arquivo continua sendo a fonte de verdade. **Mudou aqui, mude em
 `platform/db/seed.ts` e rode `npm run db:seed`.** Mudar só aqui não muda nada para ela.
+
+As pautas e os roteiros moram em `IDEAS`, no mesmo `seed.ts`. As datas ali são
+**fixas**, não deslocadas a partir de hoje: são os dias para os quais aquelas
+pautas foram escritas, e uma data calculada mudaria de lugar toda vez que o seed
+roda — inclusive por baixo de uma semana que ela já planejou. Se um lote atrasar,
+o grupo "Passou da data" existe justamente para pedir uma decisão: grava atrasado
+ou descarta.
 
 O ciclo anterior (Caminho até a compra) fica **fechado e congelado** no banco com os
 pilares dele — é assim que dá para perguntar depois "a aposta pagou?". `post.pillar`

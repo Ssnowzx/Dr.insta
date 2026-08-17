@@ -100,6 +100,23 @@ const PAIRS: Pair[] = [
   { fg: 'atencao', bg: 'papel', min: 4.5, why: 'estado de atenção' },
   { fg: 'atencao', bg: 'atencao-bg', min: 4.5, why: 'atenção sobre o próprio fundo' },
 
+  /* Status text ON A CARD. Two of these were already rendering and had never
+     been measured: `.segmento-ativo.segmento-done` puts `--ok` on `--cartao`
+     and has since the plan screen shipped, and the list above only ever knew
+     the `--papel` version. The card is the LIGHTER surface in light and the
+     lighter one in dark too, so it is not the same reading — which is exactly
+     the shape of the `--dado`-as-text failure this file was extended for once
+     already. Added with the pauta states, which use all four. */
+  { fg: 'ok', bg: 'cartao', min: 4.5, why: 'segmento ativo de feito e de publicada' },
+  { fg: 'atencao', bg: 'cartao', min: 4.5, why: 'segmento ativo de gravada' },
+
+  /* `--papel2` as a panel ground, with real ink on it rather than a label.
+     `.pedido-porque` has set `--tinta2` there since the requests screen
+     shipped, and the hook block now sets `--tinta`. The list knew `--suave` on
+     this surface and nothing else. */
+  { fg: 'tinta', bg: 'papel2', min: 4.5, why: 'o gancho da pauta sobre o painel' },
+  { fg: 'tinta2', bg: 'papel2', min: 4.5, why: '"por que importa" e a chamada da pauta' },
+
   // inverted
   /* The primary button inverts by theme: dark surface with light text in light
      mode, light surface with dark text in dark mode. Either way the pair is

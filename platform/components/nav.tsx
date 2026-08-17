@@ -36,7 +36,7 @@ import { BotaoTema } from './tema'
 interface Destino {
   href: string
   label: string
-  icon: 'sino' | 'painel' | 'plano' | 'analise' | 'pedidos' | 'conteudo' | 'conta'
+  icon: 'sino' | 'painel' | 'plano' | 'analise' | 'pedidos' | 'ideias' | 'conteudo' | 'conta'
 }
 
 const DESTINOS: Destino[] = [
@@ -48,6 +48,10 @@ const DESTINOS: Destino[] = [
      from me". */
   { href: '/analise', label: 'Análise', icon: 'analise' },
   { href: '/pedidos', label: 'Pedidos', icon: 'pedidos' },
+  /* The scripts. Ahead of the archive because of how often each is opened: this
+     is the screen she reaches for on a filming day, and `/conteudo` is a
+     reference she consults occasionally. */
+  { href: '/ideias', label: 'Ideias', icon: 'ideias' },
   { href: '/conteudo', label: 'Conteúdo', icon: 'conteudo' },
   { href: '/conta', label: 'Conta', icon: 'conta' }
 ]
@@ -74,6 +78,11 @@ function Icone ({ nome }: { nome: Destino['icon'] }) {
       return <svg {...COMUM}><path d="M4 19h16M6.5 15.5l4-4.5 3 3 4.5-6" /></svg>
     case 'pedidos':
       return <svg {...COMUM}><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
+    case 'ideias':
+      /* A sheet with lines and a spark: a script, and the idea before it. Not a
+         lightbulb — every product uses one, and beside a play button it would
+         read as "tips" rather than "the thing you film today". */
+      return <svg {...COMUM}><path d="M6 3.6h8.5L19 8v12a1.4 1.4 0 0 1-1.4 1.4H6A1.4 1.4 0 0 1 4.6 20V5A1.4 1.4 0 0 1 6 3.6M14 3.8V8h4.2M8 12.5h5M8 16.5h3" /></svg>
     case 'conteudo':
       return <svg {...COMUM}><rect x="3.2" y="4.2" width="17.6" height="15.6" rx="3" /><path d="M10.4 9.2 15 12l-4.6 2.8z" /></svg>
     case 'conta':
@@ -191,10 +200,22 @@ export function SinoTopo ({ novidades }: { novidades: number }) {
   )
 }
 
-/* Six of the seven. Conta is reached from the account name in the top bar,
-   which only exists on a phone — the rail carries all seven on desktop, where
-   vertical space is not the constraint. */
-const NA_BARRA = DESTINOS.filter(d => d.href !== '/conta')
+/**
+ * Six of the eight, and the count is load-bearing.
+ *
+ * The bottom bar gives each item 360/n pixels on the narrowest phone this
+ * product is used on. At six that is 60px; at seven it is 51, which is where
+ * "Conteúdo" stops fitting on one line and the labels start truncating. That
+ * arithmetic is why Conta left the bar when Análise arrived — it is a settings
+ * screen, visited rarely, and the account name in the top bar is the way in.
+ *
+ * Ideias made eight destinations, so a second one had to leave, and Conteúdo is
+ * it. The two are the same subject seen from opposite ends — what to publish and
+ * what was published — and only one of them is opened on a filming day. The
+ * archive stays one tap away: the rail carries all eight on desktop, and
+ * `/ideias` closes with a link to it.
+ */
+const NA_BARRA = DESTINOS.filter(d => d.href !== '/conta' && d.href !== '/conteudo')
 
 export function NavInferior ({
   pedidos,

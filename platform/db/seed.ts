@@ -3,7 +3,8 @@ import { orm } from './client.ts'
 import { db, waitForDatabase } from './connection.ts'
 import {
   benchmark, client, cycle, delivery, deliverySection, experiment, metricDef,
-  metricTarget, metricValue, pillar, request, requestEvent, step, user
+  idea, ideaBeat, metricTarget, metricValue, pillar, request, requestEvent,
+  step, user
 } from './schema.ts'
 import { ulid } from '../lib/ulid.ts'
 
@@ -400,6 +401,20 @@ interface StepSeed {
   copyValue?: string
   copyLabel?: string
   copyNote?: string
+  /**
+   * The request this chore IS, by title.
+   *
+   * By title and not by id because requests are seeded AFTER the deliveries in
+   * this file, and reordering them to get an id here would make the seed's own
+   * sequence load-bearing. A pass at the end resolves it — see `LINK_STEPS`.
+   *
+   * A step that carries this stops being asked for the moment she answers the
+   * request, which was the whole complaint: `c1` and "A aba Público de cinco
+   * Reels" are one job that lived on two screens with nothing joining them.
+   */
+  requestTitle?: string
+  /** A fact the platform observes. See `lib/verificacao.ts`. */
+  verifyKey?: string
 }
 
 /* The closed cycle's plan, frozen as delivered on 4 Aug 2026. */
@@ -453,7 +468,12 @@ const NEW_STEPS: StepSeed[] = [
     code: 'b1', urgency: 'today', deadlineLabel: 'hoje, se der',
     title: 'Conectar seu Instagram na aba Conta',
     summary: 'Dois toques, só leitura — você autoriza e desconecta quando quiser, na mesma tela. Sem isso eu não enxergo comentário e salvamento por post, e este ciclo é decidido nesses dois números.',
-    evidenceValue: '0', evidenceLabel: 'dos seus 205 Reels têm alcance medido hoje'
+    evidenceValue: '0', evidenceLabel: 'dos seus 205 Reels têm alcance medido hoje',
+    /* She did this on 14/08 and the plan had no way of knowing. The delivery is
+       archived, so it does not render today — the verifier is here because a
+       plan that is restored, reopened or re-read must not ask again for
+       something the platform can see happened. */
+    verifyKey: 'instagram_connected'
   },
   {
     code: 'b2', urgency: 'today', deadlineLabel: 'hoje, se der',
@@ -781,12 +801,23 @@ const MEASURE_REQUESTS: RequestSeed[] = [
     whyItMatters: 'Eu deduzi essa divisão de onde vieram as visualizações, em oito vídeos — é indício, não medida. Este número existe pronto no Instagram e é o que decide todo o ciclo: quem já te segue não pode te seguir de novo, então é a fatia de gente nova que diz se um vídeo funcionou.'
   },
   {
-    title: 'Um print do mês, de Insights > Visão geral',
-    kind: 'data', priority: 'high', position: 2,
+    title: 'Uma vez por mês: o número de visitas ao perfil',
+    /* Renamed and rewritten on 17/08/2026. The old text asked for THREE numbers
+       and said it existed "enquanto a conexão não volta" — both untrue since she
+       connected on 14/08. Alcance e seguidores agora chegam sozinhos; só
+       `profile_visits` não existe como métrica de conta na API.
+
+       Asking for two numbers the platform already has is how a person learns
+       that the requests screen has not been read recently, and then stops
+       reading it herself. */
+    legacyTitles: ['Um print do mês, de Insights > Visão geral'],
+    kind: 'data', priority: 'medium', position: 2,
     description:
-      'Insights → Visão geral, período de 30 dias. Preciso de três números que aparecem juntos ali: contas alcançadas, visitas ao perfil e seguidores.\n\n' +
-      'Um print da tela inteira resolve. Uma vez por mês.',
-    whyItMatters: 'É o que substitui a conexão do Instagram enquanto ela não volta. Sem esses três números eu não consigo ler nenhum experimento — e um experimento que roda sem leitura é trabalho seu jogado fora, que foi o que aconteceu nos dois ciclos anteriores.'
+      /* No markdown here: `RequestText` renders plain text and turns URLs into
+         links, and nothing else. Asterisks would print as asterisks. */
+      'Insights → Visão geral, período de 30 dias. Só um número: visitas ao perfil.\n\n' +
+      'Um print da tela resolve, uma vez por mês. Alcance e seguidores eu já pego sozinho desde que você conectou a conta — não precisa mandar mais.',
+    whyItMatters: 'É o único número do funil que a API do Instagram não entrega: ela só tem visitas por post, não por perfil. É o degrau entre "viram você" e "decidiram te seguir", e sem ele eu vejo o começo e o fim do caminho e não vejo o meio.'
   }
 ]
 
@@ -893,6 +924,312 @@ const RETAINED_REQUESTS: RequestSeed[] = [
       'Desde janeiro: lançamentos de coleção e publis grandes.\n\n' +
       'Como responder: escreva aqui embaixo, uma por linha — a data (o mês já ajuda) e o que foi. Toque em Enviar recado no fim.',
     whyItMatters: 'Picos de alcance nesses dias têm causa conhecida. Sem as datas eu leio pico de campanha como se fosse mérito do formato.'
+  }
+]
+
+// ------------------------------------------------------------------- pautas
+
+interface BeatSeed {
+  time?: string
+  says: string
+  shows?: string
+  note?: string
+}
+
+interface IdeaSeed {
+  /** By `pillar.pillar_key` of the active cycle: espelho · opiniao · guardar · personagens. */
+  pillar: string
+  title: string
+  /** Written out, never described. See the column comment in migration 010. */
+  hook: string
+  format?: 'reel' | 'carrossel' | 'story' | 'foto'
+  seconds?: number
+  why: string
+  caption?: string
+  cta?: string
+  /** `YYYY-MM-DD`. Absent means the bank. */
+  on?: string
+  script?: BeatSeed[]
+}
+
+/**
+ * THREE SCRIPTS A WEEK, AGAINST THE EIGHT REELS SHE PUBLISHES
+ *
+ * That is the finding, not a shortfall. Across 376 posts the long opinion video
+ * converted 41× the brand pauta at comparable reach, and the 1–10s bucket — 39%
+ * of all her reach — is the worst converter in the set. The short, spontaneous
+ * half of her week IS the distribution engine; scripting it would break the one
+ * thing that is not broken, and Espelho is the cycle's declared control.
+ *
+ * So the scripts are exactly the mix `perfil/pilares.md` asks for: two Opinião a
+ * week, plus one alternating between Personagens and Vale guardar. Espelho
+ * carries no pauta here on purpose.
+ *
+ * THE DATES ARE FIXED, AND THAT IS DELIBERATE
+ *
+ * They are the days these pautas were written for, not an offset from whenever
+ * the seed happens to run. A date computed from `now` would move every time the
+ * file is re-run — including out from under a pauta she had already planned her
+ * week around. If a batch slips, the "Passou da data" group is doing its job:
+ * it asks for a decision, record late or drop, instead of quietly re-dating.
+ *
+ * THE VOICE
+ *
+ * Measured across 45 real captions in `perfil/voz-e-tom.md`: lowercase
+ * throughout, two to five words, never explains the video. The blacklist there
+ * is honoured — no "não é sobre X, é sobre Y", no stacked CTA, no release
+ * adjective. Every hook here is a sentence she could say out loud without
+ * reading it.
+ */
+const IDEAS: IdeaSeed[] = [
+  {
+    pillar: 'opiniao',
+    title: 'Os perfumes que acabam e os que encalham na estante',
+    hook: 'eu tenho perfume de quatrocentos reais parado há dois anos e um de farmácia que eu recompro todo mês',
+    seconds: 100,
+    on: '2026-08-18',
+    why: '"Meus top 5 perfumes favoritos" (21/05, 99s) alcançou 305 mil e trouxe 3.131 seguidores — 41× a série sobre a coleção, com quase a mesma duração. É o formato que mais fez estranho te seguir em 376 posts. Isto aqui repete o formato, não o vídeo: o mesmo assunto pelo avesso, que é o que dá uma segunda entrada sem repetir a primeira.',
+    caption: 'acabam ou encalham',
+    cta: 'me conta qual encalhou aí',
+    script: [
+      {
+        time: '0–5s',
+        says: 'eu tenho perfume de quatrocentos reais parado há dois anos e um de farmácia que eu recompro todo mês',
+        shows: 'você já com os dois na mão, sem apresentação e sem "oi gente"',
+        note: 'Abre pela contradição. O que não pode é começar dizendo do que o vídeo vai ser — foi assim o de 1:37 da coleção, que reteve 8%.'
+      },
+      {
+        time: '5–25s',
+        says: 'o barato primeiro. por que ele acaba, em que hora do dia você usa, e o que ele resolve que o caro não resolve.',
+        shows: 'o frasco, o preço aparecendo na tela em texto'
+      },
+      {
+        time: '25–55s',
+        says: 'agora os que encalharam. dois ou três, com o motivo honesto de cada um — enjoou, é pesado demais pro calor, comprou por causa de outra pessoa.',
+        shows: 'os frascos na estante, na ordem em que você fala',
+        note: 'Esta é a parte que ninguém posta. É onde a pessoa decide te seguir, porque é onde você está dizendo uma coisa que uma publi não diria.'
+      },
+      {
+        time: '55–85s',
+        says: 'os que ficam. cinco no máximo, cada um com a ocasião — trabalho, sair à noite, o que você usa quando não quer pensar.',
+        shows: 'um por vez, nome legível na tela'
+      },
+      {
+        time: 'até o fim',
+        says: 'me conta qual encalhou aí.',
+        note: 'Uma pergunta só, curta, do seu jeito. Nada de "salva, comenta e compartilha" — pedido empilhado derruba os três.'
+      }
+    ]
+  },
+  {
+    pillar: 'opiniao',
+    title: 'O que usar em casamento de dia sem parecer que você tentou demais',
+    hook: 'casamento de dia é a única ocasião em que dá pra errar estando toda certa',
+    seconds: 110,
+    on: '2026-08-20',
+    why: 'Você mesma escreveu, em 13/08, o que mais chega no seu direct: "o que usar pra certa ocasião de uso". A pauta não é uma aposta minha — é a pergunta que já está lá todo dia, no formato que os números mostram converter.',
+    caption: 'casamento de dia',
+    cta: 'manda pra quem vai casar',
+    script: [
+      {
+        time: '0–5s',
+        says: 'casamento de dia é a única ocasião em que dá pra errar estando toda certa',
+        shows: 'você de frente, sem cenário montado'
+      },
+      {
+        time: '5–30s',
+        says: 'os três erros que você vê em toda festa de dia — e por que cada um acontece. sem citar ninguém.',
+        shows: 'se tiver foto sua de alguma, usa; se não, só você falando'
+      },
+      {
+        time: '30–75s',
+        says: 'o que funciona: comprimento, tecido, sapato e a única peça que resolve quando esfria à noite. quatro decisões, não quatro looks.',
+        shows: 'as peças, uma por vez, com o nome na tela',
+        note: 'Nomeie o tecido. "esse body é em malha pesada" foi o Story com mais cliques do mês — o que puxa ação é o detalhe nomeado, não o adjetivo.'
+      },
+      {
+        time: '75–105s',
+        says: 'o que você usaria, de verdade, se fosse amanhã.',
+        shows: 'um look só, o seu'
+      },
+      {
+        time: 'até o fim',
+        says: 'manda pra quem vai casar.',
+        note: 'Compartilhamento em DM é o segundo sinal mais forte de distribuição, e "manda pra alguém" é o pedido que ele responde.'
+      }
+    ]
+  },
+  {
+    pillar: 'personagens',
+    title: 'Trabalhar com a sua própria família — episódio 1',
+    hook: 'a minha chefe é a minha mãe, e ninguém me avisou o que isso ia dar',
+    seconds: 90,
+    on: '2026-08-23',
+    why: 'Suas palavras em 13/08: "sucessão familiar é um tópico que sempre traz bastante conversa, e o vídeo que fiz falando disso deu bastante engajamento". Vira quadro com nome e dia fixo porque série sem regularidade é evento, e evento não cria gente que volta. Domingo às 18h é o seu pico medido.',
+    caption: 'quem manda na empresa',
+    cta: 'quem mais trabalha com a família?',
+    script: [
+      {
+        time: '0–5s',
+        says: 'a minha chefe é a minha mãe, e ninguém me avisou o que isso ia dar',
+        shows: 'você sozinha, câmera na mão'
+      },
+      {
+        time: '5–35s',
+        says: 'uma situação concreta desta semana. não a teoria da sucessão — a discussão real, com o assunto real.',
+        note: 'Concreto sempre. "é difícil trabalhar em família" é uma frase que qualquer pessoa poderia dizer; a discussão de terça é sua.'
+      },
+      {
+        time: '35–70s',
+        says: 'o que você aprendeu a fazer diferente. uma coisa só, específica.',
+        shows: 'se der, a loja ou o escritório ao fundo'
+      },
+      {
+        time: '70–90s',
+        says: 'o gancho do próximo: diz o assunto do episódio dois e o dia.',
+        note: 'É isto que transforma um vídeo em quadro. Sem a promessa datada, o episódio dois começa do zero.'
+      }
+    ]
+  },
+  {
+    pillar: 'opiniao',
+    title: 'A base de duzentos reais contra a de trinta e nove',
+    hook: 'eu usei as duas na mesma cara, no mesmo dia, e uma delas eu não repito',
+    seconds: 100,
+    on: '2026-08-25',
+    why: 'Make é o primeiro assunto da lista que você mesma deu do que chega no direct, e comparação lado a lado é o formato que dá opinião sem parecer publi. Nas respostas de Stories de 13/08 apareceu "Essa base é perfeitaaaa" e "Tenho um gelzinho da ruby rose topíssimo" — a audiência já está falando de produto barato com você.',
+    caption: 'vale os 200?',
+    cta: 'qual base te salvou?',
+    script: [
+      {
+        time: '0–6s',
+        says: 'eu usei as duas na mesma cara, no mesmo dia, e uma delas eu não repito',
+        shows: 'as duas embalagens, sem dizer ainda qual é qual'
+      },
+      {
+        time: '6–35s',
+        says: 'a barata primeiro: cobertura, quanto dura, e a hora do dia em que ela te abandona.',
+        shows: 'aplicação real, sem corte de mágica'
+      },
+      {
+        time: '35–70s',
+        says: 'a cara: o que ela faz que a outra não faz. e se isso vale a diferença de preço pra você.',
+        shows: 'mesma luz, mesmo ângulo — se a luz mudar, a comparação não vale'
+      },
+      {
+        time: '70–95s',
+        says: 'o veredito, sem meio-termo. qual fica na necessaire.',
+        note: 'Escolha uma. "as duas são ótimas pra ocasiões diferentes" é a resposta que não faz ninguém te seguir.'
+      },
+      {
+        time: 'até o fim',
+        says: 'qual base te salvou?'
+      }
+    ]
+  },
+  {
+    pillar: 'guardar',
+    title: 'As quatro peças que sustentam qualquer look seu',
+    hook: 'eu tenho o armário cheio e uso as mesmas quatro coisas há dois anos',
+    seconds: 75,
+    on: '2026-08-27',
+    why: 'Salvamento é o sinal do perfil abaixo da referência do nicho — 0,23% contra 1,40% — e é guard-rail deste ciclo, não pode cair. Você já começou sozinha: "produtos baratos que valem a pena" (05/08) é exatamente este pilar. E das respostas de Stories veio literalmente "Deixa salvo nos destaques, divaaa".',
+    caption: 'as mesmas quatro',
+    cta: 'salva pra montar depois',
+    script: [
+      {
+        time: '0–5s',
+        says: 'eu tenho o armário cheio e uso as mesmas quatro coisas há dois anos',
+        shows: 'o armário aberto atrás de você'
+      },
+      {
+        time: '5–55s',
+        says: 'uma peça por vez: o que é, o tecido, e as duas ocasiões em que ela funciona. quatro peças, quinze segundos cada.',
+        shows: 'a peça na mão e no corpo — as duas coisas, ou não dá pra imaginar',
+        note: 'Nomeie o tecido e o corte. É o que faz a pessoa salvar em vez de só assistir: ela salva o que pretende usar depois.'
+      },
+      {
+        time: '55–75s',
+        says: 'salva pra montar depois.',
+        note: 'Este é o único pilar em que pedir salvamento cabe, porque é o que o vídeo entrega. Nos outros soa como cobrança.'
+      }
+    ]
+  },
+  {
+    pillar: 'personagens',
+    title: 'Trabalhar com a sua própria família — episódio 2',
+    hook: 'a pergunta que mais veio no episódio um foi essa, e ela é desconfortável',
+    seconds: 90,
+    on: '2026-08-30',
+    why: 'Segundo episódio no mesmo dia e no mesmo horário — é a regularidade que cria gente que volta, e quem volta segue. A pauta sai dos comentários do primeiro, o que fecha o ciclo: quem comentou vê que foi lido.',
+    caption: 'a pergunta desconfortável',
+    cta: 'a do próximo domingo vocês escolhem',
+    script: [
+      {
+        time: '0–6s',
+        says: 'a pergunta que mais veio no episódio um foi essa, e ela é desconfortável',
+        shows: 'o print do comentário na tela, sem o @ da pessoa'
+      },
+      {
+        time: '6–60s',
+        says: 'a resposta honesta. inclusive a parte que não é bonita.',
+        note: 'Se a resposta for confortável, a pergunta era outra. O episódio um funcionou pelo que ele admitiu.'
+      },
+      {
+        time: '60–90s',
+        says: 'o que vem no próximo domingo, e o convite pra escolherem o assunto.',
+        shows: 'você olhando pra câmera'
+      }
+    ]
+  },
+
+  /* ------------------------------------------------------------ the bank
+   *
+   * Deliberately without scripts. A pauta gets its blocks when it gets a date —
+   * writing nine full scripts up front would mean writing six of them before
+   * she has told me what she thought of the first three, which is exactly the
+   * loop `idea_note` exists to create. The screen says "pauta sem roteiro
+   * ainda" rather than pretending these are ready to film.
+   */
+  {
+    pillar: 'opiniao',
+    title: 'A tendência que eu não vou seguir',
+    hook: 'todo mundo comprou e eu vou dizer por que eu não vou',
+    seconds: 90,
+    why: 'Tema que divide é o que mais rende comentário sem depender de alcance, e opinião contrária é a versão mais barata disso — você não precisa de produção, precisa de posição. Vira roteiro assim que você me disser qual é a tendência.',
+    caption: 'passo dessa'
+  },
+  {
+    pillar: 'opiniao',
+    title: 'O que eu compraria de novo e o que eu não compraria',
+    hook: 'fiz a conta do que eu gastei em roupa esse ano e me arrependi de umas quatro coisas',
+    seconds: 110,
+    why: 'Arrependimento nomeado é a coisa mais rara num perfil de moda, e é o que separa opinião de vitrine. Mesmo motor do vídeo dos perfumes: você dizendo o que não deu certo.',
+    caption: 'os quatro arrependimentos'
+  },
+  {
+    pillar: 'guardar',
+    title: 'Como eu decido o que sai do armário',
+    hook: 'eu tiro roupa do armário por uma regra só, e ela não é "faz um ano que não uso"',
+    seconds: 80,
+    why: 'Utilidade com método é o que se salva. Você já provou o pilar com "produtos baratos que valem a pena"; isto é a versão sem produto, que funciona em qualquer semana.',
+    caption: 'a regra do armário'
+  },
+  {
+    pillar: 'opiniao',
+    title: 'Make pra trabalhar de câmera ligada',
+    hook: 'reunião por vídeo achata tudo, e a make que fica boa ao vivo some na tela',
+    seconds: 95,
+    why: '68% do seu público tem entre 25 e 44 anos e 88,7% são mulheres — é gente em idade de renda própria, com reunião na agenda. Ocasião de uso concreta, que é o que você disse que mais te pedem.',
+    caption: 'a cara da reunião'
+  },
+  {
+    pillar: 'personagens',
+    title: 'O mozão responde',
+    hook: 'eu deixei ele responder vocês sem eu ver as perguntas antes',
+    seconds: 70,
+    why: 'Quadro nomeado com um personagem que a audiência já conhece. Recorrência é o que faz a mesma pessoa voltar — e quem volta é quem segue.',
+    caption: 'ele responde'
   }
 ]
 
@@ -1256,12 +1593,18 @@ async function main (): Promise<void> {
         copyValue: s.copyValue ?? null,
         copyLabel: s.copyLabel ?? null,
         copyNote: s.copyNote ?? null,
+        verifyKey: s.verifyKey ?? null,
         position: i + 1,
         createdAt: now,
         updatedAt: now
       }).onDuplicateKeyUpdate({
         /* Everything this file authors. `step_status` is hers and lives in its
-           own table, so nothing she answered is at risk here. */
+           own table, so nothing she answered is at risk here.
+
+           `requestId` is deliberately NOT here: it is written by the linking
+           pass at the end, after the requests exist, and listing it in this
+           `set` would blank it on every re-seed — the exact silent failure the
+           README's note about `onDuplicateKeyUpdate` is about. */
         set: {
           title: s.title,
           summary: s.summary,
@@ -1272,6 +1615,7 @@ async function main (): Promise<void> {
           copyValue: s.copyValue ?? null,
           copyLabel: s.copyLabel ?? null,
           copyNote: s.copyNote ?? null,
+          verifyKey: s.verifyKey ?? null,
           position: i + 1,
           updatedAt: now
         }
@@ -1450,7 +1794,11 @@ async function main (): Promise<void> {
       evidenceValue: '8',
       evidenceLabel: 'vídeos em que eu deduzi esse número — este pedido transforma dedução em medida',
       copyValue: 'Ver insights → Público → quantos já te seguiam',
-      copyLabel: 'o caminho, dentro do Reel'
+      copyLabel: 'o caminho, dentro do Reel',
+      /* The same job as the request of the same name. Without this link she
+         sends the prints in Pedidos and Plano goes on asking — which is the
+         complaint that opened this whole change. */
+      requestTitle: 'A aba Público de cinco Reels'
     },
     {
       code: 'c2', urgency: 'this_week', deadlineLabel: 'esta semana',
@@ -1521,6 +1869,76 @@ async function main (): Promise<void> {
   await seedPillars(newCycleId, NEW_PILLARS)
   await seedPillars(thirdCycleId, THIRD_PILLARS)
 
+  // --------------------------------------------------------------- pautas
+  /*
+   * Keyed by title through `uq_idea_client_title`, so editing a script here and
+   * re-running updates it in place.
+   *
+   * `state` and `published_code` are NOT in the `set`. They are hers: a pauta
+   * she marked "gravei" must not go back to "proposta" because I fixed a typo
+   * in the hook. This is the same rule that keeps `step_status` in its own
+   * table, applied to a column that could not be moved out of this one — there
+   * is no per-person version of "this video is out".
+   *
+   * The beats ARE fully re-authored: they are entirely mine, nobody edits them
+   * in the app, and updating nine rows in place would need a stable key per
+   * beat that the script's own shape does not have. What SHE wrote lives in
+   * `idea_note`, which nothing here touches.
+   */
+  let pautasGravadas = 0
+  for (const [i, p] of IDEAS.entries()) {
+    await o.insert(idea).values({
+      publicCode: ulid(),
+      clientId,
+      cycleId: thirdCycleId,
+      pillarKey: p.pillar,
+      title: p.title,
+      hook: p.hook,
+      format: p.format ?? 'reel',
+      targetSeconds: p.seconds ?? null,
+      why: p.why,
+      caption: p.caption ?? null,
+      cta: p.cta ?? null,
+      scheduledFor: p.on ?? null,
+      state: p.on === undefined ? 'proposed' : 'scheduled',
+      position: i + 1,
+      createdAt: now,
+      updatedAt: now
+    }).onDuplicateKeyUpdate({
+      set: {
+        cycleId: thirdCycleId,
+        pillarKey: p.pillar,
+        hook: p.hook,
+        format: p.format ?? 'reel',
+        targetSeconds: p.seconds ?? null,
+        why: p.why,
+        caption: p.caption ?? null,
+        cta: p.cta ?? null,
+        scheduledFor: p.on ?? null,
+        position: i + 1,
+        updatedAt: now
+      }
+    })
+
+    const [row] = await o.select({ id: idea.id }).from(idea)
+      .where(and(eq(idea.clientId, clientId), eq(idea.title, p.title))).limit(1)
+    const ideaId = row?.id
+    if (ideaId === undefined) throw new Error(`Idea was not created: ${p.title}`)
+
+    await o.delete(ideaBeat).where(eq(ideaBeat.ideaId, ideaId))
+    for (const [j, b] of (p.script ?? []).entries()) {
+      await o.insert(ideaBeat).values({
+        ideaId,
+        position: j + 1,
+        timeLabel: b.time ?? null,
+        says: b.says,
+        shows: b.shows ?? null,
+        note: b.note ?? null
+      })
+    }
+    pautasGravadas += 1
+  }
+
   // -------------------------------------------------------------- requests
   /*
    * Keyed by title (with known legacy titles), not by "table is empty": the
@@ -1570,6 +1988,42 @@ async function main (): Promise<void> {
         position: r.position,
         updatedAt: now
       }).where(eq(request.id, existing.id))
+    }
+  }
+
+  /* ------------------------------------------------- steps ↔ requests
+   *
+   * Run here, after both exist, because the two are seeded in an order this
+   * file chose for other reasons and nothing should make that order matter.
+   *
+   * Only the pairs the author declared. A pass that matched on similar titles
+   * would guess at a relationship the person who wrote both already knows, and
+   * a wrong guess here silently marks a chore as done.
+   */
+  const LINK_STEPS: Array<{ deliveryId: number; steps: StepSeed[] }> = [
+    { deliveryId: oldDeliveryId, steps: OLD_STEPS },
+    { deliveryId: newDeliveryId, steps: NEW_STEPS },
+    { deliveryId: thirdDeliveryId, steps: THIRD_STEPS }
+  ]
+
+  let ligados = 0
+  for (const { deliveryId, steps } of LINK_STEPS) {
+    for (const s of steps) {
+      if (s.requestTitle === undefined) continue
+
+      const alvo = await requestByTitle([s.requestTitle])
+      if (alvo === undefined) {
+        /* Loud, because the failure mode is silence: a typo in the title leaves
+           the step unlinked, the plan goes on asking for something already
+           answered, and every screen looks perfectly fine. */
+        console.warn(`  ! step ${s.code}: no request titled "${s.requestTitle}"`)
+        continue
+      }
+
+      await o.update(step)
+        .set({ requestId: alvo.id, updatedAt: now })
+        .where(and(eq(step.deliveryId, deliveryId), eq(step.code, s.code)))
+      ligados += 1
     }
   }
 
@@ -1631,6 +2085,12 @@ async function main (): Promise<void> {
     `${THIRD_PILLARS.length} active`
   )
   console.log(`  Requests: ${MEASURE_REQUESTS.length} measurement + ${QUESTION_REQUESTS.length} questions + ${RETAINED_REQUESTS.length} retained, 1 retired if untouched`)
+  console.log(
+    `  Pautas: ${pautasGravadas} (${IDEAS.filter(p => p.on !== undefined).length} agendadas, ` +
+    `${IDEAS.filter(p => p.on === undefined).length} no banco), ` +
+    `${IDEAS.reduce((n, p) => n + (p.script?.length ?? 0), 0)} blocos de roteiro`
+  )
+  console.log(`  Steps linked to a request: ${ligados}`)
 }
 
 main()

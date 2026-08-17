@@ -101,7 +101,9 @@ Myfavorite/
 │   ├── README.md              # ler antes de mexer — schema, marca, contraste
 │   ├── db/                    # schema Drizzle, migrações e seed
 │   ├── lib/dashboard.ts       # tudo que as telas leem
-│   ├── app/(app)/             # painel, plano, pedidos, conteúdo, conta
+│   ├── lib/pautas.ts          # as ideias e os roteiros
+│   ├── lib/verificacao.ts     # o que já está feito — e por que não pergunta de novo
+│   ├── app/(app)/             # painel, plano, análise, pedidos, ideias, conteúdo, conta
 │   └── test/                  # Vitest, nomeados `should ...`
 └── dados/
     ├── metricas/              # seus CSVs reais (fora do git)
@@ -126,6 +128,7 @@ Myfavorite/
 | Trade-off do ciclo | `perfil/pilares.md` | `cycle.trade_off`, via seed |
 | Metas e alvos | `perfil/metas.md` | `metric_target`, via seed |
 | Link com etiqueta | `perfil/perfil.md` | `step.copy_value`, via seed |
+| Pautas e roteiros | `perfil/pilares.md` (o mix) | `idea` + `idea_beat`, via seed |
 
 **Mudou em `perfil/`? Mude no seed e rode `npm run db:seed`.** Só o markdown
 muda nada para ela — e o inverso é pior: o banco passa a discordar do arquivo
@@ -269,4 +272,6 @@ OpenSpec: `/opsx:explore`, `/opsx:propose`, `/opsx:apply`, `/opsx:archive`, `/op
 - **Gerar calendário genérico.** Um calendário que serviria para qualquer conta de marketing não serve para esta. Ancore em `perfil/pilares.md` e `perfil/icp.md`.
 - **Confundir engajamento com engajamento útil.** Comentário "🔥" não é comunidade. Meça respostas com substância, DMs iniciadas e retorno da mesma pessoa.
 - **Elogiar formato pelo alcance.** Um Reel de 8 segundos com 2 milhões de views pode ter trazido 40 seguidores. Alcance e conversão são perguntas diferentes, e neste ciclo manda a segunda.
+- **Roteirizar o que funciona por ser espontâneo.** Ela publica ~8 Reels por semana; o roteiro existe para **3**, os de opinião. Espelho é o controle declarado do ciclo e o motor de distribuição — escrever bloco a bloco o vídeo de 9 segundos que faz 2,3M de views é quebrar a única coisa que não está quebrada.
+- **Pedir de novo o que a plataforma já viu acontecer.** Antes de escrever uma etapa nova, pergunte se existe um fato que a prova: um pedido que ela responde, uma conexão que ela faz. Se existir, amarre com `step.request_id` ou `step.verify_key` em vez de contar com ela marcando uma caixinha.
 - **Propor pauta cujo sujeito é a marca.** Sai do perfil pessoal enquanto seguidores forem o norte: 179 mil pessoas alcançadas por 45 seguidores não paga o espaço. Encaminhe para a equipe da My Favorite.

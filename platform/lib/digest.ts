@@ -7,7 +7,16 @@ import {
 } from '@/db/schema'
 import { shortDate } from './format.ts'
 import { staleRequests } from './dashboard.ts'
+import { ideaNotesSince, ideasMovedSince, ideasPublishedSince } from './pautas.ts'
 import { DIAS_ATE_COBRAR, hasOutcome } from './pedido.ts'
+
+/** What each pauta state means to whoever reads about it, in one word. */
+const ESTADO_PAUTA: Record<string, string> = {
+  scheduled: 'entrou na fila',
+  recorded: 'gravou',
+  published: 'publicou',
+  dropped: 'descartou'
+}
 
 /**
  * What a client did in a window, for the daily summary.
@@ -102,6 +111,17 @@ export interface Digest {
   askedForAccess: DigestItem[]
   /** Requests she opened. Until now nothing here ever looked at the request table. */
   raisedByHer: DigestItem[]
+  /**
+   * What they wrote on a pauta.
+   *
+   * The loop the scripts depend on. A batch of roteiros that arrives and is
+   * never argued with is a batch that gets ignored by week three — so "ficou
+   * longo demais" reaching him the day it is written is the difference between
+   * this feature working and this feature being a calendar.
+   */
+  ideaTalk: DigestItem[]
+  /** A pauta that was recorded, published or refused. */
+  ideaMoved: DigestItem[]
   /**
    * Material she sent that he never opened.
    *
@@ -269,6 +289,32 @@ export async function digestFor (
     who: c.name
   }))
 
+  // ------------------------------------------------------------- pautas
+  const [falas, movidas] = await Promise.all([
+    ideaNotesSince(clientId, since, until, 'client'),
+    ideasMovedSince(clientId, since, until)
+  ])
+
+  const ideaTalk: DigestItem[] = falas.map(f => ({
+    title: f.title,
+    detail: abertura(f.body),
+    at: f.at,
+    who: f.who,
+    key: `idea-fala-${f.code}`
+  }))
+
+  const ideaMoved: DigestItem[] = movidas.map(m => ({
+    title: m.title,
+    detail: ESTADO_PAUTA[m.state] ?? m.state,
+    at: m.at,
+    /* The client, not a person: `idea.state` is one column for the whole team
+       and the row does not record which of them last touched it. The audit log
+       does — and putting a name here that the query cannot prove would be worse
+       than naming the account. */
+    who: c.name,
+    key: `idea-estado-${m.code}`
+  }))
+
   // ------------------------------------------------------------- stale
   const stale = await staleRequests(clientId, new Date(
     until.getTime() - DIAS_ATE_COBRAR * 24 * 60 * 60 * 1000
@@ -294,7 +340,8 @@ export async function digestFor (
 
   const total = blocked.length + done.length + arquivos.length +
     comments.length + delivered.length + askedForAccess.length +
-    raisedByHer.length + paradas.length + connection.length
+    raisedByHer.length + paradas.length + connection.length +
+    ideaTalk.length + ideaMoved.length
 
   return {
     clientId: c.id,
@@ -303,6 +350,8 @@ export async function digestFor (
     until,
     blocked,
     done,
+    ideaTalk,
+    ideaMoved,
     /* Files are the one group that reliably repeats: one upload session is many
        events on the same request. Comments are NOT condensed — each one carries
        different words, and merging them would throw away what she wrote. */
@@ -345,6 +394,14 @@ export interface ClientDigest {
   published: DigestItem[]
   /** He answered something she was waiting on. */
   answered: DigestItem[]
+  /**
+   * New pautas and what he wrote back on the ones they were talking about.
+   *
+   * Its own group and not folded into `published`: a delivery is read once, a
+   * pauta is worked from, and the link at the bottom of a group has to lead to
+   * the screen where its items are resolved.
+   */
+  ideas: DigestItem[]
   total: number
 }
 
@@ -466,12 +523,36 @@ export async function clientDigestFor (
     }
   }
 
+  // --------------------------------------------------------------- pautas
+  const [novas, resposta] = await Promise.all([
+    ideasPublishedSince(clientId, since, until),
+    ideaNotesSince(clientId, since, until, 'consultant')
+  ])
+
+  const ideas: DigestItem[] = [
+    ...novas.map(p => ({
+      title: p.title,
+      detail: 'Roteiro novo, com gancho e blocos.',
+      at: p.at,
+      who: 'Rodrigo'
+    })),
+    ...resposta.map(n => ({
+      title: n.title,
+      detail: abertura(n.body),
+      at: n.at,
+      who: n.who,
+      key: `idea-${n.code}`
+    }))
+  ]
+
   return {
     connection,
     requests,
     published,
     answered,
-    total: connection.length + requests.length + published.length + answered.length
+    ideas,
+    total: connection.length + requests.length + published.length +
+      answered.length + ideas.length
   }
 }
 
