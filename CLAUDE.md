@@ -40,7 +40,8 @@ Escreva em **português do Brasil**, direto, sem jargão vazio ("engajar a audi�
 | Nicho | **Moda / Lifestyle** — sempre rode o motor com `--nicho lifestyle` |
 | Objetivo — próximos 90 dias | **Fazer quem ainda não a segue virar seguidor** — 1M até dezembro, alvo declarado por ela |
 | Métrica-norte | Seguidores líquidos por mês (20.824 → 62.200) |
-| Fonte de dados | **API oficial desde 14/08/2026** — conta conectada, coleta diária às 03:00. Print mensal só para *visitas ao perfil*, que a API não expõe |
+| Fonte de dados | **API oficial desde 14/08/2026** — conta conectada, coleta 5× por dia. O que a API não dá, ela **digita** num campo de número no pedido; nada mais depende de print |
+| Quem opera | **Duas pessoas**: a Bianca e a **Cris**, assessora que cuida do Instagram pessoal com ela. As telas falam com as duas |
 
 **O que a coleta traz e o que ela não traz.** Por mês, da conta: alcance, views, curtidas, comentários, salvamentos, compartilhamentos, respostas de Stories e seguidores líquidos. Por post, nos últimos 30 dias: alcance, views, salvamentos, compartilhamentos e retenção. **Não traz** — e por isso continua dependendo dela: **visitas ao perfil** (só existe por mídia na API) e a **divisão seguidor / não-seguidor**, que é o denominador honesto da conversão e sustenta o achado dos 41×. Posts anteriores à janela de 30 dias também não têm alcance medido.
 
@@ -274,4 +275,6 @@ OpenSpec: `/opsx:explore`, `/opsx:propose`, `/opsx:apply`, `/opsx:archive`, `/op
 - **Elogiar formato pelo alcance.** Um Reel de 8 segundos com 2 milhões de views pode ter trazido 40 seguidores. Alcance e conversão são perguntas diferentes, e neste ciclo manda a segunda.
 - **Roteirizar o que funciona por ser espontâneo.** Ela publica ~8 Reels por semana; o roteiro existe para **3**, os de opinião. Espelho é o controle declarado do ciclo e o motor de distribuição — escrever bloco a bloco o vídeo de 9 segundos que faz 2,3M de views é quebrar a única coisa que não está quebrada.
 - **Pedir de novo o que a plataforma já viu acontecer.** Antes de escrever uma etapa nova, pergunte se existe um fato que a prova: um pedido que ela responde, uma conexão que ela faz. Se existir, amarre com `step.request_id` ou `step.verify_key` em vez de contar com ela marcando uma caixinha.
+- **Escrever justificativa minha na tela dela.** O porquê de uma decisão cabe no `whyItMatters` de um pedido ou num comentário do código. A tela diz **o que fazer**, e começa pelo que ela **não** precisa mudar — toda entrega nova é lida como substituição até que se diga o contrário. Ver `openspec/changes/equipe-verificacao-pautas-e-numeros/`.
+- **Número sem substantivo, ou somando coisas de prazos diferentes.** "6 na fila" não diz seis o quê e misturava o de hoje com o de daqui a duas semanas. Prosa com ramificação sai do JSX e ganha teste — `manchete()` em `platform/lib/agenda.ts` é o exemplo.
 - **Propor pauta cujo sujeito é a marca.** Sai do perfil pessoal enquanto seguidores forem o norte: 179 mil pessoas alcançadas por 45 seguidores não paga o espaço. Encaminhe para a equipe da My Favorite.
