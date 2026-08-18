@@ -1,0 +1,313 @@
+import { eq } from 'drizzle-orm'
+import { orm } from '../db/client.ts'
+import { db, waitForDatabase } from '../db/connection.ts'
+import { client } from '../db/schema.ts'
+import { createClient, IgAuthError, type IgClient } from '../lib/instagram/client.ts'
+import { tokenFor } from '../lib/instagram/connection.ts'
+
+/**
+ * Asks the API what it is willing to answer, and writes nothing.
+ *
+ * TWO QUESTIONS, AND THEY ARE NOT THE SAME QUESTION
+ *
+ * 1. Does `follows` exist as a PER-MEDIA insight metric? If it does, follower
+ *    conversion stops being typed in and becomes measured across the whole
+ *    archive — `post.non_follower_pct` exists only because nothing measured it.
+ *    `lib/instagram/collect.ts` already records that `profile_visits` exists
+ *    per media and not per account, which is the reason to suspect `follows`
+ *    lives in the same group.
+ *
+ * 2. Does a Reel that is currently in a TRIAL show up on `/{ig-user-id}/media`?
+ *    A trial is served only to non-followers and is not public, so it may not
+ *    be listed at all. This script cannot answer that on its own — it prints
+ *    the window and a human compares it against what she knows is in testing.
+ *    RUN IT WHILE A TRIAL IS ACTIVE or question 2 gets no evidence either way.
+ *
+ * WHY ONE METRIC PER CALL
+ *
+ * The insights endpoint rejects the whole request when any single metric in the
+ * list is invalid. Asking for ten at once and getting an error teaches nothing
+ * about which nine were fine. One call per metric costs ~20 requests and
+ * returns a per-metric verdict.
+ *
+ * `reach` and `views` are in the list as CONTROLS. They are known to work — the
+ * daily sync reads them. If they fail here, the failure is the call, the token
+ * or the media, and no conclusion about `follows` may be drawn from this run.
+ *
+ * Read-only: no INSERT, no UPDATE, nothing touches `post` or `metric_value`.
+ *
+ * Usage:
+ *   npm run probe:media
+ *   npm run probe:media -- --media 17912345678901234   # a specific media id
+ *   npm run probe:media -- --limit 25
+ */
+
+/** Fields the media edge is known to accept — see `lib/instagram/media.ts`. */
+const LIST_FIELDS = [
+  'id', 'media_type', 'media_product_type', 'timestamp', 'permalink',
+  'like_count', 'comments_count'
+].join(',')
+
+/**
+ * What to ask for, one at a time.
+ *
+ * The first two are controls. The rest are the question: `follows` and
+ * `profile_visits` are the two that would end the manual conversion figure,
+ * and the others are here because a run that has already paid for the token
+ * may as well map the whole surface.
+ */
+const CANDIDATE_METRICS = [
+  'reach',
+  'views',
+  'follows',
+  'profile_visits',
+  'profile_activity',
+  'total_interactions',
+  'saved',
+  'shares',
+  'ig_reels_avg_watch_time',
+  'ig_reels_video_view_total_time'
+] as const
+
+interface MediaRow {
+  id: string
+  mediaType: string
+  productType: string
+  timestamp: string
+  permalink: string
+}
+
+interface Verdict {
+  metric: string
+  /** How the API answered: available, refused, or available only with a flag. */
+  state: 'ok' | 'ok_total_value' | 'unavailable'
+  value: number | null
+  detail: string | null
+}
+
+function arg (flag: string): string | undefined {
+  const i = process.argv.indexOf(flag)
+  if (i === -1) return undefined
+  const value = process.argv[i + 1]
+  return value === undefined || value.startsWith('--') ? undefined : value
+}
+
+/** Narrows the media page by hand: the shape belongs to someone else's server. */
+function readMediaList (payload: unknown): MediaRow[] {
+  if (typeof payload !== 'object' || payload === null) return []
+  const data = (payload as Record<string, unknown>).data
+  if (!Array.isArray(data)) return []
+
+  const out: MediaRow[] = []
+  for (const item of data) {
+    if (typeof item !== 'object' || item === null) continue
+    const row = item as Record<string, unknown>
+    if (typeof row.id !== 'string') continue
+
+    out.push({
+      id: row.id,
+      mediaType: typeof row.media_type === 'string' ? row.media_type : '?',
+      productType: typeof row.media_product_type === 'string' ? row.media_product_type : '?',
+      timestamp: typeof row.timestamp === 'string' ? row.timestamp : '?',
+      permalink: typeof row.permalink === 'string' ? row.permalink : '—'
+    })
+  }
+
+  return out
+}
+
+/**
+ * The media to interrogate: the newest Reel, or the newest anything.
+ *
+ * A Reel and not just the first item because `ig_reels_*` metrics are refused
+ * on a photo, and half the list would come back "unavailable" for a reason
+ * that has nothing to do with the question.
+ */
+function pickTarget (rows: MediaRow[]): MediaRow | null {
+  return rows.find(r => r.productType === 'REELS') ?? rows[0] ?? null
+}
+
+/** A single number out of either insight envelope shape, or null. */
+function readValue (payload: unknown): number | null {
+  if (typeof payload !== 'object' || payload === null) return null
+  const data = (payload as Record<string, unknown>).data
+  if (!Array.isArray(data) || data.length === 0) return null
+
+  const first = data[0]
+  if (typeof first !== 'object' || first === null) return null
+  const entry = first as Record<string, unknown>
+
+  const total = entry.total_value
+  if (typeof total === 'object' && total !== null) {
+    const value = (total as Record<string, unknown>).value
+    if (typeof value === 'number') return value
+  }
+
+  const values = entry.values
+  if (Array.isArray(values) && values.length > 0) {
+    const point = values[0]
+    if (typeof point === 'object' && point !== null) {
+      const value = (point as Record<string, unknown>).value
+      if (typeof value === 'number') return value
+    }
+  }
+
+  return null
+}
+
+function reason (error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+/**
+ * Asks for one metric, twice if needed.
+ *
+ * The second attempt adds `metric_type=total_value`, which some metrics require
+ * and others reject. Without it a metric that exists would be reported as
+ * absent — the exact wrong answer, and the one that would kill a feature that
+ * was in fact possible.
+ */
+async function probe (api: IgClient, mediaId: string, metric: string): Promise<Verdict> {
+  try {
+    const payload = await api.get(`${mediaId}/insights`, { metric })
+    return { metric, state: 'ok', value: readValue(payload), detail: null }
+  } catch (plain) {
+    /* An auth failure is not a verdict about the metric — it ends the run. */
+    if (plain instanceof IgAuthError) throw plain
+
+    try {
+      const payload = await api.get(`${mediaId}/insights`, {
+        metric,
+        metric_type: 'total_value'
+      })
+      return { metric, state: 'ok_total_value', value: readValue(payload), detail: null }
+    } catch (withType) {
+      if (withType instanceof IgAuthError) throw withType
+      return { metric, state: 'unavailable', value: null, detail: reason(plain) }
+    }
+  }
+}
+
+const MARK: Record<Verdict['state'], string> = {
+  ok: 'YES',
+  ok_total_value: 'YES (needs metric_type=total_value)',
+  unavailable: 'no '
+}
+
+async function main (): Promise<void> {
+  const slug = process.env.TENANT_SLUG?.trim()
+  if (slug === undefined || slug === '') {
+    console.error('\nTENANT_SLUG is not set. See .env.exemplo.\n')
+    process.exitCode = 1
+    return
+  }
+
+  const limit = Number(arg('--limit') ?? '25')
+  if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
+    console.error('\n--limit must be an integer between 1 and 50.\n')
+    process.exitCode = 1
+    return
+  }
+
+  await waitForDatabase()
+
+  const rows = await orm()
+    .select({ id: client.id, name: client.name })
+    .from(client)
+    .where(eq(client.slug, slug))
+    .limit(1)
+
+  const found = rows[0]
+  if (found === undefined) {
+    console.error(`\nNo client with slug "${slug}".\n`)
+    process.exitCode = 1
+    return
+  }
+
+  const stored = await tokenFor(found.id)
+  if (stored === null) {
+    console.error(`\n${found.name}: no usable Instagram credential. Nothing to probe.\n`)
+    process.exitCode = 1
+    return
+  }
+
+  const api = createClient(stored.token)
+
+  console.log(`\n${found.name} — probing media insights\n`)
+
+  const page = await api.get(`${stored.igUserId}/media`, {
+    fields: LIST_FIELDS,
+    limit: String(limit)
+  })
+  const media = readMediaList(page)
+
+  console.log(`QUESTION 2 — what /media lists right now (${media.length} item(s)):\n`)
+  if (media.length === 0) console.log('  (nothing)')
+  for (const row of media) {
+    console.log(`  ${row.timestamp}  ${row.productType.padEnd(7)} ${row.mediaType.padEnd(15)} ${row.permalink}`)
+  }
+  console.log(
+    '\n  Compare this list against what she knows is in TRIAL right now.\n' +
+    '  A trial that is running and absent here means the API cannot see it.\n' +
+    '  If nothing is in trial today, this list proves nothing either way.\n'
+  )
+
+  const target = arg('--media') === undefined
+    ? pickTarget(media)
+    : { id: arg('--media') as string, mediaType: '?', productType: '?', timestamp: '?', permalink: '—' }
+
+  if (target === null) {
+    console.error('No media to probe. Stopping.\n')
+    process.exitCode = 1
+    return
+  }
+
+  console.log(`QUESTION 1 — per-media metrics on ${target.id} (${target.productType}, ${target.timestamp}):\n`)
+
+  const verdicts: Verdict[] = []
+  for (const metric of CANDIDATE_METRICS) {
+    const verdict = await probe(api, target.id, metric)
+    verdicts.push(verdict)
+
+    const value = verdict.value === null ? '' : `  = ${verdict.value}`
+    console.log(`  ${MARK[verdict.state].padEnd(34)} ${metric}${value}`)
+    if (verdict.detail !== null) console.log(`     ${verdict.detail}`)
+  }
+
+  const controls = verdicts.filter(v => v.metric === 'reach' || v.metric === 'views')
+  const controlsOk = controls.every(v => v.state !== 'unavailable')
+  const follows = verdicts.find(v => v.metric === 'follows')
+
+  console.log('')
+  if (!controlsOk) {
+    console.log(
+      '  CONTROLS FAILED. `reach`/`views` are read by the daily sync, so their\n' +
+      '  failure here means the call, the token or this media is the problem —\n' +
+      '  draw no conclusion about `follows` from this run.\n'
+    )
+  } else if (follows !== undefined && follows.state !== 'unavailable') {
+    console.log(
+      '  `follows` IS available per media. Follower conversion can be measured\n' +
+      '  across the archive instead of typed in — see post.non_follower_pct.\n'
+    )
+  } else {
+    console.log(
+      '  `follows` is NOT available per media. Conversion keeps depending on a\n' +
+      '  number she types.\n'
+    )
+  }
+
+  console.log(`  ${api.calls} API call(s). Nothing was written.\n`)
+}
+
+main()
+  .catch((error: unknown) => {
+    if (error instanceof IgAuthError) {
+      console.error(`\nThe credential is no longer valid: ${error.message}`)
+      console.error('She has to reconnect from Conta.\n')
+    } else {
+      console.error(`\nFailed: ${reason(error)}\n`)
+    }
+    process.exitCode = 1
+  })
+  .finally(() => { void db().end() })
