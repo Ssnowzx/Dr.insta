@@ -32,7 +32,7 @@ dela, nunca como pauta obrigatória.
 | **Espelho** | 45% | Motor de distribuição: alcança quem ainda não segue. Controle — não se mexe | sends/reach (piso) |
 | **Opinião** | 30% | O único formato medido que faz estranho decidir seguir. Centro do ciclo | **follows/reach** |
 | **Vale guardar** | 15% | Utilidade que se salva; quem salva volta. Guard-rail, não alvo | saves/reach (piso) |
-| **Personagens** | 10% | Quadro nomeado, mesmo dia da semana: dá motivo para voltar, e quem volta segue | follows/reach + retorno |
+| **Personagens** | 10% | "kinda chic", domingo fixo: dá motivo para voltar, e quem volta segue | follows/reach + retorno |
 
 Ajuste os percentuais depois de 30 dias com dados reais — não antes.
 
@@ -80,17 +80,23 @@ Ajuste os percentuais depois de 30 dias com dados reais — não antes.
 
 ### Pilar 4 — Personagens (10%)
 
-- **O que mostra:** as pessoas em volta dela em **quadro nomeado e recorrente, mesmo dia
-  da semana** — a família e a sucessão na empresa ("a minha chefe é a minha mãe"), o
-  mozão respondendo. Os personagens que a audiência já conhece (José, Pipo, Velma,
-  "renata dramática") seguem sendo material da voz dela nos Stories e no Espelho.
-- **Formatos:** Reel em série com nome fixo, domingo 18h — o pico medido dela; caixinha
-  ritual em Stories no mesmo horário.
-- **De onde vem:** palavras dela em 13/08: "sucessão familiar é um tópico que sempre traz
-  bastante conversa, e o vídeo que fiz falando disso deu bastante engajamento". E a dor
-  nº 3 do público é literalmente "quero acompanhar o teu dia".
-- **Cuidado:** série sem regularidade é evento, e evento não cria retorno. Melhor um
-  quadro por semana que sempre sai do que três que às vezes saem.
+> **Reescrito em 18/08/2026.** O quadro era "Trabalhar com a sua própria família",
+> inferido de uma fala dela. Passou a ser **"kinda chic"**, que ela mesma inventou e
+> que tem número medido por dentro do Instagram. Os roteiros da família continuam
+> escritos, no banco, sem data.
+
+- **O que mostra:** o quadro **"kinda chic"** — frases de posição dela sobre fotos e
+  vídeos dela, uma por slide, sem produto e sem marca: "acho chic dizer não sem
+  escrever textão", "acho chique priorizar sua paz". Nome fixo, todo domingo.
+- **Formatos:** carrossel de 7 a 9 slides, misto de foto e vídeo curto. A partir da
+  segunda edição as frases saem dos comentários da anterior.
+- **De onde vem — e este é o único pilar com conversão medida, não deduzida:** a
+  edição de 10/08 alcançou **459.039 e trouxe 212 seguidores** (0,046%), contra uma
+  mediana de **8 seguidores** nos outros seis posts de feed do mês (0,013%). Foi
+  também o mais compartilhado (3.074) e o mais salvo (2.731) da janela. Medido em
+  18/08/2026 via `follows` por mídia, que a API entrega no feed e recusa em Reel.
+- **Cuidado:** série sem regularidade é evento, e evento não cria retorno. E a frase
+  tem que ser dela — "acho chic" escrito por outra pessoa morre no slide.
 
 ## O que sai
 
@@ -177,6 +183,10 @@ A forma da semana: **Personagens é fixo no domingo** — quadro nomeado vive de
 regularidade, e quadro que alterna quinzena é evento, não quadro. As outras duas
 vagas é que alternam: **2 de Opinião numa semana, Opinião + Vale guardar na
 outra**. Espelho não recebe pauta escrita, de propósito.
+
+O domingo é do **"kinda chic"** desde 18/08/2026 — trocou de mãos porque ele tem
+conversão medida (212 seguidores em 459 mil) e a pauta da família não tinha. O
+número de roteiros por semana não mudou: continua 3.
 
 Cada roteiro carrega gancho escrito por extenso (nunca descrito), blocos com
 tempo, o que ela **fala** separado do que aparece **na tela** — são instruções

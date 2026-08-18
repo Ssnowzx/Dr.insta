@@ -71,6 +71,7 @@ alto e otimizá-los seria resolver problema que a conta não tem.
 | **Seguidores líquidos/mês** ★ | **20.824** | **62.200** | Insights > Público | mensal |
 | Seguidores ÷ alcance | 0,060% | ≥ 0,20% | Seguimentos ÷ Alcance, por post | por post |
 | Visitas ao perfil ÷ alcance | 6,42% | ≥ 9% | Insights > Visão geral | mensal |
+| **Seguidores ÷ visitas ao perfil** | **5,99%** | **≥ 9%** | derivado: seguidores do mês ÷ visitas do mês | mensal |
 | Alcance de não-seguidor ÷ alcance | **a medir** | — | Insights por Reel > aba **Público** | por post |
 | Seguidores ÷ alcance de não-seguidor | **a medir** | — | derivado do acima | por post |
 | Comentários/alcance — guard-rail | 0,21% ⚠️ amostra 6 | **não cair** | Insights por post | por post |
@@ -99,6 +100,31 @@ medição. Alvo em cima de indício é ficção, e coletar a aba Público é o p
 > **Visitas ao perfil ela digita no pedido, uma vez por mês.** Não existe como
 > métrica de conta na API — é o único número mensal que continua vindo dela.
 > Desde 17/08/2026 é campo de número na plataforma; até então era print.
+
+> **O segundo degrau do funil, medido em 18/08/2026.** Sondando
+> `GET /{media-id}/insights` uma métrica por vez (`platform/scripts/probe-media-metrics.ts`),
+> ficou estabelecido que a restrição é o par **métrica × superfície**: `follows`,
+> `profile_visits` e `profile_activity` respondem em **FEED** e devolvem 400 em
+> **REELS**; `ig_reels_avg_watch_time` e `ig_reels_video_view_total_time` fazem o
+> inverso. `reach` e `views` responderam nos dois e serviram de controle — é isso
+> que torna o 400 um veredito sobre a métrica e não sobre a chamada.
+>
+> Consequência: **conversão em seguidor passa a ser medida nos posts de feed** e
+> continua digitada no Reel, que é a superfície onde o ciclo roda. Os sete posts de
+> feed da janela de 30 dias deram **257 seguidores em 881.171 de alcance**, e o
+> funil deles é `alcance → 4.386 visitas (0,50%) → 257 seguidores (5,86%)`.
+>
+> **O 5,86% dos posts bate com o 5,99% da conta inteira** (20.824 ÷ 347.482) — duas
+> medições independentes no mesmo mês. É por isso que a linha nova da tabela existe
+> e por isso o alvo dela é o mesmo 9% que o experimento 2 já declarava. Aritmética
+> que ela impõe: a 6%, os 62.200/mês exigem **1,04 milhão de visitas ao perfil**, 3×
+> as de hoje. Ou a taxa sobe, ou as visitas sobem, ou os dois — e conversão de post
+> sozinha não move nenhum dos dois.
+>
+> **O que isso corrigiu:** o experimento 2 dizia "de cada 100 que abrem o perfil, 9
+> seguem" e media `profile_visits_reach`, que é visitas ÷ **alcance** — o degrau
+> anterior. Os dois estavam perto de 6% em julho, então a discrepância lia como
+> certa na tela e leria como certa no fechamento.
 
 ## Experimentos do ciclo
 

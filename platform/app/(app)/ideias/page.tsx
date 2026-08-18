@@ -175,9 +175,8 @@ export default async function Ideias () {
             what NOT to change, and only then what is here. */}
         <p className="achado">
           <strong>Continue postando como você já posta.</strong> Aqui ficam só
-          os 3 vídeos da semana que têm roteiro pronto — os de opinião, que são
-          os que fazem gente nova te seguir. Os outros continuam do seu jeito,
-          sem roteiro.
+          os 3 posts da semana que têm roteiro pronto — os que fazem gente nova
+          te seguir. Os outros continuam do seu jeito, sem roteiro.
         </p>
       </header>
 

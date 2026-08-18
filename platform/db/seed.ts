@@ -163,6 +163,17 @@ const DEFS: DefSeed[] = [
     description: 'De cada cem pessoas alcançadas, quantas abrem o seu perfil. É o passo entre te ver e decidir te seguir.',
     howToMeasure: 'Insights > Visão geral: visitas ao perfil ÷ contas alcançadas'
   },
+  /* The second gap of the funnel, added 18/08/2026.
+     Deliberately without a target. Closing the cycle's arithmetic needs 3x, and
+     3x can come from this rate, from the number of visits, or from both — a
+     target on this one alone would claim a decision nobody has made. Baseline
+     before target. */
+  {
+    key: 'follows_per_visit', label: 'Abriram o perfil e seguiram',
+    short: 'Abriram e seguiram', unit: 'ratio', tier: 'decision', decimals: 1,
+    description: 'De cada cem pessoas que abrem o seu perfil, quantas passam a te seguir. É o que a sua bio, a sua foto e os seus fixados decidem — não o post.',
+    howToMeasure: 'Seguidores no mês ÷ visitas ao perfil no mês'
+  },
   /* Deliberately without a target until the Público tab is collected. The
      split between followers and strangers was INFERRED from traffic sources on
      eight Reels — an indication, not a measurement, and a target on top of an
@@ -220,6 +231,8 @@ const VALUES: ValueSeed[] = [
   { key: 'reach', value: '5413754', source: 'insights' },
   { key: 'profile_visits', value: '347482', source: 'insights' },
   { key: 'followers_net', value: '20824', source: 'insights' },
+  /* Recomputed on read by `derivarTaxas`; stored so the card exists at all. */
+  { key: 'follows_per_visit', value: '0.059928', source: 'insights' },
   { key: 'reel_shares', value: '284000', source: 'insights' },
   { key: 'story_replies', value: '22000', source: 'insights' },
   { key: 'bio_link_clicks', value: '0', source: 'insights', note: 'Não havia link na bio no período.' },
@@ -326,6 +339,14 @@ const THIRD_TARGETS: TargetSeed[] = [
   {
     key: 'profile_visits_reach', baseline: '0.064200', target: '0.090000',
     note: 'De 6,42% para 9%. Vale para os dois terços do crescimento que não vêm de post.'
+  },
+  {
+    /* Same 9% as the experiment "Perfil como página de decisão", and from it —
+       not a number invented here. Baseline measured two ways in July and they agreed: 20.824 net
+       followers over 347.482 profile visits is 5,99%, and the seven feed posts
+       collected on 18/08 gave 5,86% from their own follows. */
+    key: 'follows_per_visit', baseline: '0.059928', target: '0.090000',
+    note: 'Hoje 6 em cada 100 que abrem seu perfil passam a te seguir. O alvo é 9 — e quem decide isso é a bio, a foto e os fixados, não o post.'
   },
   /* No baseline and no target, on purpose. The follower/stranger split was
      inferred from traffic sources on eight Reels — collecting the Público tab
@@ -595,11 +616,16 @@ const THIRD_PILLARS: PillarSeed[] = [
   {
     key: 'personagens', name: 'Personagens', share: 10, perWeek: '1 por semana',
     control: false,
-    thesis: 'Mozão, o time da My, sucessão familiar — em quadro nomeado, mesmo dia da semana.',
-    role: 'Dá motivo para voltar, e quem volta segue. A terceira geração da empresa é a pauta que você mesma disse que rendeu conversa.',
-    evidence: 'Suas palavras em 13/08: "sucessão familiar é um tópico que sempre traz bastante conversa, e o vídeo que fiz falando disso deu bastante engajamento".',
+    /* Rewritten 18/08/2026. It described "mozão, o time da My, sucessão
+       familiar" — my inference from something she said — while the quadro that
+       actually converts is one she had already invented and published. The
+       pillar now names the thing that has a number under it, and the family
+       scripts stay in the bank. */
+    thesis: '"kinda chic" — frases suas sobre fotos suas, mesmo nome, todo domingo.',
+    role: 'Dá motivo para voltar, e quem volta segue. Você já inventou o quadro; o que muda é ele ter dia fixo.',
+    evidence: 'O "kinda chic" de 10/08 alcançou 459 mil e trouxe 212 seguidores — os seus outros seis carrosséis do mês trouxeram 8 na média. Foi também o mais compartilhado e o mais salvo do mês.',
     metricKey: 'follows_reach',
-    success: 'Quadro saindo toda semana, com as respostas de Stories seguras.'
+    success: 'Quadro saindo todo domingo, e cada edição trazendo mais seguidor que a mediana dos seus carrosséis.'
   }
 ]
 
@@ -714,7 +740,12 @@ const THIRD_EXPERIMENTS: ExperimentSeed[] = [
     name: 'Perfil como página de decisão',
     hypothesis: 'Bio, foto, destaques e os primeiros nove do grid decidem quem abriu o perfil e ainda não seguiu.',
     isolated: 'o perfil, nada do conteúdo',
-    key: 'profile_visits_reach', successValue: '0.090000',
+    /* Was `profile_visits_reach` until 18/08/2026, which is visits over REACH —
+       the step BEFORE the one this hypothesis is about. The success sentence
+       always described followers over visits and the metric beside it measured
+       something else; both sat near 6% today, so the mismatch read as correct
+       on screen and would have been read as correct at the end too. */
+    key: 'follows_per_visit', successValue: '0.090000',
     successLabel: 'de cada 100 que abrem o perfil, 9 seguem',
     minSample: 7, minDays: 14, position: 2, state: 'not_started'
   },
@@ -1076,6 +1107,14 @@ interface IdeaSeed {
  * satisfy — the data was right and the sentence was wrong.) Espelho carries no
  * pauta here on purpose.
  *
+ * THE SUNDAY QUADRO CHANGED HANDS ON 18/08/2026
+ *
+ * It was "Trabalhar com a sua própria família", inferred from something she
+ * said. It is now "kinda chic", which she invented and which measured 212
+ * followers on 459.039 reach against a median of 8 across her other feed posts
+ * that month. The family scripts stay in the bank, dated the day she wants
+ * them — nothing was thrown away, and the count of three a week did not move.
+ *
  * THE DATES ARE FIXED, AND THAT IS DELIBERATE
  *
  * They are the days these pautas were written for, not an offset from whenever
@@ -1170,13 +1209,115 @@ const IDEAS: IdeaSeed[] = [
       }
     ]
   },
+  /*
+   * THE ONLY PAUTA HERE THAT IS NOT A HYPOTHESIS
+   *
+   * Every other idea in this file argues from an average across posts. This one
+   * argues from one post, measured inside Instagram on 18/08/2026: the carousel
+   * of 10/08 reached 459.039 and brought 212 followers, against a median of 8
+   * across her six other feed posts that month. It was also her most shared
+   * (3.074) and most saved (2.731) post of the window.
+   *
+   * She invented it. The quadro, the name and the format are hers — what this
+   * adds is the Sunday slot and the argument for repeating it. That is why it
+   * took the fixed Sunday from "Trabalhar com a sua própria família", which was
+   * my inference from something she said; measured beats inferred, and the
+   * family scripts keep their place in the bank rather than being thrown away.
+   *
+   * The lines are written out because the column demands it, and they are the
+   * part she should overwrite first: a "acho chic" that is not hers dies on the
+   * slide. The shape is what matters — a position, no product, no brand.
+   */
+  {
+    pillar: 'personagens',
+    title: 'kinda chic — edição 2',
+    hook: 'acho chic repetir roupa',
+    format: 'carrossel',
+    on: '2026-08-23',
+    why: 'O "kinda chic" de 10/08 alcançou 459 mil e trouxe 212 seguidores — os seus outros seis carrosséis do mês trouxeram 8 na média. Foi também o mais compartilhado e o mais salvo do mês. É a única coisa sua com conversão medida por dentro do Instagram, e não deduzida. Domingo fixo porque quadro sem dia é evento, e evento não cria gente que volta.',
+    caption: 'kinda chic ⭐️',
+    cta: 'me conta o seu',
+    script: [
+      {
+        time: 'slide 1',
+        says: 'acho chic repetir roupa',
+        shows: 'uma foto sua repetindo uma peça que já apareceu no perfil',
+        note: 'O primeiro slide é o que decide se a pessoa arrasta. No de 10/08 foi "acho chic dizer não sem escrever textão" — posição, sem explicação e sem produto.'
+      },
+      {
+        time: 'slide 2',
+        says: 'acho chic responder depois',
+        shows: 'foto de viagem, celular na mão'
+      },
+      {
+        time: 'slide 3',
+        says: 'acho chic não ter opinião sobre tudo',
+        shows: 'foto sua em evento'
+      },
+      {
+        time: 'slide 4',
+        says: 'acho chic sair sem avisar',
+        shows: 'foto de festa ou jantar'
+      },
+      {
+        time: 'slide 5',
+        says: 'acho chic almoçar sozinha',
+        shows: 'foto de restaurante'
+      },
+      {
+        time: 'slide 6',
+        says: 'acho chic dizer que não leu',
+        shows: 'foto em casa'
+      },
+      {
+        time: 'slide 7',
+        says: 'acho chic não explicar',
+        shows: 'a última foto, a mais forte',
+        note: 'Fecha sem CTA na imagem. O convite vai na legenda — no de 10/08 não havia chamada nenhuma no slide e ele foi o mais compartilhado do mês.'
+      }
+    ]
+  },
+  {
+    pillar: 'personagens',
+    title: 'kinda chic — edição 3',
+    hook: 'os melhores vieram de vocês',
+    format: 'carrossel',
+    on: '2026-08-30',
+    why: 'Segundo domingo seguido, mesmo nome, mesmo formato — é a regularidade que faz alguém voltar, e quem volta segue. As frases desta edição saem dos comentários da edição 2, o que fecha o ciclo: quem escreveu vê que foi lido, e você não precisa inventar sete frases do zero.',
+    caption: 'kinda chic ⭐️',
+    cta: 'continua mandando o seu',
+    script: [
+      {
+        time: 'antes de montar',
+        says: '—',
+        shows: 'abra os comentários da edição 2 e separe as cinco melhores',
+        note: 'Este é o trabalho todo. As frases boas já vão estar lá — o quadro de 10/08 teve 207 comentários, e o convite desta edição é justamente pedir a frase.'
+      },
+      {
+        time: 'slide 1',
+        says: 'os melhores vieram de vocês',
+        shows: 'uma foto sua, sem print de comentário ainda',
+        note: 'Abre dizendo que são delas. É o motivo de voltar no próximo domingo.'
+      },
+      {
+        time: 'slides 2 a 6',
+        says: 'as cinco frases que você escolheu, uma por slide, escritas do seu jeito',
+        shows: 'suas fotos, sem o @ de quem mandou',
+        note: 'Sem o @: crédito na legenda, não na imagem. Print de comentário na foto encurta a vida do slide fora do seu perfil.'
+      },
+      {
+        time: 'slide 7',
+        says: 'a sua, a que fecha',
+        shows: 'a foto mais forte do lote'
+      }
+    ]
+  },
   {
     pillar: 'personagens',
     title: 'Trabalhar com a sua própria família — episódio 1',
     hook: 'a minha chefe é a minha mãe, e ninguém me avisou o que isso ia dar',
     seconds: 90,
-    on: '2026-08-23',
-    why: 'Suas palavras em 13/08: "sucessão familiar é um tópico que sempre traz bastante conversa, e o vídeo que fiz falando disso deu bastante engajamento". Vira quadro com nome e dia fixo porque série sem regularidade é evento, e evento não cria gente que volta. Domingo às 18h é o seu pico medido.',
+    why: 'Suas palavras em 13/08: "sucessão familiar é um tópico que sempre traz bastante conversa". A pauta continua de pé e o roteiro está pronto — ela saiu do domingo porque o "kinda chic" chegou com número medido e o domingo é um só. Quando você quiser, é marcar a data.',
     caption: 'quem manda na empresa',
     cta: 'quem mais trabalha com a família?',
     script: [
@@ -1271,8 +1412,7 @@ const IDEAS: IdeaSeed[] = [
     title: 'Trabalhar com a sua própria família — episódio 2',
     hook: 'a pergunta que mais veio no episódio um foi essa, e ela é desconfortável',
     seconds: 90,
-    on: '2026-08-30',
-    why: 'Segundo episódio no mesmo dia e no mesmo horário — é a regularidade que cria gente que volta, e quem volta segue. A pauta sai dos comentários do primeiro, o que fecha o ciclo: quem comentou vê que foi lido.',
+    why: 'Depende do episódio um: a pauta sai dos comentários dele, o que fecha o ciclo — quem comentou vê que foi lido. Ganha data quando o primeiro sair.',
     caption: 'a pergunta desconfortável',
     cta: 'a do próximo domingo vocês escolhem',
     script: [
@@ -1934,14 +2074,56 @@ async function main (): Promise<void> {
       summary: 'Bastidor de produção, lançamento, peça — isso é do perfil da marca. No seu, entra só quando for escolha sua dentro de uma pauta sua.\n\nNão é sobre a qualidade do conteúdo. É que o espaço é limitado e essa pauta rende 41× menos.',
       evidenceValue: '179 mil',
       evidenceLabel: 'pessoas alcançadas pelos quatro episódios da série, que trouxeram 45 seguidores'
+    },
+    /* Added 18/08/2026. The three above are about what she publishes; these
+       three are about what a stranger finds after clicking, which nothing in
+       this product had ever looked at. 347.482 profile visits a month and 6 in
+       every 100 of those people follow — the other 94 saw the top of the
+       profile and left. */
+    {
+      code: 'c4', urgency: 'today', deadlineLabel: 'hoje, dois minutos',
+      title: 'Trocar um dos seus três posts fixados',
+      summary: 'Os fixados são a primeira coisa que aparece pra quem abre seu perfil. Hoje são a coleção, a viagem e a publi da Miu Miu.\n\nTira a publi e fixa o "kinda chic" no lugar. Os outros dois podem ficar.',
+      evidenceValue: '212',
+      evidenceLabel: 'seguidores que o "kinda chic" trouxe. A média dos seus outros seis carrosséis do mês é 8'
+    },
+    {
+      code: 'c5', urgency: 'this_week', deadlineLabel: 'esta semana',
+      title: 'Uma bio que responde "o que eu vou ver aqui?"',
+      summary: 'A sua bio hoje diz o seu cargo e um e-mail de assessoria. Ela funciona pra marca e pra imprensa.\n\nPra quem acabou de te descobrir, ela não diz o que a pessoa ganha te seguindo — e são 347 mil pessoas por mês abrindo esse perfil.',
+      evidenceValue: '94 em 100',
+      evidenceLabel: 'pessoas que abrem seu perfil e saem sem seguir',
+      copyValue:
+        'acho chic dizer o que eu acho\n' +
+        'moda, beleza e o que eu ando usando\n' +
+        'assessoria@biancaolivo.com.br',
+      copyLabel: 'Cole isto na sua bio',
+      copyNote:
+        'A primeira linha é sua — foi o post que mais trouxe gente nova esse mês. ' +
+        'A segunda diz em três palavras o que a pessoa vai encontrar. O e-mail ' +
+        'continua igual.\n\n' +
+        'Se você quiser manter "diretora criativa da @myfavorite.oficial", ela cabe ' +
+        'como última linha. Só não na primeira: quem chegou agora ainda não sabe o ' +
+        'que é a marca, e a primeira linha é a única que todo mundo lê.'
+    },
+    {
+      code: 'c6', urgency: 'this_week', deadlineLabel: 'esta semana',
+      title: 'Puxar cinco destaques pro começo',
+      summary: 'Você tem 49 destaques e não precisa apagar nenhum — é só arrastar.\n\nOs cinco primeiros são o menu de quem chegou agora. Hoje começam por cidades, que é o que quem já te acompanha quer rever. Põe "looks" em primeiro e deixa as viagens depois.',
+      evidenceValue: '49',
+      evidenceLabel: 'destaques hoje — os quatro primeiros que aparecem são de viagem'
     }
   ]
 
   const thirdDeliveryId = await seedDelivery({
     cycleId: thirdCycleId,
     slug: 'quem-te-ve-te-segue',
-    title: 'Três movimentos. Nenhum deles é postar mais.',
-    subtitle: 'Você já publica 8 Reels por semana e alcança 5,4 milhões de contas por mês. Isto aqui não pede mais nada — muda quais desses vídeos carregam a sua opinião.',
+    /* Six since 18/08/2026. The first three are the ones she already has and
+       nothing about them changed; the wording opens by saying so, because on
+       this product every new delivery is read as a replacement until told
+       otherwise. */
+    title: 'Os três primeiros continuam. Três novos, e dois minutos resolvem o primeiro.',
+    subtitle: 'Você já publica 8 Reels por semana e alcança 5,4 milhões de contas por mês. Isto aqui continua não pedindo mais nada — o que entrou agora é sobre o que a pessoa encontra depois de clicar no seu perfil.',
     periodStart: '2026-02-16',
     periodEnd: '2026-08-12',
     readingMinutes: 4,
