@@ -135,4 +135,38 @@ describe('derivarTaxas', () => {
     expect(saida.find(c => c.key === 'reach')?.value).toBe(5584671)
     expect(saida.find(c => c.key === 'reach')?.note).toBe('nota do alcance')
   })
+
+  it('should derive the visit-to-follower rate, the funnel step nobody measured', () => {
+    // ARRANGE — July as stored: the second gap of the funnel
+    const cartoes = [
+      card({ key: 'followers_net', value: 20824 }),
+      card({ key: 'profile_visits', value: 347482 }),
+      card({ key: 'follows_per_visit', value: 0, note: null })
+    ]
+
+    // ACT
+    const taxa = derivarTaxas(cartoes, '2026-07-01')
+      .find(c => c.key === 'follows_per_visit')
+
+    // ASSERT — ~6 in every 100 who open the profile follow. Seven feed posts
+    // measured the same month gave 5,86% independently.
+    expect(taxa?.value).toBeCloseTo(0.0599, 4)
+    expect(taxa?.note).toContain('347.482 visitas ao perfil')
+  })
+
+  it('should keep the stored rate when a part of the division is missing', () => {
+    // ARRANGE — no profile visits for this period
+    const cartoes = [
+      card({ key: 'followers_net', value: 20824 }),
+      card({ key: 'follows_per_visit', value: 0.0599, note: 'nota antiga' })
+    ]
+
+    // ACT
+    const taxa = derivarTaxas(cartoes, '2026-08-01')
+      .find(c => c.key === 'follows_per_visit')
+
+    // ASSERT — an older figure that says where it came from beats an empty card
+    expect(taxa?.value).toBe(0.0599)
+    expect(taxa?.note).toBe('nota antiga')
+  })
 })

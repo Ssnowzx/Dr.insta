@@ -3,8 +3,9 @@ import Link from 'next/link'
 import { DataAge } from '@/components/freshness'
 import { Series } from '@/components/series'
 import { MetricBar, MetricStat } from '@/components/metric-bar'
+import { Funnel } from '@/components/funnel'
 import {
-  activeCycle, clientProfile, latestPeriod, metrics,
+  activeCycle, clientProfile, funnel, latestPeriod, metrics,
   monthlySeries, requests
 } from '@/lib/dashboard'
 import { clientScope, requireSession } from '@/lib/dal'
@@ -63,10 +64,11 @@ export default async function Painel () {
 
   const identity = await requireSession()
 
-  const [todas, pedidos, series] = await Promise.all([
+  const [todas, pedidos, series, etapas] = await Promise.all([
     metrics(clientId, cycle.id, period, profile?.niche ?? 'lifestyle'),
     requests(clientId),
-    monthlySeries(clientId, ['views', 'posts_published'])
+    monthlySeries(clientId, ['views', 'posts_published']),
+    funnel(clientId, period)
   ])
 
   const cartoes = todas.filter(m => !HANDED_OFF.has(m.key))
@@ -140,30 +142,39 @@ export default async function Painel () {
         <section className="placa">
           <h2 className="placa-sobrancelha">O alcance já é seu</h2>
           <p className="placa-sub">
-            Todo mês milhões de contas veem você, e boa parte delas ainda não te
-            segue. O que este ciclo persegue é o segundo número: quantas dessas
-            pessoas decidem te acompanhar.
+            Todo mês milhões de contas veem você. Entre ver e seguir tem dois
+            degraus: abrir o seu perfil, e decidir seguir depois de abrir. O
+            segundo é o que a sua bio, a sua foto e os seus fixados decidem —
+            não o post.
           </p>
-          {/* The same two-number statement the funnel's collapse used: the
-              plate-native pattern, so both numbers read on the dark wool. */}
-          <div className="colapso">
-            <div className="colapso-lado">
-              <span className="numero colapso-n">
-                {format(vistas.value, vistas.unit, vistas.decimals)}
-              </span>
-              <span className="colapso-rot">contas alcançadas no mês</span>
-            </div>
-            <div className="colapso-meio" aria-hidden="true">
-              <span className="colapso-regua" />
-              <span className="colapso-taxa">quantas decidiram te seguir</span>
-            </div>
-            <div className="colapso-lado colapso-lado-fim">
-              <span className="numero colapso-n">
-                {format(seguiram.value, seguiram.unit, seguiram.decimals)}
-              </span>
-              <span className="colapso-rot">passaram a te seguir</span>
-            </div>
-          </div>
+          {/* The two numbers, and — since 18/08/2026 — the step between them.
+              It used to be a hand-built collapse of reach against followers,
+              which stated the gap without saying where it opens. The funnel
+              lives INSIDE the plate because that is what its colours are for:
+              `--sobre-bloco` is #faf4f0, which on the page's own paper is
+              invisible. Rendered and measured before shipping, both themes. */}
+          {etapas.length > 1
+            ? <Funnel stages={etapas} />
+            : (
+              <div className="colapso">
+                <div className="colapso-lado">
+                  <span className="numero colapso-n">
+                    {format(vistas.value, vistas.unit, vistas.decimals)}
+                  </span>
+                  <span className="colapso-rot">contas alcançadas no mês</span>
+                </div>
+                <div className="colapso-meio" aria-hidden="true">
+                  <span className="colapso-regua" />
+                  <span className="colapso-taxa">quantas decidiram te seguir</span>
+                </div>
+                <div className="colapso-lado colapso-lado-fim">
+                  <span className="numero colapso-n">
+                    {format(seguiram.value, seguiram.unit, seguiram.decimals)}
+                  </span>
+                  <span className="colapso-rot">passaram a te seguir</span>
+                </div>
+              </div>
+              )}
           {seguiram.target !== null && (
             <p className="placa-sub">
               O alvo do ciclo é{' '}

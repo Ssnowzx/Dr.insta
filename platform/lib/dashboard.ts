@@ -32,19 +32,27 @@ export interface FunnelStage {
 }
 
 /**
- * The four steps between being seen and being paid.
+ * The three steps between being seen and being followed.
  *
- * Ordered on purpose: reach → profile visits → store sessions → purchases. It
- * is the cycle's whole thesis in four rows, and the collapse between the second
- * and the fourth is the reason the cycle exists.
+ * REWRITTEN 18/08/2026, WITH THE CYCLE
+ *
+ * It used to end at the store — reach → profile visits → sessions → purchases —
+ * which was the previous cycle's thesis and left with the handoff of the store
+ * side to the brand's team on 12/08. The cycle in force is decided by
+ * followers, and it has exactly two gaps: getting someone to open the profile,
+ * and getting them to follow once they did.
+ *
+ * Both gaps leak, and the second one is the one nobody had looked at: 347.482
+ * visits and 20.824 net followers in July is 6 in every 100. The seven feed
+ * posts measured on 18/08 independently gave 5,86% — two routes to the same
+ * number, which is why it is on the screen and not in a note.
  */
-const FUNNEL_KEYS = ['reach', 'profile_visits', 'tracked_sessions', 'transactions'] as const
+const FUNNEL_KEYS = ['reach', 'profile_visits', 'followers_net'] as const
 
 const FUNNEL_LABELS: Record<string, string> = {
   reach: 'viram você',
   profile_visits: 'abriram seu perfil',
-  tracked_sessions: 'chegaram na loja',
-  transactions: 'compraram'
+  followers_net: 'começaram a te seguir'
 }
 
 export async function funnel (clientId: number, period: string): Promise<FunnelStage[]> {
@@ -255,6 +263,20 @@ const TAXAS_DERIVADAS = [
     denominador: 'reach',
     nota: (n: number, d: number, mes: string): string =>
       `Derivado: ${inteiro(n)} visitas ÷ ${inteiro(d)} contas alcançadas em ${mes}.`
+  },
+  /* The second gap, added 18/08/2026. Its numerator is NET followers and the
+     denominator is profile visits, so it is not a clean per-person conversion:
+     someone who unfollowed in the same month is subtracted from the top without
+     ever having visited. It is the honest reading available and the note says
+     which two numbers made it. Seven feed posts measured the same month gave
+     5,86% from gross follows — close enough that the net figure is not hiding
+     anything, and far too close to be coincidence. */
+  {
+    key: 'follows_per_visit',
+    numerador: 'followers_net',
+    denominador: 'profile_visits',
+    nota: (n: number, d: number, mes: string): string =>
+      `Derivado: ${inteiro(n)} seguidores ÷ ${inteiro(d)} visitas ao perfil em ${mes}.`
   }
 ] as const
 

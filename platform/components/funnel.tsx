@@ -8,7 +8,7 @@ import { format, smallRatio } from '@/lib/format'
  * above it, and not normalised to be comfortable. At this client's numbers that
  * makes the last two bars thinner than a hair, which is the honest picture and
  * the entire argument of the cycle: the attention is enormous and almost none
- * of it reaches the store.
+ * of it turns into someone deciding to follow.
  *
  * A conventional funnel chart normalises each stage against the previous one,
  * so every stage looks substantial and the collapse disappears. That version
@@ -26,7 +26,16 @@ import { format, smallRatio } from '@/lib/format'
 /** Below this share of the track, a bar is drawn at a fixed sliver width. */
 const VISIBLE_THRESHOLD = 0.004
 
-export function Funnel ({ stages }: { stages: FunnelStage[] }) {
+/**
+ * `resumo` draws the top-to-bottom statement above the bars.
+ *
+ * Off when the page already states those two numbers — the panel's plate does,
+ * and two identical collapse blocks one under the other read as a rendering
+ * bug rather than as emphasis.
+ */
+export function Funnel (
+  { stages, resumo = true }: { stages: FunnelStage[]; resumo?: boolean }
+) {
   if (stages.length === 0) return null
 
   const pinned = stages.filter(s => s.ofTotal > 0 && s.ofTotal < VISIBLE_THRESHOLD)
@@ -40,7 +49,7 @@ export function Funnel ({ stages }: { stages: FunnelStage[] }) {
 
   return (
     <figure className="funil">
-      {top !== undefined && bottom !== undefined && stages.length > 1 && (
+      {resumo && top !== undefined && bottom !== undefined && stages.length > 1 && (
         <div className="colapso">
           <div className="colapso-lado">
             <span className="numero numero-grande colapso-n">{format(top.value, 'count')}</span>
@@ -95,7 +104,8 @@ export function Funnel ({ stages }: { stages: FunnelStage[] }) {
       </ol>
 
       <figcaption className="funil-nota">
-        Cada barra é a fatia real do topo — a mesma régua para as quatro.{' '}
+        Cada barra é a fatia real do topo — a mesma régua para{' '}
+        {stages.length === 2 ? 'as duas' : `as ${stages.length}`}.{' '}
         {pinned.length > 0 && (
           <>
             As {pinned.length === 1 ? 'última' : `${pinned.length} últimas`} são finas
