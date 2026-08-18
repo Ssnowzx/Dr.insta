@@ -20,8 +20,16 @@ import { tokenFor } from '../lib/instagram/connection.ts'
  *    and `views` answered on the same media. The controls passing is what makes
  *    that a verdict about the metric rather than about the call.
  *
- *    The refusal names the PRODUCT TYPE, so it does not settle FEED. That is
- *    why this probe now asks a Reel and a feed post on the same run.
+ *    ANSWERED 18/08/2026, FOR FEED: yes. The same three metrics answered on a
+ *    carousel — `follows = 8`, `profile_visits = 199`, `profile_activity = 3` —
+ *    while `ig_reels_*` was refused there instead. So the constraint is the
+ *    PAIR, metric x surface, and neither one alone. Follower conversion is
+ *    measurable on the feed and stays typed in on Reels, which is the surface
+ *    this cycle actually runs on.
+ *
+ *    `--feed-sweep` reads the six that FEED answers on every feed post in the
+ *    window, because one carousel is an anecdote and this project's rule is
+ *    seven posts or fourteen days.
  *
  * 2. Does a Reel that is currently in a TRIAL show up on `/{ig-user-id}/media`?
  *    A trial is served only to non-followers and is not public, so it may not
@@ -46,6 +54,7 @@ import { tokenFor } from '../lib/instagram/connection.ts'
  *   npm run probe:media
  *   npm run probe:media -- --media 17912345678901234   # a specific media id
  *   npm run probe:media -- --limit 25
+ *   npm run probe:media -- --feed-sweep              # every feed post, as a table
  */
 
 /** Fields the media edge is known to accept — see `lib/instagram/media.ts`. */
@@ -73,6 +82,18 @@ const CANDIDATE_METRICS = [
   'shares',
   'ig_reels_avg_watch_time',
   'ig_reels_video_view_total_time'
+] as const
+
+/**
+ * What to read on every feed post, once the surface question is settled.
+ *
+ * Only the six that FEED answered on 18/08/2026, so the sweep costs one call
+ * per metric instead of two and no line is padded with refusals already known.
+ * `ig_reels_*` is absent for the same reason it is refused there: a carousel
+ * is not a Reel.
+ */
+const FEED_SWEEP_METRICS = [
+  'reach', 'views', 'follows', 'profile_visits', 'saved', 'shares'
 ] as const
 
 interface MediaRow {
@@ -248,6 +269,80 @@ function conclude (target: MediaRow, verdicts: Verdict[]): void {
   )
 }
 
+/**
+ * Every feed post in the window, as one table.
+ *
+ * WHY THIS EXISTS: a single carousel answered `follows = 8` on 76.742 reach,
+ * which is a startling rate and an n of 1. This project's own rule is seven
+ * posts or fourteen days before a number becomes a reading, and the ids are
+ * already on screen — so the sweep is the difference between an anecdote and
+ * a measurement, at the cost of one more run.
+ *
+ * `follows/reach` is printed with its denominator beside it and NOT called a
+ * conversion rate. Reach here mixes people who already follow her with people
+ * who do not, and only the second group could have converted. The honest
+ * denominator is non-follower reach, which no endpoint reports.
+ */
+async function feedSweep (api: IgClient, media: MediaRow[]): Promise<void> {
+  const feed = media.filter(r => r.productType === 'FEED')
+
+  console.log(`SWEEP \u2014 every FEED post in the window (${feed.length}):\n`)
+  if (feed.length === 0) {
+    console.log('  (none)\n')
+    return
+  }
+
+  console.log(
+    `  ${'date'.padEnd(12)}${'reach'.padStart(9)}${'views'.padStart(10)}` +
+    `${'follows'.padStart(9)}${'visits'.padStart(8)}${'saved'.padStart(8)}` +
+    `${'shares'.padStart(8)}   follows/reach`
+  )
+
+  let totalReach = 0
+  let totalFollows = 0
+
+  for (const row of feed) {
+    const read = new Map<string, number | null>()
+    for (const metric of FEED_SWEEP_METRICS) {
+      const verdict = await probe(api, row.id, metric)
+      read.set(metric, verdict.value)
+    }
+
+    const reach = read.get('reach') ?? null
+    const follows = read.get('follows') ?? null
+    const rate = reach !== null && reach > 0 && follows !== null
+      ? `${(follows / reach * 100).toFixed(4)}%`
+      : '\u2014'
+
+    if (reach !== null) totalReach += reach
+    if (follows !== null) totalFollows += follows
+
+    console.log(
+      `  ${row.timestamp.slice(0, 10).padEnd(12)}${cell(reach, 9)}${cell(read.get('views') ?? null, 10)}` +
+      `${cell(follows, 9)}${cell(read.get('profile_visits') ?? null, 8)}` +
+      `${cell(read.get('saved') ?? null, 8)}${cell(read.get('shares') ?? null, 8)}` +
+      `   ${rate}`
+    )
+  }
+
+  const pooled = totalReach > 0
+    ? `${(totalFollows / totalReach * 100).toFixed(4)}%`
+    : '\u2014'
+
+  console.log(
+    `\n  ${feed.length} post(s): ${totalFollows} follower(s) on ${totalReach} reach ` +
+    `= ${pooled}\n` +
+    '  Reach mixes followers and non-followers, so this is NOT the conversion\n' +
+    '  rate \u2014 the honest denominator is non-follower reach and no endpoint\n' +
+    '  reports it. It is comparable BETWEEN feed posts, which is the point.\n'
+  )
+}
+
+/** Right-aligned cell; an absent number prints as a dash, never as zero. */
+function cell (value: number | null, width: number): string {
+  return (value === null ? '\u2014' : String(value)).padStart(width)
+}
+
 async function main (): Promise<void> {
   const slug = process.env.TENANT_SLUG?.trim()
   if (slug === undefined || slug === '') {
@@ -308,6 +403,12 @@ async function main (): Promise<void> {
     '  A trial that is running and absent here means the API cannot see it.\n' +
     '  If nothing is in trial today, this list proves nothing either way.\n'
   )
+
+  if (process.argv.includes('--feed-sweep')) {
+    await feedSweep(api, media)
+    console.log(`  ${api.calls} API call(s). Nothing was written.\n`)
+    return
+  }
 
   const explicit = arg('--media')
   const targets = explicit === undefined
