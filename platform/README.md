@@ -418,6 +418,21 @@ that post, and its denominator here is post reach summed, which double-counts
 anyone who saw two posts. It is comparable BETWEEN feed posts, which is the
 point, and is not the same quantity as account reach.
 
+**None of this retires a number she types**, and the shape invites believing it
+does. `post.profile_visits` is not the account metric of the same name: summing
+it across posts double-counts whoever arrived from two of them and misses
+everyone who reached the profile from search, from Stories, or by typing the
+handle — July was 347.482 for the account against 4.386 across these seven
+posts. And `follows` being refused on Reels is what keeps
+`post.non_follower_pct` arriving by hand. Both typed figures stay; they answer
+questions the measured ones do not.
+
+**Do not run the test suite on the server.** Ten files INSERT, UPDATE and
+DELETE against whatever `.env` sits beside them, which in production is her
+database, and the suite would pass while doing it. `test/setup.ts` refuses when
+`NODE_ENV=production` — set by the Dockerfile and by compose, never set locally
+or in CI.
+
 One trap worth naming: the public field `media_repost_count` is a **repost**
 count, not a share count. Measured against July's screenshots it read 1,986
 where Insights showed 48,000 shares. It is stored in its own column and never

@@ -616,6 +616,20 @@ export const post = mysqlTable('post', {
    * NULL means not measured and never zero: a Reel refuses these, and so does
    * every row collected before migration 013. Reading NULL as 0 would invent a
    * post that reached people and converted nobody.
+   *
+   * NEITHER COLUMN MAKES A TYPED FIGURE REDUNDANT — asked on 18/08/2026, and
+   * the answer is worth writing down because the shape invites the mistake:
+   *
+   * `profile_visits` here is NOT the account metric of the same name. Summing
+   * it across posts counts twice anyone who arrived from two of them, and
+   * misses everyone who reached the profile from search, from Stories or by
+   * typing the handle. In July the account figure was 347.482 while these seven
+   * feed posts add to 4.386 — the monthly number she types stays.
+   *
+   * `follows` is refused on Reels, so `non_follower_pct` — the honest
+   * denominator for conversion there — also stays a number she types. The two
+   * live side by side and answer different questions; the day one is presented
+   * as the other, a rate will be right by arithmetic and wrong by meaning.
    */
   follows: bigint({ mode: 'number', unsigned: true }),
   profileVisits: bigint('profile_visits', { mode: 'number', unsigned: true }),
