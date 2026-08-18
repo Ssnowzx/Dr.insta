@@ -2456,6 +2456,30 @@ a.secao-nota:hover { text-decoration: underline; }
   box-shadow: 0 0 0 3px var(--foco);
 }
 
+/* A value with line breaks renders in a textarea, because `<input>` strips them
+   at the DOM level — see `components/copy-value.tsx`. Sized by `rows`, so no
+   scrollbar and no empty space; resize off, since the height already fits and a
+   drag handle on a read-only field only invites confusion.
+
+   `align-self: start` on the row: the button stays beside the FIRST line rather
+   than stretching down three of them. */
+.copiar-valor-multi {
+  line-height: 1.6;
+  resize: none;
+  /* `field-sizing` grows the box to its content, which is what this needs: the
+     `rows` attribute counts text lines and knows nothing about padding or about
+     a line that wraps, so it under-measures. Measured here: rows=3 gave 78px of
+     box for 97px of content and silently clipped the third line.
+
+     `overflow: auto` is the fallback, not the plan. Where `field-sizing` is
+     unsupported the field scrolls — which is ugly and honest. `hidden` was
+     neither: it hid the last line of a value she is meant to paste. */
+  field-sizing: content;
+  overflow: auto;
+}
+
+.copiar-linha:has(.copiar-valor-multi) { align-items: flex-start; }
+
 .copiar-btn {
   flex: 0 0 auto;
   font: inherit;

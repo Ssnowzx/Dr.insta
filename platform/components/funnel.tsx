@@ -27,6 +27,20 @@ import { format, smallRatio } from '@/lib/format'
 const VISIBLE_THRESHOLD = 0.004
 
 /**
+ * Small counts spelled out, because this is prose and not a figure.
+ *
+ * The version that interpolated the number read "As última são finas demais"
+ * when exactly one bar was pinned — the singular branch dropped the count and
+ * left the article and the verb in the plural. Three stages instead of four is
+ * what made it happen, and it went out to production.
+ */
+const EXTENSO = ['zero', 'uma', 'duas', 'três', 'quatro', 'cinco', 'seis']
+
+export function porExtenso (n: number): string {
+  return EXTENSO[n] ?? String(n)
+}
+
+/**
  * `resumo` draws the top-to-bottom statement above the bars.
  *
  * Off when the page already states those two numbers — the panel's plate does,
@@ -104,13 +118,18 @@ export function Funnel (
       </ol>
 
       <figcaption className="funil-nota">
-        Cada barra é a fatia real do topo — a mesma régua para{' '}
-        {stages.length === 2 ? 'as duas' : `as ${stages.length}`}.{' '}
-        {pinned.length > 0 && (
+        Cada barra é a fatia real do topo — a mesma régua para as {porExtenso(stages.length)}.{' '}
+        {pinned.length === 1 && (
           <>
-            As {pinned.length === 1 ? 'última' : `${pinned.length} últimas`} são finas
-            demais para desenhar nesta escala e estão marcadas com um traço mínimo.
-            Não é falha de desenho: é o tamanho real do problema.
+            A última é fina demais para desenhar nesta escala e está marcada com um
+            traço mínimo. Não é falha de desenho: é o tamanho real do problema.
+          </>
+        )}
+        {pinned.length > 1 && (
+          <>
+            As {porExtenso(pinned.length)} últimas são finas demais para desenhar
+            nesta escala e estão marcadas com um traço mínimo. Não é falha de
+            desenho: é o tamanho real do problema.
           </>
         )}
       </figcaption>

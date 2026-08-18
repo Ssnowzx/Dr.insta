@@ -24,6 +24,17 @@ import { useState } from 'react'
  *
  * `readonly` rather than plain text: on a phone, `select()` on an input reliably
  * selects the whole value, and long-pressing text does not.
+ *
+ * A MULTI-LINE VALUE NEEDS A TEXTAREA, AND THIS COST A NEAR MISS
+ *
+ * `<input>` strips newlines from its value — silently, at the DOM level. The
+ * three-line bio shipped on 18/08/2026 rendered as
+ * "acho chic dizer o que eu achomoda, beleza e o que eu ando usando…", with the
+ * words welded together. The copy button was still correct, because it writes
+ * the prop rather than the field, so the bug was invisible to anyone who tested
+ * by clicking it — and would have hit whoever selected the text by hand, which
+ * is exactly what the error message below tells her to do when the clipboard
+ * fails. Found by reading the rendered DOM in production, not the code.
  */
 export function CopyValue ({
   valor,
@@ -37,6 +48,11 @@ export function CopyValue ({
 }) {
   const [copiado, setCopiado] = useState(false)
   const [erro, setErro] = useState(false)
+
+  /* Sized to the content: a fixed height would either scroll a three-line bio
+     or leave a hole under a one-line link. */
+  const linhas = valor.split('\n').length
+  const multilinha = linhas > 1
 
   async function copiar (): Promise<void> {
     setErro(false)
@@ -56,14 +72,28 @@ export function CopyValue ({
       <p className="copiar-rot">{rotulo}</p>
 
       <div className="copiar-linha">
-        <input
-          className="copiar-valor"
-          value={valor}
-          readOnly
-          spellCheck={false}
-          aria-label={rotulo}
-          onFocus={e => { e.currentTarget.select() }}
-        />
+        {multilinha
+          ? (
+            <textarea
+              className="copiar-valor copiar-valor-multi"
+              value={valor}
+              readOnly
+              spellCheck={false}
+              rows={linhas}
+              aria-label={rotulo}
+              onFocus={e => { e.currentTarget.select() }}
+            />
+            )
+          : (
+            <input
+              className="copiar-valor"
+              value={valor}
+              readOnly
+              spellCheck={false}
+              aria-label={rotulo}
+              onFocus={e => { e.currentTarget.select() }}
+            />
+            )}
         <button type="button" className="copiar-btn" onClick={() => { void copiar() }}>
           {copiado ? 'Copiado' : 'Copiar'}
         </button>
