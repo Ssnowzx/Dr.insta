@@ -84,6 +84,7 @@ npm run dev
 | `npm run invite -- --email … --name …` | Creates a user on `TENANT_SLUG` and prints an invite link (`--consultant` for an unscoped one, `--job "assessora"` for what they do) |
 | `npm run link -- --email …` | Prints a fresh access link for someone who already exists — invite or reset, chosen from the account |
 | `npm run sync:instagram` | Collects the current month from the Instagram API (`--period YYYY-MM-01` to backfill) |
+| `npm run probe:media` | Asks the API which insight metrics it will answer, one per call. Read-only, writes nothing. `--feed-sweep` reads every feed post in the window as a table |
 
 ---
 
@@ -337,7 +338,7 @@ Three routes, and which one a number came in by is recorded on it as `source`.
 
 | Route | What it gives |
 |---|---|
-| **Official API** (`api`) | reach, views, saves, shares, likes, comments, replies, follows, **bio link clicks**, and **the post itself** — caption, permalink, date, type |
+| **Official API** (`api`) | reach, views, saves, shares, likes, comments, replies, follows, **bio link clicks**, and **the post itself** — caption, permalink, date, type. Per media, on FEED only: **follows** and **profile visits** |
 | **Public export** (`public`) | views, likes, comments, caption, **duration**, date — per Reel |
 | **By hand** (`insights`) | profile visits, video retention curve, Stories older than a day |
 
@@ -364,8 +365,58 @@ not at all.
 
 The bottom row is what the API still does not answer. `profile_visits` exists
 per media but **not as an account metric**, so the funnel's second step is
-manual. Retention comes back as an average (`ig_reels_avg_watch_time`), never
-as the curve — the "how far they watched" screenshot request stands.
+manual at the account level. Retention comes back as an average
+(`ig_reels_avg_watch_time`), never as the curve — the "how far they watched"
+screenshot request stands.
+
+### What answers where — measured 18/08/2026
+
+The insights endpoint constrains the **pair**, metric × surface, and neither
+half on its own. Probed one metric per call by `scripts/probe-media-metrics.ts`:
+
+| Metric | FEED | REELS |
+|---|---|---|
+| `reach`, `views`, `saved`, `shares`, `likes`, `comments` | answers | answers |
+| `follows`, `profile_visits`, `profile_activity` | **answers** | 400 |
+| `ig_reels_avg_watch_time`, `ig_reels_video_view_total_time` | 400 | **answers** |
+
+`reach` and `views` are the controls. Their answering on the same media is what
+makes a 400 a verdict about the metric rather than about the call — without
+them, a bad token and an unsupported metric look identical.
+
+Consequence: **follower conversion is measured on feed posts and typed in on
+Reels**, which is the surface this cycle runs on. That covers about a third of
+what she publishes. The refusal message names the product type — "does not
+support the follows metric for this media product type" — which is why a probe
+that only ever asks one surface reads a refusal as the metric being absent
+everywhere. It did, once, before the probe asked both.
+
+The two funnel metrics are requested in a **call of their own**. The endpoint
+rejects the whole request over a single invalid metric, so appending them to
+the list would mean that the day Instagram changes its mind every post loses
+reach and views too — the denominator of everything here — to gain a figure the
+project lived without. `funnelInsights` also swallows its own failure: by the
+time it runs, the caller already holds real measurements.
+
+### The second step of the funnel
+
+Reach → profile visit → follow. The middle step had never been looked at.
+
+| | July 2026, account | 7 feed posts, 30d window |
+|---|---:|---:|
+| reach | 5.413.754 | 881.171 |
+| profile visits | 347.482 · 6,42% | 4.386 · 0,50% |
+| followers | 20.824 · **5,99% of visits** | 257 · **5,86% of visits** |
+
+Two independent routes to the same number in the same month. 94 of every 100
+people who open the profile leave without following, and what they see there is
+bio, photo, highlights and three pinned posts — decided by none of the content
+work. `follows_per_visit` carries it on the panel, derived on read, target 9%.
+
+A carousel is not a Reel: `follows` on a feed post counts followers gained from
+that post, and its denominator here is post reach summed, which double-counts
+anyone who saw two posts. It is comparable BETWEEN feed posts, which is the
+point, and is not the same quantity as account reach.
 
 One trap worth naming: the public field `media_repost_count` is a **repost**
 count, not a share count. Measured against July's screenshots it read 1,986
@@ -606,8 +657,9 @@ Two destinations, as an enum and never a column name in a string:
 | `metric` | `metric_value`, source `insights` | visitas ao perfil, monthly |
 | `post_share` | `post.non_follower_pct` | the Público tab, one per Reel |
 
-`post.non_follower_pct` is new and is the honest denominator for follower
-conversion — someone who already follows cannot follow again. Neither the API
+`post.non_follower_pct` is the honest denominator for follower conversion —
+someone who already follows cannot follow again — and it is still typed in even
+after 18/08/2026, because `follows` is refused on Reels. Neither the API
 nor the public export has it; it exists only on the Público tab of each Reel,
 which is why a request asks for it at all.
 

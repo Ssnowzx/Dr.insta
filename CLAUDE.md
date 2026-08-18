@@ -43,13 +43,22 @@ Escreva em **português do Brasil**, direto, sem jargão vazio ("engajar a audi�
 | Fonte de dados | **API oficial desde 14/08/2026** — conta conectada, coleta 5× por dia. O que a API não dá, ela **digita** num campo de número no pedido; nada mais depende de print |
 | Quem opera | **Duas pessoas**: a Bianca e a **Cris**, assessora que cuida do Instagram pessoal com ela. As telas falam com as duas |
 
-**O que a coleta traz e o que ela não traz.** Por mês, da conta: alcance, views, curtidas, comentários, salvamentos, compartilhamentos, respostas de Stories e seguidores líquidos. Por post, nos últimos 30 dias: alcance, views, salvamentos, compartilhamentos e retenção. **Não traz** — e por isso continua dependendo dela: **visitas ao perfil** (só existe por mídia na API) e a **divisão seguidor / não-seguidor**, que é o denominador honesto da conversão e sustenta o achado dos 41×. Desde 17/08 os dois chegam por **campo de número no pedido**, não por print: ela digita e o valor cai em `metric_value` e em `post.non_follower_pct` na hora. Posts anteriores à janela de 30 dias também não têm alcance medido.
+**O que a coleta traz e o que ela não traz.** Por mês, da conta: alcance, views, curtidas, comentários, salvamentos, compartilhamentos, respostas de Stories e seguidores líquidos. Por post, nos últimos 30 dias: alcance, views, salvamentos, compartilhamentos e retenção.
+
+**A API constrange o par métrica × superfície, não cada um isolado** — medido em 18/08/2026 sondando uma métrica por chamada (`platform/scripts/probe-media-metrics.ts`, com `reach` e `views` de controle):
+
+| Métrica | FEED | REELS |
+|---|---|---|
+| `follows`, `profile_visits`, `profile_activity` | **responde** | 400 |
+| `ig_reels_avg_watch_time`, `ig_reels_video_view_total_time` | 400 | **responde** |
+
+Ou seja: **conversão em seguidor é medida em post de feed e continua digitada em Reel**, que é a superfície onde este ciclo roda. Continua dependendo dela: a **divisão seguidor / não-seguidor** (`post.non_follower_pct`, o denominador honesto da conversão em Reel) e as **visitas ao perfil do mês** — que existem por mídia mas não como métrica de conta. Desde 17/08 os dois chegam por **campo de número no pedido**, não por print. Posts anteriores à janela de 30 dias também não têm alcance medido.
 
 O detalhamento vivo (bio, ICP, pilares, voz, metas) está em **`perfil/`**. Leia antes de qualquer recomendação de conteúdo. Se `perfil/perfil.md` ainda tem marcadores `[PREENCHER]`, colete o que falta antes de produzir plano editorial — mas não bloqueie análise de métricas por isso.
 
 **Consequência prática do objetivo escolhido:** priorize `seguidores/alcance` e `visitas ao perfil/alcance`. Nesta ordem. Comentários, saves e sends viram **guard-rail com piso no próprio baseline** — não podem cair, e não são alvo.
 
-**O denominador muda para esta métrica.** A regra 1 continua valendo em geral, mas quem já segue não pode seguir de novo: conversão em seguidor se normaliza por **alcance de não-seguidor**, e toda taxa declara qual denominador usou.
+**O denominador muda para esta métrica.** A regra 1 continua valendo em geral, mas quem já segue não pode seguir de novo: conversão em seguidor se normaliza por **alcance de não-seguidor**, e toda taxa declara qual denominador usou. Para o segundo degrau do funil o denominador é outro — **visitas ao perfil** — e as duas taxas não se somam nem se substituem: uma mede se a pessoa clicou, a outra se ela ficou.
 
 Atenção ao que **não** é o gargalo: alcance total. Em julho/2026 foram 5,4M de contas alcançadas, 284 mil compartilhamentos e 22 mil respostas em Stories. O gargalo é o que acontece **depois** de alcançar. Medido sobre 376 posts de 16/02 a 12/08:
 
@@ -58,6 +67,19 @@ Atenção ao que **não** é o gargalo: alcance total. Em julho/2026 foram 5,4M 
 - 39% de todo o alcance vai para vídeos de até 10s, que convertem 0,061%
 
 Ou seja: o conteúdo que faz estranho seguir não é mostrado a estranho, e o que os estranhos veem não os converte. Detalhe em `dados/metricas/` e na análise publicada para ela.
+
+**Só que o gargalo tem dois degraus, e o segundo foi medido em 18/08/2026 — é o maior:**
+
+| Degrau | Julho, conta inteira | 7 posts de feed, 30 dias |
+|---|---:|---:|
+| alcance → visita ao perfil | 347.482 de 5,4M = **6,42%** | 4.386 de 881.171 = **0,50%** |
+| visita → seguidor | 20.824 de 347.482 = **5,99%** | 257 de 4.386 = **5,86%** |
+
+**De cada 100 pessoas que abrem o perfil dela, 6 seguem.** Duas medições independentes, mesmo mês, mesmo número. As outras 94 viram bio, foto, destaques e os três posts fixados — nada disso é conteúdo.
+
+A aritmética que isso impõe: a 6%, os 62.200/mês exigem **1,04 milhão de visitas ao perfil**, 3× as de hoje. Os "3–4× de conversão" que este arquivo já pedia têm endereço agora, e é a tela do perfil.
+
+**Consequência para qualquer recomendação:** antes de propor pauta, pergunte se o gargalo daquele número está antes ou depois do clique. Pauta nova não move `follows_per_visit`. A auditoria de perfil (18/08, 47/100) e o experimento 2 do ciclo é que movem.
 
 **O que saiu do escopo:** a relação perfil→loja (link, UTM, receita, conversão, voz de marca) é da **equipe da My Favorite** desde 12/08/2026, por decisão da cliente. O diagnóstico de conversão continua válido e vira handoff — não recomende mais nada que trate o perfil dela como canal de venda.
 
@@ -278,3 +300,5 @@ OpenSpec: `/opsx:explore`, `/opsx:propose`, `/opsx:apply`, `/opsx:archive`, `/op
 - **Escrever justificativa minha na tela dela.** O porquê de uma decisão cabe no `whyItMatters` de um pedido ou num comentário do código. A tela diz **o que fazer**, e começa pelo que ela **não** precisa mudar — toda entrega nova é lida como substituição até que se diga o contrário. Ver `openspec/changes/equipe-verificacao-pautas-e-numeros/`.
 - **Número sem substantivo, ou somando coisas de prazos diferentes.** "6 na fila" não diz seis o quê e misturava o de hoje com o de daqui a duas semanas. Prosa com ramificação sai do JSX e ganha teste — `manchete()` em `platform/lib/agenda.ts` é o exemplo.
 - **Propor pauta cujo sujeito é a marca.** Sai do perfil pessoal enquanto seguidores forem o norte: 179 mil pessoas alcançadas por 45 seguidores não paga o espaço. Encaminhe para a equipe da My Favorite.
+- **Responder com conteúdo um problema que está depois do clique.** 94 de cada 100 que abrem o perfil vão embora, e quem decide isso é bio, foto, destaques e os três fixados. Pauta nova não move esse número. Pergunte de que lado do clique está o gargalo antes de recomendar.
+- **Preferir a pauta que eu inferi à que ela já publicou e mediu.** O quadro de domingo era uma inferência minha de uma fala dela; "kinda chic" é dela, e mediu 212 seguidores contra a mediana de 8 do mesmo formato. Quando as duas disputam o mesmo espaço, ganha a que tem número — e a outra vai para o banco com o roteiro intacto, não para o lixo.

@@ -8,13 +8,23 @@ context: |
   plano editorial e relatórios acionáveis.
 
   Perfil atendido: conta única, nicho Moda/Lifestyle — rode o motor com `--nicho lifestyle`.
-  Objetivo primário dos próximos 90 dias: engajamento do perfil pessoal (@bianca.olivo) —
-  conversa pública e recorrente. Trocado em 12/08/2026 por decisão da cliente; antes era
-  "caminho até a compra" (04/08–12/08, fechado sem leitura — a relação com a loja passou
-  para a equipe da My Favorite). Métrica-norte: comentários por alcance (ver perfil/metas.md).
+  Objetivo primário dos próximos 90 dias: fazer quem ainda não a segue virar seguidor
+  (@bianca.olivo), com meta declarada de 1M até dezembro. Métrica-norte: seguidores
+  líquidos/mês, 20.824 → 62.200 (ver perfil/metas.md). Em vigor desde 13/08/2026, por
+  decisão da cliente. Antes: "o perfil que conversa" (12/08–13/08) e "caminho até a
+  compra" (04/08–12/08), ambos fechados sem leitura — a relação com a loja passou para a
+  equipe da My Favorite.
 
-  Não é o gargalo: alcance, sends/reach e resposta em Stories já estão em nível alto.
-  O gargalo é comentário público (0,21% contra 0,50%) e saves/reach (0,23% contra 1,40%).
+  Não é o gargalo: alcance. Julho fez 5,4M de contas alcançadas, 284 mil compartilhamentos
+  e 22 mil respostas em Stories. Comentários e saves viraram guard-rail com piso no próprio
+  baseline.
+
+  O gargalo tem DOIS degraus, e o segundo foi medido em 18/08/2026:
+  - alcance → visita ao perfil: 6,42% (347.482 sobre 5,4M)
+  - visita → seguidor: 5,99% (20.824 sobre 347.482) — 94 em cada 100 abrem e vão embora
+  O segundo é decidido por bio, foto, destaques e posts fixados, não por conteúdo. Ele foi
+  medido por dois caminhos independentes no mesmo mês: os dois números da conta e sete
+  posts de feed coletados por API, que deram 5,86%.
 
   Stack: TypeScript strict (ESM, NodeNext), Vitest para testes e cobertura, zero
   dependências de runtime. Node >= 20.19.
