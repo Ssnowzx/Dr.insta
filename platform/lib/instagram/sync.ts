@@ -284,6 +284,11 @@ async function collectMedia (
       ...(insights.saves === null ? {} : { saves: insights.saves }),
       ...(insights.sends === null ? {} : { sends: insights.sends }),
       ...(insights.views === null ? {} : { views: insights.views }),
+      /* Feed only — a Reel refuses both, and the refusal arrives as null.
+         Written under the same rule as the rest: absent stays absent rather
+         than overwriting a measurement with nothing. */
+      ...(insights.follows === null ? {} : { follows: insights.follows }),
+      ...(insights.profileVisits === null ? {} : { profileVisits: insights.profileVisits }),
       ...(retencao(insights.avgWatchMs, duracao.get(codigo) ?? null))
     }
 

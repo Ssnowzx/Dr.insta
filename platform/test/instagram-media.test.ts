@@ -135,6 +135,84 @@ describe('mediaInsights', () => {
     expect(asked[0]?.searchParams.get('metric')).toContain('ig_reels_avg_watch_time')
     expect(asked[1]?.searchParams.get('metric')).not.toContain('ig_reels_avg_watch_time')
   })
+
+  it('should ask for follows only on feed posts', async () => {
+    // ARRANGE — probed 18/08/2026: `follows` answers on a carousel and returns
+    // 400 on a Reel. Asking anyway would cost the whole request, not just this
+    // metric.
+    const { client, asked } = fake([{ data: [] }, { data: [] }, { data: [] }])
+
+    // ACT
+    await mediaInsights(client, media({ isReel: true }))
+    await mediaInsights(client, media({ isReel: false, kind: 'carousel' }))
+
+    // ASSERT — one call for the Reel, two for the carousel
+    expect(asked).toHaveLength(3)
+    expect(asked.some(u => u.searchParams.get('metric')?.includes('follows'))).toBe(true)
+    expect(asked[0]?.searchParams.get('metric')).not.toContain('follows')
+  })
+
+  it('should read follows and profile visits on a feed post', async () => {
+    // ARRANGE — the second response is the funnel request, asked separately
+    const { client } = fake([
+      { data: [{ name: 'reach', total_value: { value: 76742 } }] },
+      {
+        data: [
+          { name: 'follows', total_value: { value: 8 } },
+          { name: 'profile_visits', total_value: { value: 199 } }
+        ]
+      }
+    ])
+
+    // ACT
+    const insights = await mediaInsights(client, media({ isReel: false, kind: 'carousel' }))
+
+    // ASSERT — the two steps of the funnel, from the same post
+    expect(insights.reach).toBe(76742)
+    expect(insights.follows).toBe(8)
+    expect(insights.profileVisits).toBe(199)
+  })
+
+  it('should leave follows null on a reel rather than reporting zero', async () => {
+    // ARRANGE
+    const { client } = fake([{ data: [{ name: 'reach', total_value: { value: 17890 } }] }])
+
+    // ACT
+    const insights = await mediaInsights(client, media({ isReel: true }))
+
+    // ASSERT — a refusal is absence, not a post that converted nobody
+    expect(insights.follows).toBeNull()
+    expect(insights.profileVisits).toBeNull()
+  })
+
+  it('should keep the measured numbers when the funnel call fails', async () => {
+    // ARRANGE — the funnel is the newest and least certain call in the
+    // collection. A run that already read reach, views and saves must not be
+    // discarded because Instagram changed its mind about `follows`.
+    let call = 0
+    const client = createClient('t', (async () => {
+      call += 1
+      if (call === 1) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: [{ name: 'reach', total_value: { value: 76742 } }] })
+        }
+      }
+      return {
+        ok: false,
+        status: 400,
+        json: async () => ({ error: { code: 100, message: 'does not support the follows metric' } })
+      }
+    }) as unknown as typeof fetch)
+
+    // ACT
+    const insights = await mediaInsights(client, media({ isReel: false, kind: 'carousel' }))
+
+    // ASSERT
+    expect(insights.reach).toBe(76742)
+    expect(insights.follows).toBeNull()
+  })
 })
 
 describe('listRecentMedia', () => {

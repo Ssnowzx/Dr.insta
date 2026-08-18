@@ -58,6 +58,26 @@ const MEDIA_FIELDS = [
 const MEDIA_METRICS = ['reach', 'views', 'saved', 'shares', 'likes', 'comments'].join(',')
 const REEL_METRICS = [...MEDIA_METRICS.split(','), 'ig_reels_avg_watch_time'].join(',')
 
+/**
+ * The funnel metrics, which only the FEED surface answers.
+ *
+ * Probed one metric at a time on 18/08/2026 against a Reel and a carousel on
+ * the same account: `follows` and `profile_visits` answered on the carousel and
+ * returned 400 on the Reel — "does not support the <metric> metric for this
+ * media product type" — while `ig_reels_*` did the exact reverse. `reach` and
+ * `views` answered on both and served as controls, which is what makes that a
+ * verdict about the metrics rather than about the call.
+ *
+ * ASKED IN A SEPARATE REQUEST, ON PURPOSE
+ *
+ * The insights endpoint rejects the WHOLE request when any single metric in the
+ * list is invalid. Appending these to `MEDIA_METRICS` would mean that the day
+ * Instagram changes which surface answers them, every post silently loses reach
+ * and views too — the numbers this project is built on — to gain a metric it
+ * has lived without. They travel alone so their failure costs only themselves.
+ */
+const FUNNEL_METRICS = ['follows', 'profile_visits'].join(',')
+
 export interface MediaSummary {
   /** The API's own media id. What `/{id}/insights` needs, and nothing else. */
   igCode: string
@@ -125,6 +145,9 @@ export interface MediaInsights {
   sends: number | null
   /** Milliseconds, as the API reports it. */
   avgWatchMs: number | null
+  /** Feed only. Null on a Reel, which is a refusal and not a zero. */
+  follows: number | null
+  profileVisits: number | null
 }
 
 /**
@@ -183,6 +206,7 @@ export async function mediaInsights (
   })
 
   const totals = readTotals(payload)
+  const funnel = media.isReel ? null : await funnelInsights(client, media)
 
   return {
     igCode: media.igCode,
@@ -192,7 +216,34 @@ export async function mediaInsights (
     views: totals.get('views') ?? null,
     saves: totals.get('saved') ?? null,
     sends: totals.get('shares') ?? null,
-    avgWatchMs: totals.get('ig_reels_avg_watch_time') ?? null
+    avgWatchMs: totals.get('ig_reels_avg_watch_time') ?? null,
+    follows: funnel?.follows ?? null,
+    profileVisits: funnel?.profileVisits ?? null
+  }
+}
+
+/**
+ * The two funnel metrics for a feed post, or null for all of them.
+ *
+ * Swallows its own failure by design. This is the newest and least certain call
+ * in the collection, and a run that already read reach, views, saves and sends
+ * must not be thrown away because Instagram changed its mind about `follows` —
+ * the caller has real numbers in hand by the time this runs.
+ */
+async function funnelInsights (
+  client: IgClient,
+  media: MediaSummary
+): Promise<{ follows: number | null; profileVisits: number | null } | null> {
+  try {
+    const payload = await client.get(`${media.igCode}/insights`, { metric: FUNNEL_METRICS })
+    const totals = readTotals(payload)
+
+    return {
+      follows: totals.get('follows') ?? null,
+      profileVisits: totals.get('profile_visits') ?? null
+    }
+  } catch {
+    return null
   }
 }
 

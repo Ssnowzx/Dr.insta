@@ -605,6 +605,20 @@ export const post = mysqlTable('post', {
    * `request_field` can write it.
    */
   nonFollowerPct: decimal('non_follower_pct', { precision: 6, scale: 5 }),
+  /**
+   * Followers gained from this post, and profile visits it produced.
+   *
+   * Measured, not typed — but only on the FEED surface. Probed one metric at a
+   * time on 18/08/2026: `follows` and `profile_visits` answer on a carousel and
+   * return 400 on a Reel, while `ig_reels_*` does the exact reverse. The
+   * constraint is the pair, metric x surface.
+   *
+   * NULL means not measured and never zero: a Reel refuses these, and so does
+   * every row collected before migration 013. Reading NULL as 0 would invent a
+   * post that reached people and converted nobody.
+   */
+  follows: bigint({ mode: 'number', unsigned: true }),
+  profileVisits: bigint('profile_visits', { mode: 'number', unsigned: true }),
   avgWatchSec: decimal('avg_watch_sec', { precision: 8, scale: 2 }),
 
   provenance: mysqlEnum(['public', 'insights', 'mixed']).notNull().default('public'),
