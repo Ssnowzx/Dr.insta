@@ -13,9 +13,15 @@ import { tokenFor } from '../lib/instagram/connection.ts'
  * 1. Does `follows` exist as a PER-MEDIA insight metric? If it does, follower
  *    conversion stops being typed in and becomes measured across the whole
  *    archive — `post.non_follower_pct` exists only because nothing measured it.
- *    `lib/instagram/collect.ts` already records that `profile_visits` exists
- *    per media and not per account, which is the reason to suspect `follows`
- *    lives in the same group.
+ *
+ *    ANSWERED 18/08/2026, FOR REELS: no. `follows`, `profile_visits` and
+ *    `profile_activity` all came back 400 — "The Media Insights API does not
+ *    support the <metric> metric for this media product type" — while `reach`
+ *    and `views` answered on the same media. The controls passing is what makes
+ *    that a verdict about the metric rather than about the call.
+ *
+ *    The refusal names the PRODUCT TYPE, so it does not settle FEED. That is
+ *    why this probe now asks a Reel and a feed post on the same run.
  *
  * 2. Does a Reel that is currently in a TRIAL show up on `/{ig-user-id}/media`?
  *    A trial is served only to non-followers and is not public, so it may not
@@ -117,14 +123,25 @@ function readMediaList (payload: unknown): MediaRow[] {
 }
 
 /**
- * The media to interrogate: the newest Reel, or the newest anything.
+ * The media to interrogate: the newest Reel AND the newest feed post.
  *
- * A Reel and not just the first item because `ig_reels_*` metrics are refused
- * on a photo, and half the list would come back "unavailable" for a reason
- * that has nothing to do with the question.
+ * Two, because of how the API refused on 18/08/2026 — "does not support the
+ * follows metric FOR THIS MEDIA PRODUCT TYPE". That wording says the refusal
+ * is about REELS specifically, not about the metric existing at all, and a
+ * probe that only ever asks a Reel can never tell those apart.
+ *
+ * A Reel is picked deliberately rather than just taking the first row: the
+ * `ig_reels_*` metrics are refused on a photo, and half the list would come
+ * back "unavailable" for a reason that has nothing to do with the question.
  */
-function pickTarget (rows: MediaRow[]): MediaRow | null {
-  return rows.find(r => r.productType === 'REELS') ?? rows[0] ?? null
+function pickTargets (rows: MediaRow[]): MediaRow[] {
+  const reel = rows.find(r => r.productType === 'REELS')
+  const feed = rows.find(r => r.productType === 'FEED')
+  const chosen = [reel, feed].filter((r): r is MediaRow => r !== undefined)
+
+  /* Neither kind present: probe whatever is there rather than nothing. */
+  if (chosen.length === 0) return rows.slice(0, 1)
+  return chosen
 }
 
 /** A single number out of either insight envelope shape, or null. */
@@ -194,6 +211,43 @@ const MARK: Record<Verdict['state'], string> = {
   unavailable: 'no '
 }
 
+/**
+ * What one target's answers mean, said out loud rather than left to be inferred.
+ *
+ * Reported per target because the refusal is per media product type: `follows`
+ * absent on a Reel and present on a feed post is a real possible outcome, and
+ * one combined verdict would hide it.
+ */
+function conclude (target: MediaRow, verdicts: Verdict[]): void {
+  const label = `${target.productType} ${target.id}`
+  const controlsOk = verdicts
+    .filter(v => v.metric === 'reach' || v.metric === 'views')
+    .every(v => v.state !== 'unavailable')
+  const follows = verdicts.find(v => v.metric === 'follows')
+
+  if (!controlsOk) {
+    console.log(
+      `  ${label}: CONTROLS FAILED. \`reach\`/\`views\` are read by the daily sync,\n` +
+      '  so their failure here means the call, the token or this media is the\n' +
+      '  problem \u2014 draw no conclusion about `follows` from this run.\n'
+    )
+    return
+  }
+
+  if (follows !== undefined && follows.state !== 'unavailable') {
+    console.log(
+      `  ${label}: \`follows\` IS available. Follower conversion can be measured\n` +
+      '  here instead of typed in \u2014 see post.non_follower_pct.\n'
+    )
+    return
+  }
+
+  console.log(
+    `  ${label}: \`follows\` is NOT available. Conversion on this surface keeps\n` +
+    '  depending on a number she types.\n'
+  )
+}
+
 async function main (): Promise<void> {
   const slug = process.env.TENANT_SLUG?.trim()
   if (slug === undefined || slug === '') {
@@ -244,7 +298,10 @@ async function main (): Promise<void> {
   console.log(`QUESTION 2 — what /media lists right now (${media.length} item(s)):\n`)
   if (media.length === 0) console.log('  (nothing)')
   for (const row of media) {
-    console.log(`  ${row.timestamp}  ${row.productType.padEnd(7)} ${row.mediaType.padEnd(15)} ${row.permalink}`)
+    console.log(
+      `  ${row.timestamp}  ${row.productType.padEnd(7)} ${row.mediaType.padEnd(15)} ` +
+      `${row.id.padEnd(19)} ${row.permalink}`
+    )
   }
   console.log(
     '\n  Compare this list against what she knows is in TRIAL right now.\n' +
@@ -252,50 +309,40 @@ async function main (): Promise<void> {
     '  If nothing is in trial today, this list proves nothing either way.\n'
   )
 
-  const target = arg('--media') === undefined
-    ? pickTarget(media)
-    : { id: arg('--media') as string, mediaType: '?', productType: '?', timestamp: '?', permalink: '—' }
+  const explicit = arg('--media')
+  const targets = explicit === undefined
+    ? pickTargets(media)
+    : [{ id: explicit, mediaType: '?', productType: '?', timestamp: '?', permalink: '\u2014' }]
 
-  if (target === null) {
+  if (targets.length === 0) {
     console.error('No media to probe. Stopping.\n')
     process.exitCode = 1
     return
   }
 
-  console.log(`QUESTION 1 — per-media metrics on ${target.id} (${target.productType}, ${target.timestamp}):\n`)
+  const runs: Array<{ target: MediaRow; verdicts: Verdict[] }> = []
 
-  const verdicts: Verdict[] = []
-  for (const metric of CANDIDATE_METRICS) {
-    const verdict = await probe(api, target.id, metric)
-    verdicts.push(verdict)
+  for (const target of targets) {
+    console.log(
+      `QUESTION 1 \u2014 per-media metrics on ${target.id} ` +
+      `(${target.productType}, ${target.timestamp}):\n`
+    )
 
-    const value = verdict.value === null ? '' : `  = ${verdict.value}`
-    console.log(`  ${MARK[verdict.state].padEnd(34)} ${metric}${value}`)
-    if (verdict.detail !== null) console.log(`     ${verdict.detail}`)
+    const verdicts: Verdict[] = []
+    for (const metric of CANDIDATE_METRICS) {
+      const verdict = await probe(api, target.id, metric)
+      verdicts.push(verdict)
+
+      const value = verdict.value === null ? '' : `  = ${verdict.value}`
+      console.log(`  ${MARK[verdict.state].padEnd(34)} ${metric}${value}`)
+      if (verdict.detail !== null) console.log(`     ${verdict.detail}`)
+    }
+
+    console.log('')
+    runs.push({ target, verdicts })
   }
 
-  const controls = verdicts.filter(v => v.metric === 'reach' || v.metric === 'views')
-  const controlsOk = controls.every(v => v.state !== 'unavailable')
-  const follows = verdicts.find(v => v.metric === 'follows')
-
-  console.log('')
-  if (!controlsOk) {
-    console.log(
-      '  CONTROLS FAILED. `reach`/`views` are read by the daily sync, so their\n' +
-      '  failure here means the call, the token or this media is the problem —\n' +
-      '  draw no conclusion about `follows` from this run.\n'
-    )
-  } else if (follows !== undefined && follows.state !== 'unavailable') {
-    console.log(
-      '  `follows` IS available per media. Follower conversion can be measured\n' +
-      '  across the archive instead of typed in — see post.non_follower_pct.\n'
-    )
-  } else {
-    console.log(
-      '  `follows` is NOT available per media. Conversion keeps depending on a\n' +
-      '  number she types.\n'
-    )
-  }
+  for (const { target, verdicts } of runs) conclude(target, verdicts)
 
   console.log(`  ${api.calls} API call(s). Nothing was written.\n`)
 }
