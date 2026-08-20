@@ -42,3 +42,38 @@
 
 - [ ] 6.1 Rodar a sonda num dia com Reel de teste no ar — a única forma de fechar a pergunta
 - [ ] 6.2 Ler `follows_per_visit` 14 dias depois de as três etapas de perfil serem marcadas
+
+## 7. O que aconteceu depois — conferido no perfil real em 20/08/2026
+
+As três etapas de perfil saíram do papel em 18/08, e **quem executou foi a Cris**, não a
+Bianca. Isso é o primeiro sinal de comportamento da divisão de trabalho: a assessora mexe
+na mecânica do perfil, a cliente responde o que só ela pode responder (mandar a aba
+Público, decidir que pauta de marca sai). O produto ainda escreve "você" para as duas.
+
+- [x] 7.1 **c4 (fixados) — marcado feito, feito pela metade.** O "kinda chic"
+      (`Db4JPPplRC0`) entrou, que era a parte que importa. Mas quem saiu dos três foi a
+      **viagem**, não a publi: a Miu Miu (`DXzAFzfh0iS`, 01/05) segue fixada. **A etapa
+      não foi reaberta** — foi feita conforme ela leu, e o que faltou virou item próprio.
+- [x] 7.2 **c6 (destaques) — a etapa pedia cinco no título e um no corpo.** "Põe looks em
+      primeiro" era a única instrução concreta; ela fez exatamente isso e marcou feito,
+      com razão. Título corrigido para "Pôr «looks» na frente dos destaques", estado
+      preservado. **Os outros quatro lugares não foram pedidos porque não existem
+      candidatos: 36 dos 49 destaques são viagem.** Fazer direito é criar destaque de
+      make/perfume/"o que usar em" — trabalho de conteúdo, não arrasto. Fica para a
+      próxima entrega.
+- [x] 7.3 **c7 "Os outros dois fixados", nova etapa** — nomeia "pensando pensamentos"
+      (20/07) e "thinking out loud" (05/08) pelos dois lugares que ainda são marca, e
+      responde a dúvida antes de ela existir: desafixar não despublica.
+- [x] 7.4 **A escolha dos dois substitutos veio de medição, não de julgamento.** Ranking
+      dos 14 posts de feed da janela — a superfície onde a API responde `follows`. Penhasco
+      entre o 3º e o 4º (146 para 20) e **nenhum post de marca passou de 9**. Registrado em
+      `perfil/metas.md`.
+- [x] 7.5 Título da entrega deixou de declarar contagem ("Três novos"), que estava errada
+      no instante em que a sétima etapa entrou.
+- [x] 7.6 Seed em produção (`3091699`), conferido renderizado nos dois temas: "Faltam 3.",
+      "4 de 7 marcados", `step_status` preservado.
+
+**O que isto ensina para a próxima etapa que eu escrever:** título e corpo têm que pedir a
+mesma coisa. Um título que promete cinco e um corpo que pede um produzem uma tarefa marcada
+como feita que não foi feita — e o defeito só aparece medindo o perfil de fora, nunca lendo
+a tela.

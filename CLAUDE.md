@@ -60,7 +60,7 @@ O detalhamento vivo (bio, ICP, pilares, voz, metas) está em **`perfil/`**. Leia
 
 **O denominador muda para esta métrica.** A regra 1 continua valendo em geral, mas quem já segue não pode seguir de novo: conversão em seguidor se normaliza por **alcance de não-seguidor**, e toda taxa declara qual denominador usou. Para o segundo degrau do funil o denominador é outro — **visitas ao perfil** — e as duas taxas não se somam nem se substituem: uma mede se a pessoa clicou, a outra se ela ficou.
 
-Atenção ao que **não** é o gargalo: alcance total. Em julho/2026 foram 5,4M de contas alcançadas, 284 mil compartilhamentos e 22 mil respostas em Stories. O gargalo é o que acontece **depois** de alcançar. Medido sobre 376 posts de 16/02 a 12/08:
+Atenção ao que **não** é o gargalo: alcance total. Em julho/2026 foram 5.584.671 contas alcançadas (número da API; o print dizia 5.413.754 e é o valor a aposentar), 284 mil compartilhamentos e 22 mil respostas em Stories. O gargalo é o que acontece **depois** de alcançar. Medido sobre 376 posts de 16/02 a 12/08:
 
 - Vídeo longo de opinião converte **41×** melhor que pauta institucional — 3.131 seguidores contra 45, com alcance parecido
 - E quase nunca chega em estranho: ~1% das visualizações do longo vêm de Explorar e Aba Reels, contra ~80% no curto
@@ -72,7 +72,7 @@ Ou seja: o conteúdo que faz estranho seguir não é mostrado a estranho, e o qu
 
 | Degrau | Julho, conta inteira | 7 posts de feed, 30 dias |
 |---|---:|---:|
-| alcance → visita ao perfil | 347.482 de 5,4M = **6,42%** | 4.386 de 881.171 = **0,50%** |
+| alcance → visita ao perfil | 347.482 de 5.584.671 = **6,22%** | 4.386 de 881.171 = **0,50%** |
 | visita → seguidor | 20.824 de 347.482 = **5,99%** | 257 de 4.386 = **5,86%** |
 
 **De cada 100 pessoas que abrem o perfil dela, 6 seguem.** Duas medições independentes, mesmo mês, mesmo número. As outras 94 viram bio, foto, destaques e os três posts fixados — nada disso é conteúdo.
@@ -301,4 +301,6 @@ OpenSpec: `/opsx:explore`, `/opsx:propose`, `/opsx:apply`, `/opsx:archive`, `/op
 - **Número sem substantivo, ou somando coisas de prazos diferentes.** "6 na fila" não diz seis o quê e misturava o de hoje com o de daqui a duas semanas. Prosa com ramificação sai do JSX e ganha teste — `manchete()` em `platform/lib/agenda.ts` é o exemplo.
 - **Propor pauta cujo sujeito é a marca.** Sai do perfil pessoal enquanto seguidores forem o norte: 179 mil pessoas alcançadas por 45 seguidores não paga o espaço. Encaminhe para a equipe da My Favorite.
 - **Responder com conteúdo um problema que está depois do clique.** 94 de cada 100 que abrem o perfil vão embora, e quem decide isso é bio, foto, destaques e os três fixados. Pauta nova não move esse número. Pergunte de que lado do clique está o gargalo antes de recomendar.
+- **Escrever etapa cujo título e corpo pedem coisas diferentes.** "Puxar cinco destaques pro começo" com um corpo que só dizia "põe «looks» em primeiro" produziu uma tarefa marcada como feita que não foi feita — e o defeito só apareceu medindo o perfil por fora, nunca lendo a tela. O título é o que ela lembra; o corpo é o que ela executa. Se os dois discordam, quem manda é o corpo e o título vira mentira.
+- **Confiar em "marcado como feito" sem olhar o perfil.** Em 18/08 as duas etapas de fixados e destaques foram marcadas, e nenhuma das duas saiu como pedida: entrou o post certo mas saiu o errado, e dos cinco destaques só um mudou. Marcar é a intenção dela; o perfil é o fato. Confira por fora antes de escrever o próximo passo em cima.
 - **Preferir a pauta que eu inferi à que ela já publicou e mediu.** O quadro de domingo era uma inferência minha de uma fala dela; "kinda chic" é dela, e mediu 212 seguidores contra a mediana de 8 do mesmo formato. Quando as duas disputam o mesmo espaço, ganha a que tem número — e a outra vai para o banco com o roteiro intacto, não para o lixo.

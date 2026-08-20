@@ -160,6 +160,50 @@ Explorar + Aba Reels; nos curtos, 77,8% a 83,5%. O que converte não chega em es
 Comparação entre meses sofre desse viés; comparação por duração e por tema **dentro da mesma
 janela** não sofre — e são essas que sustentam as decisões acima.
 
+## A segunda medição, em outra superfície — 14 posts de feed, 20/08/2026
+
+A tabela acima vem da coluna `Seguimentos` do export dela, que acumula desde a publicação.
+Esta aqui vem da API, pelo par métrica × superfície: `follows` e `profile_visits` só
+respondem em **FEED**, e a janela de insight é de 30 dias. São 14 carrosséis, medidos no
+dump de produção de 19/08.
+
+| Seguidores | Post | Alcance | Visitas ao perfil | seg/visita |
+|---:|---|---:|---:|---:|
+| **215** | kinda chic ⭐️ (10/08) | 460.909 | 1.433 | **15,0%** |
+| **196** | pensando pensamentos (20/07) | 223.671 | 1.667 | **11,8%** |
+| **146** | thinking out loud (05/08) | 352.390 | 1.249 | **11,7%** |
+| 20 | ter você ao meu lado… (25/07) | 110.098 | 1.079 | 1,9% |
+| 15 | como explicar pra esses dois… (09/08) | 111.381 | 795 | 1,9% |
+| 9 | duuump 10 anos @myfavorite (08/08) | 60.460 | 665 | 1,4% |
+| 9 | COOL GIRLS CLUB @myfavorite (28/07) | 73.132 | 412 | 2,2% |
+| 6 | spoiler Primavera 27 (27/07) | 70.285 | 322 | 1,9% |
+| 3 | my iconic dress @myfavorite (31/07) | 47.139 | 235 | 1,3% |
+
+**Três coisas que esta medição diz e a outra não podia dizer.**
+
+1. **O penhasco é entre o terceiro e o quarto lugar: 146 para 20.** Não é uma curva, é um
+   degrau. Três posts fazem o trabalho e os outros onze não fazem quase nada.
+2. **Nenhum post que fala da marca passou de 9 seguidores.** Sete dos catorze mencionam
+   `@myfavorite.oficial`, a Primavera 27 ou uma campanha; o melhor deles fez 9. Isso é a
+   mesma conclusão dos 376 posts, medida de novo, em outra superfície, com outro
+   numerador. Duas medições independentes concordando é o mais perto de causa que este
+   projeto chega.
+3. **O denominador honesto finalmente existe.** `seguidores/visitas` não sofre o viés do
+   alcance: mede quem chegou na porta e entrou. A média da conta é 5,86% — e os três
+   primeiros fazem o dobro ou mais. **A conversão do perfil não é uma constante do
+   perfil: depende de qual post trouxe a pessoa até ele.**
+
+O que os três têm em comum e nenhum dos onze tem: são foto-dump pessoal com legenda de
+duas ou três palavras — "kinda chic", "pensando pensamentos", "thinking out loud". Sem
+produto, sem marca, sem chamada. Isto é o pilar **Espelho** convertendo melhor que
+qualquer outra coisa, o que o mix de `perfil/pilares.md` já supunha e agora tem número.
+
+⚠️ **O limite, declarado:** Reels não estão neste ranking e não podem estar — a API recusa
+`follows` em REELS. Não conclua daqui que carrossel converte mais que Reel; conclua que
+**entre posts de feed**, o pessoal converte 20× o de marca. E `follows` também acumula com
+a idade do post, mas `seg/visita` normaliza isso melhor que o valor absoluto: o kinda
+chic é o mais novo dos três e lidera nas duas leituras.
+
 ## O que saiu do painel — e para onde foi
 
 Sessões rastreadas, receita, transações, conversão, cliques no link da bio e retenção de
