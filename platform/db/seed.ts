@@ -1058,6 +1058,21 @@ const QUESTION_REQUESTS: RequestSeed[] = [
       'E uma segunda coisa, na mesma resposta: a assessora que já responde o direct com você pode responder comentário em público também?\n\n' +
       'Como responder: escreva aqui embaixo os nomes e o que você achar dos comentários, e toque em Enviar recado.',
     whyItMatters: 'Quadro fixo cria gente que volta — e resposta na primeira hora puxa a segunda rodada de conversa. As duas coisas dependem só de vocês duas.'
+  },
+  /* Added 20/08/2026. She raised bringing TikTok videos over; the answer decides
+     the ORDER of what gets tested and nothing is blocked waiting for it, which
+     is exactly what belongs in a request rather than in a message. A hook that
+     already performed somewhere else is a cheap test — the hook is measured and
+     only the distribution is new. A video that never ran anywhere is a bet, and
+     bets go after evidence, not before it. */
+  {
+    title: 'Os vídeos do TikTok que você quer trazer: quais são?',
+    kind: 'question', priority: 'medium', position: 8,
+    description:
+      'Você falou em trazer vídeos do TikTok pro Instagram. Preciso saber de quais: os que foram bem lá, ou os que simplesmente nunca vieram pra cá?\n\n' +
+      'Se forem os que foram bem, eu começo por eles. Se for o acervo inteiro, a gente escolhe por assunto.\n\n' +
+      'Como responder: escreva aqui embaixo e toque em Enviar recado. "Uns dez que estouraram lá" já me serve.',
+    whyItMatters: 'Vídeo que já provou o gancho em outra plataforma é teste barato: o gancho está medido e só a distribuição é nova. Vídeo que nunca rodou é aposta, e aposta entra depois da evidência. A ordem do que eu testo primeiro muda inteira com essa resposta.'
   }
 ]
 
