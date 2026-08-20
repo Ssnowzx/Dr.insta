@@ -75,6 +75,11 @@ async function main (): Promise<void> {
     console.log(
       `${found.name}: ${result.stored} metric(s) stored for ${period}, ` +
       `${result.posts} post(s) updated, ${result.created} created` +
+      /* Said out loud because a gap in the daily follower series cannot be
+         filled in later: the API answers "how many now" and never "how many on
+         the 14th". A run that silently missed it costs that day forever, and
+         the log is the only place anyone would see it. */
+      `${result.followers === null ? ', followers NOT read' : `, ${result.followers} followers`}` +
       `${result.refreshed ? ', credential refreshed' : ''}` +
       ` (${result.calls} API call${result.calls === 1 ? '' : 's'}).`
     )

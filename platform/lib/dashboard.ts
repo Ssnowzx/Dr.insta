@@ -63,6 +63,10 @@ export async function funnel (clientId: number, period: string): Promise<FunnelS
     .where(and(
       eq(metricValue.clientId, clientId),
       eq(metricValue.period, period),
+      /* On the first of any month a day row and a month row share a period
+         string — 2026-09-01 is both. Without this the daily total would be read
+         as September's figure, once a month, silently. */
+      eq(metricValue.granularity, 'month'),
       inArray(metricDef.metricKey, [...FUNNEL_KEYS]),
       /* Only measured sources. A funnel mixing a measured number with a value
          someone typed into a form would look identical and mean nothing. */
@@ -195,6 +199,10 @@ export async function metrics (
       eq(metricValue.metricDefId, metricDef.id),
       eq(metricValue.clientId, clientId),
       eq(metricValue.period, period),
+      /* Months. A day row and a month row collide on the first of every month,
+         and a card showing the follower total as September's reach would look
+         entirely plausible. */
+      eq(metricValue.granularity, 'month'),
       /* Measured sources only. `manual` and `public` are kept in the table as
          the record of what someone reported, and `public` counts looping views
          — neither is a figure to decide on. Which of the measured ones wins is
@@ -1064,6 +1072,13 @@ export async function latestPeriod (
     .from(metricValue)
     .where(and(
       eq(metricValue.clientId, clientId),
+      /* MONTHS ONLY, and this line is the whole function.
+         `followers_total` is filed by day, and the first day row — 2026-08-20 —
+         became the newest "period" in the table. The panel switched to it,
+         found no monthly metric under that date and rendered a cycle with no
+         cards at all: no north star, no guard-rails, no funnel. Shipped and
+         seen on her screen before it was caught, by looking at it. */
+      eq(metricValue.granularity, 'month'),
       inArray(metricValue.source, [...ORIGENS_MEDIDAS])
     ))
     .orderBy(desc(metricValue.period))
