@@ -307,11 +307,11 @@ export async function digestFor (
     title: m.title,
     detail: ESTADO_PAUTA[m.state] ?? m.state,
     at: m.at,
-    /* The client, not a person: `idea.state` is one column for the whole team
-       and the row does not record which of them last touched it. The audit log
-       does — and putting a name here that the query cannot prove would be worse
-       than naming the account. */
-    who: c.name,
+    /* The person, now that the query reads the audit log and can prove it.
+       This used to name the account, because `idea.state` is one column for the
+       whole team — and while the events came from a row timestamp, some of them
+       had no person behind them at all. */
+    who: m.who ?? c.name,
     key: `idea-estado-${m.code}`
   }))
 

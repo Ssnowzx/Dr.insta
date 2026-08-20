@@ -2,8 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { orm } from '../db/client.ts'
 import { db } from '../db/connection.ts'
-import { client, idea, ideaBeat, ideaNote, user } from '../db/schema.ts'
-import { bankSize, ideaDetail, ideas, pendingIdeaCount } from '../lib/pautas.ts'
+import { auditLog, client, idea, ideaBeat, ideaNote, user } from '../db/schema.ts'
+import { bankSize, ideaDetail, ideas, ideasMovedSince, pendingIdeaCount } from '../lib/pautas.ts'
 import { ulid } from '../lib/ulid.ts'
 
 /**
@@ -81,6 +81,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  await orm().delete(auditLog).where(eq(auditLog.clientId, clientId))
   for (const id of [comRoteiro, noBanco, publicada]) {
     await orm().delete(ideaNote).where(eq(ideaNote.ideaId, id))
     await orm().delete(ideaBeat).where(eq(ideaBeat.ideaId, id))
@@ -194,5 +195,69 @@ describe('bankSize', () => {
   it('should count only the undated ones', async () => {
     // ARRANGE / ACT / ASSERT
     expect(await bankSize(clientId)).toBe(1)
+  })
+})
+
+/**
+ * The digest reports what a person did — and used to report the seed run.
+ *
+ * `ideasMovedSince` read `idea.updatedAt`, and `db/seed.ts` upserts every pauta
+ * with `updatedAt: now`. Every re-seed manufactured one "entrou na fila" per
+ * scheduled pauta, under her name, at that minute. The events were
+ * indistinguishable from real ones, in the exact screen we read to find out
+ * whether anyone is using the product.
+ */
+describe('ideasMovedSince', () => {
+  const janela = (): { since: Date; until: Date } => {
+    const agora = new Date()
+    return {
+      since: new Date(agora.getTime() - 60 * 60 * 1000),
+      until: new Date(agora.getTime() + 60 * 60 * 1000)
+    }
+  }
+
+  it('should not report a pauta whose row was only touched', async () => {
+    // ARRANGE — exactly what a re-seed does: bump the timestamp, audit nothing
+    await orm().update(idea).set({ updatedAt: new Date() }).where(eq(idea.id, comRoteiro))
+    const { since, until } = janela()
+
+    // ACT
+    const movidas = await ideasMovedSince(clientId, since, until)
+
+    // ASSERT
+    expect(movidas).toEqual([])
+  })
+
+  it('should report a transition a person performed, and name that person', async () => {
+    // ARRANGE
+    await orm().insert(auditLog).values({
+      clientId, userId, action: 'idea_recorded', entity: 'idea', entityId: comRoteiro,
+      createdAt: new Date()
+    })
+    const { since, until } = janela()
+
+    // ACT
+    const movidas = await ideasMovedSince(clientId, since, until)
+
+    // ASSERT
+    expect(movidas).toHaveLength(1)
+    expect(movidas[0]?.state).toBe('recorded')
+    expect(movidas[0]?.title).toBe('Pauta com roteiro')
+    expect(movidas[0]?.who).toBe('Bianca')
+  })
+
+  it('should drop an audited action it has no word for', async () => {
+    // ARRANGE — a state added later must vanish, not print its column name
+    await orm().insert(auditLog).values({
+      clientId, userId, action: 'idea_arquivada', entity: 'idea', entityId: noBanco,
+      createdAt: new Date()
+    })
+    const { since, until } = janela()
+
+    // ACT
+    const movidas = await ideasMovedSince(clientId, since, until)
+
+    // ASSERT — still only the recorded one from the test above
+    expect(movidas.map(m => m.title)).toEqual(['Pauta com roteiro'])
   })
 })

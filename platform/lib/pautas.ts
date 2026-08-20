@@ -1,7 +1,7 @@
 import 'server-only'
 import { and, asc, desc, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
 import { orm } from '@/db/client'
-import { idea, ideaBeat, ideaNote, pillar, user } from '@/db/schema'
+import { auditLog, idea, ideaBeat, ideaNote, pillar, user } from '@/db/schema'
 
 /**
  * The pautas and their scripts — everything the Ideias screen reads.
@@ -265,28 +265,69 @@ export async function ideaNotesSince (
  * the screen, which is the "depends on someone remembering" this product removed
  * everywhere else.
  */
+/** The four transitions a person can perform, and nothing else. */
+const ESTADO_AUDITADO: Record<string, IdeaState> = {
+  idea_scheduled: 'scheduled',
+  idea_recorded: 'recorded',
+  idea_published: 'published',
+  idea_dropped: 'dropped'
+}
+
+/**
+ * Pautas a PERSON moved in the window — read from the audit log, not from a
+ * row timestamp.
+ *
+ * THIS USED TO REPORT THE SEED RUN AS HER WORK
+ *
+ * It read `idea.updatedAt`, and `db/seed.ts` upserts every pauta with
+ * `updatedAt: now` on every run. So each re-seed manufactured one "entrou na
+ * fila" per scheduled pauta, dated that minute and shown under her name in
+ * both digests. Eight phantom events per run, three runs in three days, and
+ * they were indistinguishable from the real thing — which is worse than
+ * useless, because the digest is what we read to find out whether anyone is
+ * using this.
+ *
+ * The audit log carries only what a person did, with `userId` attached, so it
+ * fixes the attribution in the same move: the old code named the account
+ * because the row "does not record which of them last touched it". It does,
+ * one table over.
+ *
+ * The cost, stated: transitions made before the audit log existed are not in
+ * here. The alternative was keeping a query that invents events, and an empty
+ * history is more honest than a fabricated one.
+ */
 export async function ideasMovedSince (
   clientId: number,
   since: Date,
   until: Date
-): Promise<Array<{ title: string; state: IdeaState; at: Date; code: string }>> {
-  return await orm()
+): Promise<Array<{ title: string; state: IdeaState; at: Date; code: string; who: string | null }>> {
+  const linhas = await orm()
     .select({
       title: idea.title,
       code: idea.publicCode,
-      state: idea.state,
-      at: idea.updatedAt
+      action: auditLog.action,
+      at: auditLog.createdAt,
+      who: user.name
     })
-    .from(idea)
+    .from(auditLog)
+    .innerJoin(idea, eq(idea.id, auditLog.entityId))
+    .leftJoin(user, eq(user.id, auditLog.userId))
     .where(and(
-      eq(idea.clientId, clientId),
-      /* `proposed` is where a pauta starts, so reporting it would announce his
-         own seed run back to him on the day he ran it. */
-      ne(idea.state, 'proposed'),
-      sql`${idea.updatedAt} >= ${since}`,
-      sql`${idea.updatedAt} < ${until}`
+      eq(auditLog.clientId, clientId),
+      eq(auditLog.entity, 'idea'),
+      inArray(auditLog.action, Object.keys(ESTADO_AUDITADO)),
+      sql`${auditLog.createdAt} >= ${since}`,
+      sql`${auditLog.createdAt} < ${until}`
     ))
-    .orderBy(desc(idea.updatedAt))
+    .orderBy(desc(auditLog.createdAt))
+
+  return linhas.flatMap(l => {
+    const state = ESTADO_AUDITADO[l.action]
+    /* `inArray` already filtered, so this only narrows the type — but an
+       action added later without a label here must vanish rather than print
+       its own database name on her screen. */
+    return state === undefined ? [] : [{ title: l.title, code: l.code, state, at: l.at, who: l.who }]
+  })
 }
 
 /** New pautas she has not seen, for her own digest. */
