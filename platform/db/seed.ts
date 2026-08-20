@@ -2108,21 +2108,40 @@ async function main (): Promise<void> {
     },
     {
       code: 'c6', urgency: 'this_week', deadlineLabel: 'esta semana',
-      title: 'Puxar cinco destaques pro começo',
-      summary: 'Você tem 49 destaques e não precisa apagar nenhum — é só arrastar.\n\nOs cinco primeiros são o menu de quem chegou agora. Hoje começam por cidades, que é o que quem já te acompanha quer rever. Põe "looks" em primeiro e deixa as viagens depois.',
-      evidenceValue: '49',
-      evidenceLabel: 'destaques hoje — os quatro primeiros que aparecem são de viagem'
+      title: 'Pôr "looks" na frente dos destaques',
+      summary: 'Você tem 49 destaques e não precisa apagar nenhum — é só arrastar.\n\nO primeiro é o menu de quem chegou agora. Hoje começa por cidade, que é o que quem já te acompanha quer rever. Põe "looks" em primeiro e deixa as viagens depois.',
+      evidenceValue: '36',
+      evidenceLabel: 'dos seus 49 destaques são viagem. "looks" é o único que responde o que a pessoa vai ver aqui'
+    },
+    /* Added 20/08/2026, after checking the profile: c4 was marked done and the
+       "kinda chic" really is pinned — but what left the three was the trip, not
+       the publi. This does not reopen c4. It names the two slots still holding
+       brand, and it names them from the only ranking that exists: the 14 feed
+       posts of the last 30 days, the surface where the API answers `follows`.
+       Every personal photo dump beat every brand post, and the cliff between
+       third and fourth place is 146 to 20. Reels are not in this ranking and
+       the copy must never imply they are. */
+    {
+      code: 'c7', urgency: 'today', deadlineLabel: 'hoje, dois minutos',
+      title: 'Os outros dois fixados',
+      summary: 'O "kinda chic" já está lá e fica onde está.\n\nOs outros dois lugares são a coleção e a publi da Miu Miu. No lugar deles: "pensando pensamentos", de 20 de julho, e "thinking out loud", de 5 de agosto.\n\nDesafixar não tira o post do ar. Ele continua no seu perfil, na data dele — só sai dos três de cima.',
+      evidenceValue: '196 e 146',
+      evidenceLabel: 'seguidores que esses dois trouxeram. Nenhum post seu que fala da marca passou de 9'
     }
   ]
 
   const thirdDeliveryId = await seedDelivery({
     cycleId: thirdCycleId,
     slug: 'quem-te-ve-te-segue',
-    /* Six since 18/08/2026. The first three are the ones she already has and
-       nothing about them changed; the wording opens by saying so, because on
-       this product every new delivery is read as a replacement until told
-       otherwise. */
-    title: 'Os três primeiros continuam. Três novos, e dois minutos resolvem o primeiro.',
+    /* The first three are the ones she already had and nothing about them
+       changed; the wording opens by saying so, because on this product every
+       new delivery is read as a replacement until told otherwise.
+
+       The count used to be in this string — "Três novos". A seventh step
+       arrived on 20/08 and the sentence was wrong before anyone noticed. A
+       title that states a number has to be edited every time the list moves,
+       and the edit that gets forgotten is the one nobody can see is stale. */
+    title: 'Os três primeiros continuam. Os novos são sobre o seu perfil, não sobre o que você posta.',
     subtitle: 'Você já publica 8 Reels por semana e alcança 5,4 milhões de contas por mês. Isto aqui continua não pedindo mais nada — o que entrou agora é sobre o que a pessoa encontra depois de clicar no seu perfil.',
     periodStart: '2026-02-16',
     periodEnd: '2026-08-12',
