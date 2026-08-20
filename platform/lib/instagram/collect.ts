@@ -115,6 +115,52 @@ export async function collectAccountMonth (
 }
 
 /**
+ * The account as it is right now — a total, not a month of one.
+ *
+ * `followers_count` is the number the cycle is judged by and the only one she
+ * has ever named out loud: a million by December. Everything the panel showed
+ * about followers until now was NET followers of a closed month, so on the 20th
+ * of August it answered a question about July. This answers "how many do I have
+ * and how far is that from a million", which is the question she actually asks.
+ *
+ * `biography` is here because reading it is what lets the platform verify the
+ * bio step instead of waiting for somebody to tick a box.
+ *
+ * Confirmed against the live token on 20/08/2026 by `scripts/probe-profile-
+ * fields.ts`, one field per call, with `user_id` and `username` as controls —
+ * both fields answered. Batching them in one call is safe only because that run
+ * proved neither is refused; a batch containing one invalid field fails whole.
+ *
+ * NOT COLLECTED, DELIBERATELY: `profile_picture_url`. The Graph API signs it and
+ * it expires in hours. Stored in a row it becomes a broken image on a screen
+ * nobody is looking at, which is worse than no picture.
+ *
+ * Returns null when the payload has no usable follower count. Absence is
+ * preserved here exactly as it is for every other metric: a fabricated zero
+ * would read as an account that lost every follower it had.
+ */
+export async function collectProfile (
+  client: IgClient,
+  igUserId: string
+): Promise<{ followersTotal: number; biography: string | null } | null> {
+  const payload = await client.get(igUserId, {
+    fields: 'followers_count,biography'
+  })
+
+  if (payload === null || typeof payload !== 'object') return null
+  const objeto = payload as Record<string, unknown>
+
+  const total = objeto.followers_count
+  if (typeof total !== 'number' || !Number.isFinite(total)) return null
+
+  const bio = objeto.biography
+  return {
+    followersTotal: total,
+    biography: typeof bio === 'string' ? bio : null
+  }
+}
+
+/**
  * Pulls `name` -> `total_value.value` out of the insights envelope.
  *
  * Hand-narrowed rather than cast: the shape belongs to someone else's server,

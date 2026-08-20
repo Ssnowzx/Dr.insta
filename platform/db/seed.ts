@@ -146,6 +146,16 @@ const DEFS: DefSeed[] = [
     howToMeasure: 'Insights > Atividade do perfil'
   },
   {
+    /* The total, read live from the account node — not a month of anything.
+       Every follower figure this product had until 20/08/2026 described a
+       CLOSED month, so on the 20th of August the panel answered a question
+       about July. This is the one she says out loud. */
+    key: 'followers_total', label: 'Seguidores', short: 'Total', unit: 'count',
+    tier: 'monitor', decimals: 0,
+    description: 'Quantos seguidores você tem agora. Vem da sua conta cinco vezes por dia — é o número inteiro, não o do mês.',
+    howToMeasure: 'O número embaixo do seu @, no seu perfil'
+  },
+  {
     key: 'followers_net', label: 'Seguidores novos', unit: 'count',
     tier: 'north_star', decimals: 0,
     description: 'Quantas pessoas passaram a te seguir no mês, já descontando quem deixou. É o número que decide este ciclo.',
@@ -368,6 +378,21 @@ const THIRD_TARGETS: TargetSeed[] = [
   {
     key: 'follows_per_nonfollower_reach',
     note: 'Só existe depois do número acima. É a taxa que realmente decide, e ela ainda não foi medida.'
+  },
+  {
+    /* Her own words, and the only figure in this file she chose herself: a
+       million by December. It lives in the seed rather than in the panel's code
+       because it is a decision, and decisions written into a component go stale
+       without anyone being able to see that they did.
+
+       The baseline is what the account node answered on the day the product
+       first asked it — 715.519 — and not an estimate of where she was when the
+       cycle opened on 13/08. There is no way back to that number: the API
+       answers "how many now" and nothing else. Dating it honestly is the whole
+       of what can be done. */
+    key: 'followers_total', baseline: '715519', target: '1000000',
+    baselineOn: '2026-08-20',
+    note: 'Alvo declarado por ela: 1 milhão até o fim de dezembro. A linha de base é a primeira leitura automática do total, em 20/08.'
   },
   /* THE FOUR GUARD-RAILS, RECALIBRATED 20/08/2026
      ---------------------------------------------

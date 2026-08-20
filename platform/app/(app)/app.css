@@ -1878,6 +1878,24 @@ a.secao-nota:hover { text-decoration: underline; }
    escalates with the age — a banner that always looks urgent stops being read.
    ============================================================================= */
 
+/* The one live number on a page made of closed months.
+   
+   Reading order is deliberate: the cycle's goal, then where she is against it
+   today, then how old everything below is. The rule on the left is the same
+   device the plan cards use for evidence — this line is a measurement, not a
+   caption, and it should not be mistaken for the data-age note it sits above.
+   No new colour token: `--tinta` is the page's primary text and already carries
+   the contrast the theme was measured for. */
+.meta-hoje {
+  margin: .875rem 0 0;
+  padding-left: .75rem;
+  border-left: 2px solid var(--dado-texto);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--tinta);
+  max-width: 54ch;
+}
+
 .idade {
   margin: 1rem 0 0;
   padding: .75rem .875rem;

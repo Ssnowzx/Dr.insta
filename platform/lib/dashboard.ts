@@ -333,6 +333,79 @@ export interface CycleSummary {
   endsOn: string | null
 }
 
+/**
+ * What the goal line at the top of the panel needs, in one round trip.
+ *
+ * THREE NUMBERS THAT LIVE IN DIFFERENT PLACES, ON PURPOSE
+ *
+ * `followers_total` is a DAY row: the account node answers "how many now" and
+ * never "how many on the 14th", so the series is whatever the collection
+ * managed to write, and the newest row is the answer.
+ *
+ * `followers_net` is a MONTH row and stays that way. Net followers of a closed
+ * month is a fact about that month; putting the two on the same granularity
+ * would make one of them a lie.
+ *
+ * `goal` comes from the cycle's target rather than from a constant here,
+ * because a million by December is her decision and decisions live in the
+ * seed. A number typed into this file would be a strategy written in code,
+ * which is how the last four guard-rails went stale without anyone noticing.
+ *
+ * Every field is nullable and the caller is expected to cope: the line has to
+ * be able to say less rather than say something untrue.
+ */
+export async function followerGoal (
+  clientId: number,
+  cycleId: number
+): Promise<{ total: number | null; goal: number | null; lastMonthNet: number | null }> {
+  const [totalRow] = await orm()
+    .select({ value: metricValue.value })
+    .from(metricValue)
+    .innerJoin(metricDef, eq(metricDef.id, metricValue.metricDefId))
+    .where(and(
+      eq(metricValue.clientId, clientId),
+      eq(metricDef.metricKey, 'followers_total'),
+      eq(metricValue.granularity, 'day')
+    ))
+    .orderBy(desc(metricValue.period))
+    .limit(1)
+
+  const [goalRow] = await orm()
+    .select({ target: metricTarget.target })
+    .from(metricTarget)
+    .innerJoin(metricDef, eq(metricDef.id, metricTarget.metricDefId))
+    .where(and(
+      eq(metricTarget.clientId, clientId),
+      eq(metricTarget.cycleId, cycleId),
+      eq(metricDef.metricKey, 'followers_total')
+    ))
+    .limit(1)
+
+  const [netRow] = await orm()
+    .select({ value: metricValue.value })
+    .from(metricValue)
+    .innerJoin(metricDef, eq(metricDef.id, metricValue.metricDefId))
+    .where(and(
+      eq(metricValue.clientId, clientId),
+      eq(metricDef.metricKey, 'followers_net'),
+      eq(metricValue.granularity, 'month')
+    ))
+    .orderBy(desc(metricValue.period))
+    .limit(1)
+
+  /* `decimal` comes back as a string from MySQL. Number.parseFloat on
+     undefined is NaN, which would print as a goal of NaN — so absence is
+     narrowed before it is parsed, not after. */
+  const numero = (v: string | null | undefined): number | null =>
+    v === null || v === undefined ? null : Number.parseFloat(v)
+
+  return {
+    total: numero(totalRow?.value),
+    goal: numero(goalRow?.target),
+    lastMonthNet: numero(netRow?.value)
+  }
+}
+
 export async function activeCycle (clientId: number): Promise<CycleSummary | null> {
   const rows = await orm()
     .select({

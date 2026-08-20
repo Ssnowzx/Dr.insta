@@ -5,9 +5,10 @@ import { Series } from '@/components/series'
 import { MetricBar, MetricStat } from '@/components/metric-bar'
 import { Funnel } from '@/components/funnel'
 import {
-  activeCycle, clientProfile, funnel, latestPeriod, metrics,
+  activeCycle, clientProfile, followerGoal, funnel, latestPeriod, metrics,
   monthlySeries, requests
 } from '@/lib/dashboard'
+import { goalLine } from '@/lib/goal'
 import { clientScope, requireSession } from '@/lib/dal'
 import { KIND_LABEL, turnOf } from '@/lib/pedido'
 import { connectionFor } from '@/lib/instagram/connection'
@@ -64,12 +65,26 @@ export default async function Painel () {
 
   const identity = await requireSession()
 
-  const [todas, pedidos, series, etapas] = await Promise.all([
+  const [todas, pedidos, series, etapas, meta] = await Promise.all([
     metrics(clientId, cycle.id, period, profile?.niche ?? 'lifestyle'),
     requests(clientId),
     monthlySeries(clientId, ['views', 'posts_published']),
-    funnel(clientId, period)
+    funnel(clientId, period),
+    followerGoal(clientId, cycle.id)
   ])
+
+  /* The only live number on a page made of closed months, and the reason it is
+     here: everything below describes July, and she opens this to find out where
+     she is TODAY against the one target she chose herself. Null when the total
+     has never been collected — a placeholder at the top of the panel is a line
+     she learns to skip. */
+  const distancia = goalLine({
+    total: meta.total,
+    goal: meta.goal,
+    deadline: cycle.endsOn,
+    today: new Date(),
+    lastMonthNet: meta.lastMonthNet
+  })
 
   const cartoes = todas.filter(m => !HANDED_OFF.has(m.key))
 
@@ -131,6 +146,7 @@ export default async function Painel () {
         </p>
         <h1 className="display">{cycle.title}</h1>
         {cycle.goal !== null && <p className="lead">{cycle.goal}</p>}
+        {distancia !== null && <p className="meta-hoje">{distancia}</p>}
         <DataAge
           period={period}
           syncedAt={conexao?.state === 'active' ? conexao.lastSyncAt : null}

@@ -4,7 +4,7 @@ import { orm } from '@/db/client'
 import { metricDef, metricValue, post } from '@/db/schema'
 import { createClient, IgAuthError } from './client.ts'
 import type { IgClient } from './client.ts'
-import { collectAccountMonth } from './collect.ts'
+import { collectAccountMonth, collectProfile } from './collect.ts'
 import type { Collected } from './collect.ts'
 import { listRecentMedia, mediaInsights, retentionPct, WINDOW_DAYS } from './media.ts'
 import {
@@ -43,6 +43,15 @@ export interface SyncResult {
    * something upstream had been broken for a month.
    */
   created: number
+  /**
+   * Her follower total at this run, or null when the account node did not
+   * answer.
+   *
+   * Reported so the log says whether the daily series got a point. A gap in it
+   * cannot be backfilled — the API answers "how many now" and never "how many
+   * on the 14th" — so a silent failure here costs a day forever.
+   */
+  followers: number | null
   refreshed: boolean
   calls: number
   /** Present only on failure. */
@@ -61,7 +70,7 @@ export async function syncClient (
   period: string,
   now: Date = new Date()
 ): Promise<SyncResult> {
-  const stored0 = { ok: false, stored: 0, posts: 0, created: 0, refreshed: false, calls: 0 }
+  const stored0 = { ok: false, stored: 0, posts: 0, created: 0, followers: null, refreshed: false, calls: 0 }
 
   const credential = await tokenFor(clientId)
   if (credential === null) {
@@ -96,6 +105,7 @@ export async function syncClient (
   try {
     const collected = await collectAccountMonth(client, credential.igUserId, period)
     const stored = await storeCollected(clientId, period, collected, now)
+    const followers = await storeFollowerTotal(client, clientId, credential.igUserId, now)
     const media = await collectMedia(client, clientId, credential.igUserId, now)
 
     await markSynced(clientId, now)
@@ -104,6 +114,7 @@ export async function syncClient (
       stored,
       posts: media.updated,
       created: media.created,
+      followers,
       refreshed,
       calls: client.calls
     }
@@ -187,6 +198,73 @@ async function storeCollected (
   }
 
   return written
+}
+
+/**
+ * Her follower total, filed under the day it was read.
+ *
+ * A DAY, NOT A MONTH — and that is the whole point
+ *
+ * Every other metric here describes a closed calendar month, which is right for
+ * them: reach in a month is a fact about that month. A follower total is a fact
+ * about a moment, and the moment is the only one the API will ever give — there
+ * is no endpoint for "how many did she have on the 14th". So a day missed is a
+ * day missing forever, which is why the caller reports whether this worked
+ * instead of letting it fail quietly.
+ *
+ * Five runs a day write the same row five times; the unique key is
+ * (client, metric, period, granularity, source) and the last read of the day
+ * wins. That is the honest reading for a running total.
+ *
+ * Swallows its own failure, like `funnelInsights` and for the same reason: by
+ * the time this runs the month's metrics are already in hand, and losing them
+ * because the account node changed shape would be a bad trade.
+ */
+async function storeFollowerTotal (
+  client: IgClient,
+  clientId: number,
+  igUserId: string,
+  now: Date
+): Promise<number | null> {
+  try {
+    const perfil = await collectProfile(client, igUserId)
+    if (perfil === null) return null
+
+    const [def] = await orm()
+      .select({ id: metricDef.id })
+      .from(metricDef)
+      .where(eq(metricDef.metricKey, 'followers_total'))
+      .limit(1)
+
+    /* No definition means the seed has not run with it yet. Writing the row
+       anyway is impossible — `metric_def_id` is not nullable — and inventing a
+       definition here would put a metric on her panel that no seed authored. */
+    if (def === undefined) return null
+
+    const value = perfil.followersTotal.toFixed(6)
+    /* UTC, like `currentPeriod`. A run at 21:40 in Brazil belongs to the day the
+       rest of the collection files it under, or the series grows a duplicate
+       every evening. */
+    const day = now.toISOString().slice(0, 10)
+
+    await orm()
+      .insert(metricValue)
+      .values({
+        clientId,
+        metricDefId: def.id,
+        period: day,
+        granularity: 'day',
+        value,
+        source: 'api',
+        createdAt: now,
+        updatedAt: now
+      })
+      .onDuplicateKeyUpdate({ set: { value, updatedAt: now } })
+
+    return perfil.followersTotal
+  } catch {
+    return null
+  }
 }
 
 /**
