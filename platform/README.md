@@ -123,8 +123,26 @@ on. A new migration always lands as a new file; never edit one already applied.
 3. **`UNIQUE (client_id, metric_def_id, period, granularity, source)`.** The same
    metric arrives from Insights and from GA4 with different numbers; overwriting
    one with the other would destroy the disagreement that needs to surface.
+
+   **Every query that means "the month" must SAY `granularity = 'month'`.**
+   `followers_total` is filed by day — the account node answers "how many now"
+   and never "how many on the 14th" — and it is the first row here that is not
+   a month. On 20/08/2026 it broke the panel twice over in one deploy:
+   `latestPeriod` read `2026-08-20` as the newest period and rendered a cycle
+   with no cards at all, and `metrics()`/`funnel()` would have read the daily
+   total as September's figure on the 1st, when a day period and a month period
+   are the same string. Filtering by `period` alone is not enough and looks
+   correct. See `test/periodo-ignora-dia.test.ts`.
 4. **`metric_target.contaminated`** marks a baseline that cannot set a target. It
    is the "baseline before target" rule written in SQL.
+
+   It comes OFF when a real measurement replaces the weak one, and that is not
+   cosmetic: the four cycle guard-rails carried floors from a six-Reel
+   screenshot until 20/08/2026, three to four times under the account's actual
+   rates, so no drop could ever cross them. A rail that cannot be crossed is
+   decoration. Floors now come from the API over a closed month — the same
+   measurement the card displays — with no comfort margin, because one closed
+   month says nothing about the account's normal noise.
 5. **`pillar` hangs off the CYCLE, not the client.** A pillar is a bet with an
    expiry date. Tied to the client, November's edit would overwrite August's mix
    and "did the bet pay off?" would lose its object. Tied to the cycle, closing

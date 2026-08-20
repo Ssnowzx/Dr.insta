@@ -15,9 +15,12 @@ context: |
   compra" (04/08–12/08), ambos fechados sem leitura — a relação com a loja passou para a
   equipe da My Favorite.
 
-  Não é o gargalo: alcance. Julho fez 5,4M de contas alcançadas, 284 mil compartilhamentos
-  e 22 mil respostas em Stories. Comentários e saves viraram guard-rail com piso no próprio
-  baseline.
+  Não é o gargalo: alcance. Julho fez 5.584.671 contas alcançadas (medido pela API; o print
+  dizia 5.413.754), 304 mil compartilhamentos e 22 mil respostas em Stories. Comentários e
+  saves são guard-rail com piso no próprio baseline — recalibrados em 20/08/2026 sobre o mês
+  fechado medido pela API, porque os pisos anteriores vinham de uma amostra de 6 Reels e
+  ficavam 3 a 4x abaixo da verdade. Desde 20/08 a plataforma também lê o TOTAL de seguidores
+  ao vivo, 5x por dia: 715.517 em 20/08, contra a meta de 1M em 31/12.
 
   O gargalo tem DOIS degraus, e o segundo foi medido em 18/08/2026:
   - alcance → visita ao perfil: 6,42% (347.482 sobre 5,4M)

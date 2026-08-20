@@ -74,23 +74,41 @@ alto e otimizá-los seria resolver problema que a conta não tem.
 | **Seguidores ÷ visitas ao perfil** | **5,99%** | **≥ 9%** | derivado: seguidores do mês ÷ visitas do mês | mensal |
 | Alcance de não-seguidor ÷ alcance | **a medir** | — | Insights por Reel > aba **Público** | por post |
 | Seguidores ÷ alcance de não-seguidor | **a medir** | — | derivado do acima | por post |
-| Comentários/alcance — guard-rail | 0,21% ⚠️ amostra 6 | **não cair** | Insights por post | por post |
-| Saves/alcance — guard-rail | 0,23% ⚠️ amostra 6 | **não cair** | Insights por post | por post |
-| Sends/alcance — guard-rail | 1,32% | **não cair** | Insights por post | por post |
-| Alcance — guard-rail | 5.413.754/mês | **não cair** | Insights > Visão geral | mensal |
+| Comentários/alcance — guard-rail | **0,32%** | **não cair** | conta, mês fechado (API) | mensal |
+| Saves/alcance — guard-rail | **0,74%** | **não cair** | conta, mês fechado (API) | mensal |
+| Sends/alcance — guard-rail | **5,45%** | **não cair** | conta, mês fechado (API) | mensal |
+| Alcance — guard-rail | **5.584.671/mês** | **não cair** | conta, mês fechado (API) | mensal |
+| Seguidores (total) | **715.517** em 20/08 | **1.000.000 até 31/12** | conta, ao vivo (API) | 5×/dia |
 
 ★ é a métrica-norte. As duas linhas "a medir" ficam **sem alvo de propósito**: a divisão
 entre seguidor e estranho foi inferida por fonte de tráfego em 8 Reels — indício, não
 medição. Alvo em cima de indício é ficção, e coletar a aba Público é o passo zero do ciclo.
 
-> **A fonte mudou em 14/08/2026, os alvos não.** A conta foi conectada e o alcance
-> de julho passou a ser medido pela API: **5.584.671**, contra os 5.413.754
-> transcritos do print. Diferença de 3,2%, e a versão medida é a melhor.
+> **~~A fonte mudou em 14/08/2026, os alvos não.~~ Decisão revista em 20/08/2026.**
 >
-> **O baseline da tabela fica como está.** Trocar a régua no meio do ciclo faria o
-> guard-rail medir contra um número que ninguém acordou, e faria o "não cair"
-> parecer cumprido por mudança de fonte. Os alvos deste ciclo foram fixados sobre
-> os números de 13/08; na virada do próximo, tudo passa a nascer medido.
+> O que estava escrito aqui, e o motivo: os baselines ficariam nos números do
+> print porque "trocar a régua no meio do ciclo faria o `não cair` parecer
+> cumprido por mudança de fonte". O receio é legítimo e **não se aplicava a este
+> caso** — o argumento foi conferido antes de ser derrubado.
+>
+> **Por que ele se inverte aqui.** Os quatro pisos vinham de um print de julho
+> com **amostra de 6 Reels** — abaixo do mínimo de 7 posts que é regra 3 deste
+> projeto — e o denominador era somado post a post, o que conta duas vezes quem
+> viu dois posts. Os dois erros empurram para o mesmo lado, então os pisos
+> ficavam **3 a 4 vezes abaixo da verdade**. E o valor exibido no cartão já era
+> o da API. O painel comparava leitura de API contra piso de print, e a régua
+> antiga não protegia nada: os compartilhamentos podiam cair pela metade e o
+> cartão continuaria dizendo "não caiu".
+>
+> Trocar a régua aqui **aperta** o guard-rail, não afrouxa. É o oposto do risco
+> que a decisão original queria evitar, e por isso ela cai.
+>
+> **Sem margem de conforto, de propósito.** O piso ficou exatamente no valor
+> medido. Uma folga de 10% silenciaria o alarme com um número que ninguém mediu
+> — com um único mês fechado, ninguém sabe o ruído normal desta conta. Agosto e
+> setembro fechados dão a banda real. O alcance é a exceção e mantém a regra que
+> **foi decidida** e não inventada agora: queda acima de 25% sustentada por três
+> semanas abre revisão do mix.
 >
 > Consequência prática no painel: a taxa de visitas ao perfil é derivada na
 > leitura desde `b566ff3`, então ela acompanha o alcance vigente — 347.482 ÷
