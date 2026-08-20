@@ -288,6 +288,16 @@ interface TargetSeed {
   baseline?: string
   target?: string
   contaminated?: boolean
+  /**
+   * The day the baseline describes, when it is not `BASELINE_ON`.
+   *
+   * The default is the day the figures were transcribed, which was honest while
+   * every one of them came from a screenshot taken that morning. A baseline
+   * measured by the API over a closed calendar month describes the month, not
+   * the transcription — and auditing a floor months later means knowing which
+   * window it came out of.
+   */
+  baselineOn?: string
   /** Exactly one per cycle — enforced by a unique index, not by care here. */
   northStar?: boolean
   note?: string
@@ -359,24 +369,47 @@ const THIRD_TARGETS: TargetSeed[] = [
     key: 'follows_per_nonfollower_reach',
     note: 'Só existe depois do número acima. É a taxa que realmente decide, e ela ainda não foi medida.'
   },
-  /* This is the ONE targetNote that renders (contaminated → metric-bar shows
-     it). It used to assert "o diagnóstico de 12/08 continua verdadeiro" in the
-     present tense — a claim the API now remeasures monthly and can contradict.
-     Dated measurement instead: true forever, however the number moves. */
+  /* THE FOUR GUARD-RAILS, RECALIBRATED 20/08/2026
+     ---------------------------------------------
+     Every floor below used to come from a July screenshot of six Reels over
+     thirteen days — under this project's own minimum of seven posts, and Reels
+     only, while the rates describe the whole account. The denominator was
+     inflated on top of that: summing reach post by post counts twice whoever
+     saw two posts. Both errors push the same way, so the floors sat three to
+     four times under the truth and no drop could ever cross them. A rail that
+     cannot be crossed is decoration.
+
+     The figures below are the same measurement the card itself displays:
+     account metric over account reach, full closed month, from the API
+     (`collect.ts` RATES). Not a screenshot, not a sample, not a per-post sum.
+
+     They are deliberately EXACT — no comfort margin. A 1% dip will show as a
+     drop, and that is the honest state of a rail calibrated on one closed
+     month: nobody here knows this account's normal month-to-month noise yet.
+     Inventing a 10% cushion would silence the alarm with a number nobody
+     measured. Two closed months (August, September) give the real band; until
+     then the first crossing is read, not obeyed.
+
+     `reach` keeps its own tolerance because that one WAS decided rather than
+     invented, and it stays in prose on the card. */
   {
-    key: 'comments_reach', baseline: '0.002100', target: '0.002100', contaminated: true,
-    note: 'Guard-rail, não alvo — medido em 12/08 em 0,21% contra 0,50% do nicho, e rebaixado de alvo por decisão da cliente. O piso é o próprio ponto de partida: se cair, o ciclo está comprando audiência que não conversa.'
+    key: 'comments_reach', baseline: '0.003164', target: '0.003164',
+    baselineOn: '2026-07-31',
+    note: 'Guard-rail, não alvo — rebaixado de alvo por decisão da cliente. Medido em julho fechado: 0,32% contra 0,50% do nicho. O piso é o próprio ponto de partida: se cair, o ciclo está comprando audiência que não conversa.'
   },
   {
-    key: 'saves_reach', baseline: '0.002300', target: '0.002300', contaminated: true,
-    note: 'Guard-rail. Piso no que já existe.'
+    key: 'saves_reach', baseline: '0.007400', target: '0.007400',
+    baselineOn: '2026-07-31',
+    note: 'Guard-rail. Piso no que já existe, medido em julho fechado.'
   },
   {
-    key: 'sends_reach', baseline: '0.013200', target: '0.013200',
+    key: 'sends_reach', baseline: '0.054464', target: '0.054464',
+    baselineOn: '2026-07-31',
     note: 'Guard-rail de distribuição. É o que sustenta o alcance, e o alcance é o topo de tudo neste ciclo.'
   },
   {
-    key: 'reach', baseline: '5413754', target: '5413754',
+    key: 'reach', baseline: '5584671', target: '5584671',
+    baselineOn: '2026-07-31',
     note: 'Guard-rail. Queda acima de 25% por três semanas abre revisão do mix antes de qualquer decisão de pauta.'
   }
 ]
@@ -1707,7 +1740,7 @@ async function main (): Promise<void> {
         clientId,
         cycleId,
         metricDefId: requireDef(t.key),
-        baselineOn: BASELINE_ON,
+        baselineOn: t.baselineOn ?? BASELINE_ON,
         contaminated: t.contaminated === true ? 1 : 0,
         isNorthStar: t.northStar === true ? 1 : 0,
         createdAt: now,
@@ -1720,7 +1753,7 @@ async function main (): Promise<void> {
            target or note printed success and changed nothing. */
         set: {
           baseline: t.baseline ?? null,
-          baselineOn: BASELINE_ON,
+          baselineOn: t.baselineOn ?? BASELINE_ON,
           target: t.target ?? null,
           contaminated: t.contaminated === true ? 1 : 0,
           isNorthStar: t.northStar === true ? 1 : 0,

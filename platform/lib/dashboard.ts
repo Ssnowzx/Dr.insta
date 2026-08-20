@@ -132,7 +132,19 @@ export interface MetricCard {
    * differ say something about how far to trust the number, and dropping the
    * loser turns disagreement into false certainty.
    */
-  divergences: Array<{ source: string | null; value: number }>
+  divergences: Array<{
+    source: string | null
+    value: number
+    /**
+     * How many posts the losing reading came from, when it says.
+     *
+     * A divergence without it invites the reader to weigh the two figures as
+     * equals. July's rates disagreed by three to four times for one reason —
+     * one side was six Reels and the other was the whole account — and the
+     * screen showed only the two numbers.
+     */
+    sampleSize: number | null
+  }>
 }
 
 /**
@@ -229,7 +241,7 @@ export async function metrics (
     benchmarkUpdatedOn: r.benchmarkUpdatedOn,
     divergences: divergentes
       .filter((d): d is typeof d & { value: number } => d.value !== null)
-      .map(d => ({ source: d.source, value: d.value }))
+      .map(d => ({ source: d.source, value: d.value, sampleSize: d.sampleSize }))
   }))
 
   return derivarTaxas(cartoes, period)

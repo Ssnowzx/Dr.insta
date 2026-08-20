@@ -57,6 +57,24 @@ export function MetricStat ({ metric }: { metric: MetricCard }) {
  *   larger value, because "the one the cycle is decided on" has to be legible
  *   as a rank and not only as a position in a list.
  */
+/**
+ * How the losing reading of a divergence ends: with its sample, when it has one.
+ *
+ * The sample is the explanation and not a footnote. July's rates disagreed by
+ * three to four times for one reason — one side was six Reels and the other was
+ * the whole account — and the card showed the two figures side by side with
+ * nothing to weigh them by. A reader who cannot see that one came from six posts
+ * has to treat them as equally good, which is precisely the false certainty the
+ * divergence note exists to prevent.
+ *
+ * Exported and tested because it branches on singular, and the last piece of
+ * prose in this codebase that branched shipped "As última são finas demais".
+ */
+export function amostraDe (sampleSize: number | null): string {
+  if (sampleSize === null) return '.'
+  return `, de uma amostra de ${sampleSize} ${sampleSize === 1 ? 'post' : 'posts'}.`
+}
+
 export function MetricBar ({ metric, destaque = false }: { metric: MetricCard; destaque?: boolean }) {
   /* The same rule the panel groups by: a target that IS the baseline is a
      floor. Derived from the numbers, so a new floor in the seed lands here
@@ -203,7 +221,8 @@ export function MetricBar ({ metric, destaque = false }: { metric: MetricCard; d
                     ? 'Outra medição do mesmo período'
                     : `Pela leitura ${outra.medido ? 'do ' : 'de '}${outra.curto}`}
                   {' este número é '}
-                  <strong>{format(d.value, metric.unit, metric.decimals)}</strong>.
+                  <strong>{format(d.value, metric.unit, metric.decimals)}</strong>
+                  {amostraDe(d.sampleSize)}
                   {' As duas medições não batem — vale saber antes de decidir em cima.'}
                 </p>
               )
