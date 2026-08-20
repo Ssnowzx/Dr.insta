@@ -85,6 +85,7 @@ npm run dev
 | `npm run link -- --email …` | Prints a fresh access link for someone who already exists — invite or reset, chosen from the account |
 | `npm run sync:instagram` | Collects the current month from the Instagram API (`--period YYYY-MM-01` to backfill) |
 | `npm run probe:media` | Asks the API which insight metrics it will answer, one per call. Read-only, writes nothing. `--feed-sweep` reads every feed post in the window as a table |
+| `npm run probe:profile` | Asks the API which fields of the ACCOUNT it will answer, one per call — `followers_count` and `biography` are the two that would change a screen. Read-only |
 
 ---
 

@@ -23,7 +23,8 @@
     "link": "tsx --conditions=react-server --env-file-if-exists=.env scripts/link.ts",
     "pedido": "tsx --conditions=react-server --env-file-if-exists=.env scripts/pedido.ts",
     "sync:instagram": "tsx --conditions=react-server --env-file-if-exists=.env scripts/sync-instagram.ts",
-    "probe:media": "tsx --conditions=react-server --env-file-if-exists=.env scripts/probe-media-metrics.ts"
+    "probe:media": "tsx --conditions=react-server --env-file-if-exists=.env scripts/probe-media-metrics.ts",
+    "probe:profile": "tsx --conditions=react-server --env-file-if-exists=.env scripts/probe-profile-fields.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",
